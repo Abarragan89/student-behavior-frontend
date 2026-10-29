@@ -9,7 +9,7 @@ function Home() {
   const { data: students, isLoading, error } = useQuery({
     queryKey: ['students'],
     queryFn: async () => {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/students`)
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/users`)
       if (!res.ok) throw new Error('Failed to fetch')
       return res.json()
     },
