@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 
 export const Route = createFileRoute('/')({ component: Home })
@@ -22,10 +22,14 @@ function Home() {
 
   return (
     <div className="p-8">
-      <h1 className="text-4xl font-bold">Welcome to TanStack Start</h1>
-      <p className="mt-4 text-lg">
-        Edit <code>src/routes/index.tsx</code> to get started.
-      </p>
+      <h1 className="text-4xl font-bold">Welcome to Student Behavior</h1>
+      <a
+        href="http://localhost:8080/auth/google/login"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Sign On With Google
+      </a>
     </div>
   )
 }
