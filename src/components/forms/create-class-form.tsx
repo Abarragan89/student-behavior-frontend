@@ -17,7 +17,9 @@ import {
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
 import { cn } from '@/lib/utils'
+import { OfflineNote } from '#/components/offline-note'
 import { ApiError } from '#/lib/api'
+import { useOnline } from '#/lib/online'
 import { meQueryOptions } from '#/lib/auth'
 import { createClassroom, switchClassroom } from '#/lib/classroom'
 
@@ -109,6 +111,7 @@ export default function CreateClassForm({
     },
   })
   const isSaving = create.isPending
+  const online = useOnline()
 
   return (
     <form
@@ -152,14 +155,16 @@ export default function CreateClassForm({
         </Alert>
       )}
 
+      <OfflineNote action="create a class" />
+
       <Button
         type="submit"
-        disabled={isSaving}
+        disabled={isSaving || !online}
         aria-busy={isSaving}
         // The label stays in place (invisible) under the spinner, so the
         // button keeps its exact size. `relative` keeps the spinner on the
         // button, and it stays solid while it spins.
-        className="relative disabled:opacity-100"
+        className={cn('relative', isSaving && 'disabled:opacity-100')}
       >
         <span className={cn(isSaving && 'invisible')}>Create class</span>
         {isSaving && (

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { LogOut } from 'lucide-react'
+import { HardDrive, LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -11,6 +11,8 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { meQueryOptions } from '#/lib/auth'
+import { usePwaInstall } from '#/lib/pwa-install'
+import { ArchivedClasses } from '#/components/archived-classes'
 import { SignOutDialog } from '#/components/sign-out-dialog'
 import { TeacherAvatar } from '#/components/teacher-avatar'
 
@@ -22,6 +24,7 @@ function AccountPage() {
   // Already loaded by the login check in _authed.tsx.
   const { data: me } = useSuspenseQuery(meQueryOptions)
   const [signOutOpen, setSignOutOpen] = useState(false)
+  const { standalone } = usePwaInstall()
 
   // Logged out: the layout is already sending the teacher to /login.
   if (!me) return null
@@ -52,6 +55,18 @@ function AccountPage() {
           Google.
         </CardContent>
       </Card>
+
+      {/* Only the installed app saves anything (see src/lib/persist.ts). */}
+      {standalone && (
+        <p className="flex gap-3 text-sm text-muted-foreground">
+          <HardDrive className="mt-0.5 size-4 shrink-0" />
+          So the app opens quickly and works offline, your class list and
+          today’s marks are saved on this device. They’re deleted when you sign
+          out, or after 7 days without opening the app.
+        </p>
+      )}
+
+      <ArchivedClasses />
 
       <Button
         variant="outline"

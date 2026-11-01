@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { Me, Student } from '#/lib/auth'
 import { formatStudentCount } from '#/lib/classroom'
-import { localDate, markCountsQueryOptions } from '#/lib/marks'
+import { useToday } from '#/lib/day'
+import { markCountsQueryOptions } from '#/lib/marks'
 import { MarkDialog } from '#/components/mark-dialog'
 import { RosterToolbar } from '#/components/roster-toolbar'
 import { StudentCard } from '#/components/student-card'
@@ -24,7 +25,8 @@ export function ClassRoster({ classroom }: { classroom: Me['classroom'] }) {
   const labels = cardLabels(students)
 
   // Today's counts, in the teacher's own time zone.
-  const counts = useQuery(markCountsQueryOptions(classroomId, localDate()))
+  const today = useToday()
+  const counts = useQuery(markCountsQueryOptions(classroomId, today))
   const countsByStudent = useMemo(
     () => new Map(counts.data?.students.map((s) => [s.student_id, s])),
     [counts.data],
@@ -103,7 +105,7 @@ export function ClassRoster({ classroom }: { classroom: Me['classroom'] }) {
         onCancel={stopSelecting}
       />
 
-      <ul className="grid grid-cols-3 gap-2 sm:grid-cols-5 sm:gap-3 md:grid-cols-6 lg:grid-cols-8">
+      <ul className="grid grid-cols-4 gap-2 sm:grid-cols-5 sm:gap-3 md:grid-cols-6 lg:grid-cols-8">
         {students.map((student, i) => (
           <li key={student.id} className="min-w-0">
             <StudentCard

@@ -12,9 +12,12 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { cn } from '@/lib/utils'
+import { OfflineNote } from '#/components/offline-note'
 import { ApiError } from '#/lib/api'
+import { useOnline } from '#/lib/online'
 import { meQueryOptions } from '#/lib/auth'
 import {
+  archivedClassroomsQueryOptions,
   classroomStatusQueryOptions,
   formatStudentCount,
   googleCoursesQueryOptions,
@@ -56,6 +59,8 @@ export function GoogleClassCards({
     }
   }, [notConnected, queryClient])
 
+  // Read live from Google: nothing to show or import without a connection.
+  const online = useOnline()
   const importCourse = useMutation({
     // wasOpen: the class was already the open tab when clicked.
     mutationFn: ({ course }: { course: GoogleCourse; wasOpen: boolean }) =>
@@ -66,6 +71,10 @@ export function GoogleClassCards({
       queryClient.setQueryData(googleCoursesQueryOptions.queryKey, (list) =>
         list?.map((c) => (c.id === course.id ? { ...c, imported: true } : c)),
       )
+      // Picking a class that was archived brings it back.
+      void queryClient.invalidateQueries({
+        queryKey: archivedClassroomsQueryOptions.queryKey,
+      })
       // Reload the dashboard (tabs and roster) before the spinner stops, so
       // the class is open with its students when it does.
       await queryClient.invalidateQueries({
@@ -105,7 +114,10 @@ export function GoogleClassCards({
         </p>
       </div>
 
-      {courses.isPending || notConnected ? (
+      <OfflineNote action="bring in your Google Classroom classes" />
+
+      {courses.isPending && !online ? null : courses.isPending ||
+        notConnected ? (
         <LoadingCards />
       ) : courses.isError ? (
         <Alert
@@ -147,7 +159,7 @@ export function GoogleClassCards({
                     importCourse.variables.course.id === course.id
                   }
                   // One at a time; the backend runs them one by one anyway.
-                  disabled={importCourse.isPending}
+                  disabled={importCourse.isPending || !online}
                   onClick={() =>
                     importCourse.mutate({ course, wasOpen: isOpen })
                   }

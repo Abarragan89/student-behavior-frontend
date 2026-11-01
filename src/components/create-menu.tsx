@@ -13,7 +13,7 @@ import { useCreateDialogs } from '#/components/create-dialogs'
 
 /**
  * The + button: a menu of things to add. In the top bar on wide screens, and
- * in the middle of the bottom bar on phones (side="top", so it opens upward).
+ * in the bottom bar on phones (side="top", so it opens upward).
  */
 export function CreateMenu({
   side = 'bottom',

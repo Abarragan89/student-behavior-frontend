@@ -1,6 +1,13 @@
-import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  onlineManager,
+  queryOptions,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
+import type { QueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { ApiError, apiFetch } from './api'
+import { clearPersistedCache } from './persist'
 
 export type Role = 'teacher' | 'admin'
 
@@ -73,6 +80,51 @@ export function useLogout() {
     // then drop anything else cached for the previous user.
     queryClient.setQueryData(meQueryOptions.queryKey, null)
     queryClient.removeQueries({ predicate: (q) => q.queryKey[0] !== 'me' })
+    // Marks not sent yet go too (the sign-out dialog warns first), and
+    // anything saved on the device (installed app).
+    queryClient.getMutationCache().clear()
+    await clearPersistedCache()
     await navigate({ to: '/' })
   }
+}
+
+/**
+ * Drops everything cached for a teacher once they're signed out (session
+ * ended) or a different teacher signs in, so it isn't shown to, or saved on
+ * the device for, the next person.
+ */
+export function forgetOnTeacherChange(queryClient: QueryClient) {
+  let email = queryClient.getQueryData<Me | null>(meQueryOptions.queryKey)
+    ?.teacher.email
+
+  return queryClient.getQueryCache().subscribe((event) => {
+    if (event.type !== 'updated' || event.query.queryKey[0] !== 'me') return
+    const me = event.query.state.data as Me | null | undefined
+    if (me === undefined) return
+
+    const next = me?.teacher.email
+    if (next === email) return
+    const hadTeacher = email !== undefined
+    email = next
+    if (hadTeacher) {
+      queryClient.removeQueries({ predicate: (q) => q.queryKey[0] !== 'me' })
+    }
+  })
+}
+
+/**
+ * For pages that only redirect (landing, login): the signed-in teacher if
+ * already known (this visit or saved on the device), else a quick check.
+ * Never waits on a missing connection, and treats errors as signed out, so
+ * those pages always show right away.
+ */
+export async function signedInTeacher(
+  queryClient: QueryClient,
+): Promise<Me | null> {
+  const cached = queryClient.getQueryData<Me | null>(meQueryOptions.queryKey)
+  if (cached !== undefined) return cached
+  if (!onlineManager.isOnline()) return null
+  return queryClient
+    .query({ ...meQueryOptions, retry: false })
+    .catch(() => null)
 }

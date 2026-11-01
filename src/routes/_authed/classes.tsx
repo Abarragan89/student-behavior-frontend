@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import type { RefObject } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
-import { CircleAlert, Plus, Users } from 'lucide-react'
+import { Archive, CircleAlert, Plus, Users } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
@@ -13,6 +14,8 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty'
 import { Spinner } from '@/components/ui/spinner'
+import { ArchiveClassDialog } from '#/components/archive-class-dialog'
+import type { ArchiveTarget } from '#/components/archive-class-dialog'
 import { ClassRoster } from '#/components/class-roster'
 import { connectNotice } from '#/components/classroom-connect-notice'
 import { useCreateDialogs } from '#/components/create-dialogs'
@@ -26,24 +29,19 @@ import {
 } from '#/lib/classroom'
 import { meQueryOptions } from '#/lib/auth'
 import type { Me } from '#/lib/auth'
-import {
-  localDate,
-  markCountsQueryOptions,
-  markTypesQueryOptions,
-} from '#/lib/marks'
+import { useToday } from '#/lib/day'
+import { markCountsQueryOptions, markTypesQueryOptions } from '#/lib/marks'
 
 export const Route = createFileRoute('/_authed/classes')({
   // ?classroom=connected or ?classroom_error=…, passed on from / after
   // "Connect Google Classroom".
   validateSearch: validateClassroomResult,
-  // Loaded ahead, so the Add Students dialog knows right away whether Google
-  // Classroom is connected. No retries, and the page still shows if this
-  // fails.
-  loader: async ({ context }) => {
-    // Not waited for: just so the mark buttons are ready when a student is
-    // tapped.
+  // Started early but not waited for, so the page shows at once (and
+  // offline): the mark types, so the buttons are ready when a student is
+  // tapped, and whether Google Classroom is connected, for Add Students.
+  loader: ({ context }) => {
     void context.queryClient.query(markTypesQueryOptions).catch(() => null)
-    await context.queryClient
+    void context.queryClient
       .query({ ...classroomStatusQueryOptions, retry: false })
       .catch(() => null)
   },
@@ -65,7 +63,16 @@ function ClassesPage() {
 function ClassesContent({ me }: { me: Me }) {
   const { teacher, classroom } = me
   // Adding students (typed, or from Google Classroom) is in the + menu.
-  const { openAddStudents } = useCreateDialogs()
+  const { openAddStudents, openCreateClass } = useCreateDialogs()
+
+  // "Archive class" at the bottom. The dialog keeps the class it was opened
+  // for, since another class opens as soon as archiving works.
+  const [archiveTarget, setArchiveTarget] = useState<ArchiveTarget | null>(null)
+  const [archiveOpen, setArchiveOpen] = useState(false)
+  // After archiving, focus moves to the newly opened class's name, not back
+  // to the Archive button at the bottom of the page.
+  const headingRef = useRef<HTMLHeadingElement>(null)
+  const justArchived = useRef(false)
 
   // The open class is the teacher's default on the server. Picking another
   // in the Switch dialog makes it the default and shows it here.
@@ -99,6 +106,7 @@ function ClassesContent({ me }: { me: Me }) {
         name={shownName}
         loading={isLoading}
         onSwitch={() => setSwitchOpen(true)}
+        headingRef={headingRef}
       />
 
       {/* Red icon, black text: small red text on white is hard to read. */}
@@ -128,6 +136,48 @@ function ClassesContent({ me }: { me: Me }) {
         />
       )}
 
+      {/* At the very bottom, below the students (mt-auto), and set apart
+          by a line: it's for the end of the year, not everyday use. */}
+      {!isLoading && (
+        <div className="mt-auto pt-10">
+          <div className="border-t-2 border-border pt-6">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setArchiveTarget({
+                  id: classroom.id,
+                  name: classroom.name,
+                  onlyClass: me.classrooms.length <= 1,
+                })
+                setArchiveOpen(true)
+              }}
+              className="h-11 rounded-lg border-2 px-4 font-bold"
+            >
+              <Archive />
+              Archive class
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {archiveTarget && (
+        <ArchiveClassDialog
+          target={archiveTarget}
+          open={archiveOpen}
+          onOpenChange={setArchiveOpen}
+          onArchived={() => {
+            justArchived.current = true
+            window.scrollTo({ top: 0 })
+          }}
+          onCreateClass={openCreateClass}
+          finalFocus={() => {
+            if (!justArchived.current) return true
+            justArchived.current = false
+            return headingRef.current
+          }}
+        />
+      )}
+
       <SwitchClassDialog
         classrooms={me.classrooms}
         openId={shownId}
@@ -149,17 +199,21 @@ function ClassHeader({
   name,
   loading,
   onSwitch,
+  headingRef,
 }: {
   me: Me
   name: string
   /** A switch is under way: me.classroom is still the old class. */
   loading: boolean
   onSwitch: () => void
+  /** The class name, for moving focus to it. */
+  headingRef: RefObject<HTMLHeadingElement | null>
 }) {
   const { classroom } = me
   // The same request as the cards' counts, so it's only fetched once.
+  const date = useToday()
   const counts = useQuery({
-    ...markCountsQueryOptions(classroom.id, localDate()),
+    ...markCountsQueryOptions(classroom.id, date),
     enabled: !loading,
   })
   const today =
@@ -187,8 +241,11 @@ function ClassHeader({
       <div className="flex min-w-0 flex-1 flex-col gap-1 sm:pt-2">
         <div className="flex items-baseline gap-x-3 gap-y-1 sm:flex-wrap">
           <h1
+            ref={headingRef}
+            // Focusable from code only, for after archiving a class.
+            tabIndex={-1}
             title={name}
-            className="min-w-0 truncate text-xl font-bold sm:overflow-visible sm:text-2xl sm:whitespace-normal sm:wrap-break-word"
+            className="min-w-0 truncate text-xl font-bold outline-none sm:overflow-visible sm:text-2xl sm:whitespace-normal sm:wrap-break-word"
           >
             {name}
           </h1>

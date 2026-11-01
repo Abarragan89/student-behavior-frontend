@@ -10,7 +10,9 @@ import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
 import { cn } from '@/lib/utils'
+import { OfflineNote } from '#/components/offline-note'
 import { ApiError } from '#/lib/api'
+import { useOnline } from '#/lib/online'
 import { cacheStudentName, updateStudentName } from '#/lib/students'
 import type { StudentDetail } from '#/lib/students'
 
@@ -121,6 +123,7 @@ function EditName({
     },
   })
   const isSaving = save.isPending
+  const online = useOnline()
 
   return (
     <form
@@ -179,11 +182,13 @@ function EditName({
         </p>
       )}
 
+      <OfflineNote action="rename students" />
+
       <div className="flex items-center gap-2">
         <Button
           type="submit"
           size="sm"
-          disabled={!isDirty || isSaving}
+          disabled={!isDirty || isSaving || !online}
           aria-busy={isSaving}
           // Solid while saving, with the spinner over the hidden label so the
           // button keeps its size.

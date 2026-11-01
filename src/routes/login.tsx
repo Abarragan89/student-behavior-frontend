@@ -13,7 +13,8 @@ import { cn } from '@/lib/utils'
 import { GoogleIcon } from '#/components/GoogleIcon'
 import { Wordmark } from '#/components/Wordmark'
 import { loginUrl } from '#/lib/api'
-import { meQueryOptions } from '#/lib/auth'
+import { signedInTeacher } from '#/lib/auth'
+import { useOnline } from '#/lib/online'
 import { usePwaInstall } from '#/lib/pwa-install'
 import {
   InstallAppDialog,
@@ -34,21 +35,25 @@ export const Route = createFileRoute('/login')({
   validateSearch: (search: Record<string, unknown>): { error?: string } => ({
     error: typeof search.error === 'string' ? search.error : undefined,
   }),
-  // Already signed in: go to Classes. No retries and errors ignored, so
-  // the page still shows right away if the backend is down.
+  // Already signed in: go to Classes. The page still shows right away if the
+  // backend is down or offline.
   beforeLoad: async ({ context }) => {
-    const user = await context.queryClient
-      .query({ ...meQueryOptions, retry: false })
-      .catch(() => null)
+    const user = await signedInTeacher(context.queryClient)
     if (user) throw redirect({ to: '/classes' })
   },
   component: LoginPage,
 })
 
+const googleButtonClass = cn(
+  buttonVariants({ variant: 'outline' }),
+  'h-12 w-full gap-3 rounded-lg border-2 border-border bg-card text-base font-bold text-card-foreground shadow-md',
+)
+
 function LoginPage() {
   const { error } = Route.useSearch()
   // In the installed app, home is this page, so there's nowhere to go back to.
   const { standalone } = usePwaInstall()
+  const online = useOnline()
 
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center gap-8 bg-background px-4 py-12 text-foreground">
@@ -80,16 +85,26 @@ function LoginPage() {
             </Alert>
           )}
 
-          <a
-            href={loginUrl}
-            className={cn(
-              buttonVariants({ variant: 'outline' }),
-              'h-12 w-full gap-3 rounded-lg border-2 border-border bg-card text-base font-bold text-card-foreground shadow-md',
-            )}
-          >
-            <GoogleIcon />
-            Continue with Google
-          </a>
+          {online ? (
+            <a href={loginUrl} className={googleButtonClass}>
+              <GoogleIcon />
+              Continue with Google
+            </a>
+          ) : (
+            // Signing in goes to Google and back, so it needs a connection.
+            <>
+              <Button variant="outline" disabled className={googleButtonClass}>
+                <GoogleIcon />
+                Continue with Google
+              </Button>
+              <p
+                role="status"
+                className="text-center text-sm text-muted-foreground"
+              >
+                You’re offline. Connect to the internet to sign in.
+              </p>
+            </>
+          )}
         </CardContent>
       </Card>
 

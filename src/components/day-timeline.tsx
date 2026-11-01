@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
+import { markTime } from '#/lib/marks'
 import type { Mark } from '#/lib/marks'
 import { formatHour, formatTime, minutesIntoDay } from '#/lib/day'
 
@@ -52,7 +53,7 @@ export function DayTimeline({
   const items = marks
     .map((mark) => ({
       mark,
-      minute: minutesIntoDay(mark.created_at, timeZone),
+      minute: minutesIntoDay(markTime(mark), timeZone),
     }))
     .sort((a, b) => a.minute - b.minute)
 
@@ -179,7 +180,7 @@ export function DayTimeline({
 
           {width > 0 &&
             dots.map((dot) => {
-              const time = formatTime(dot.mark.created_at, timeZone)
+              const time = formatTime(markTime(dot.mark), timeZone)
               const kind = dot.mark.is_positive ? 'positive' : 'negative'
               return (
                 // A 24px target around a 12px dot: easy to hit.
@@ -214,7 +215,7 @@ export function DayTimeline({
             <Tooltip
               dot={active}
               x={Math.min(Math.max(xOf(active), 72), width - 72)}
-              time={formatTime(active.mark.created_at, timeZone)}
+              time={formatTime(markTime(active.mark), timeZone)}
               classroom={classroomName?.(active.mark.classroom_id)}
             />
           )}

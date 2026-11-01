@@ -32,8 +32,9 @@ import {
   isDateString,
   minutesIntoDay,
   timeZoneLabel,
+  useToday,
 } from '#/lib/day'
-import { localDate, timeZone } from '#/lib/marks'
+import { localDate, markTime, timeZone } from '#/lib/marks'
 import type { Mark } from '#/lib/marks'
 import {
   studentFromMe,
@@ -75,7 +76,7 @@ function StudentPage() {
   const navigate = Route.useNavigate()
   const { data: me } = useMe()
 
-  const today = localDate()
+  const today = useToday()
   const date = search.date ?? today
 
   const student = useQuery({
@@ -417,14 +418,14 @@ function MarkList({
   classroomName?: (id: string) => string | undefined
 }) {
   const sorted = [...marks].sort((a, b) =>
-    a.created_at.localeCompare(b.created_at),
+    markTime(a).localeCompare(markTime(b)),
   )
   return (
     <ol className="flex flex-col divide-y divide-foreground/10">
       {sorted.map((mark) => (
         <li key={mark.id} className="flex items-center gap-3 py-2.5">
           <span className="w-18 shrink-0 text-sm text-muted-foreground tabular-nums">
-            {formatTime(mark.created_at, zone)}
+            {formatTime(markTime(mark), zone)}
           </span>
           <span
             aria-hidden
@@ -502,7 +503,7 @@ function StudentMissing({
 function busiestHour(marks: Array<Mark>, zone: string) {
   const perHour = new Map<number, number>()
   for (const mark of marks) {
-    const hour = Math.floor(minutesIntoDay(mark.created_at, zone) / 60)
+    const hour = Math.floor(minutesIntoDay(markTime(mark), zone) / 60)
     perHour.set(hour, (perHour.get(hour) ?? 0) + 1)
   }
   let best: { hour: number; count: number } | null = null

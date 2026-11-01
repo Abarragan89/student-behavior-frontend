@@ -1,17 +1,25 @@
-import { Plus } from 'lucide-react'
-
+/**
+ * The TeachForFree logo. Shows the dark version when the `dark` class is on
+ * <html> (src/components/theme-provider.tsx). That class is set before the
+ * first paint, so the right logo shows without a flash.
+ */
 export function Wordmark() {
   return (
-    <span className="inline-flex items-center gap-2">
-      <span
-        aria-hidden
-        className="grid size-8 place-items-center rounded-md border-2 border-border bg-primary text-primary-foreground"
-      >
-        <Plus className="size-4" strokeWidth={3.5} />
-      </span>
-      <span className="text-lg font-bold tracking-tight">
-        Teach<span className="text-primary">For</span>Free
-      </span>
+    <span className="inline-flex shrink-0">
+      <img
+        src="/branding/teachforfree-apple-light.png"
+        alt="TeachForFree"
+        width={804}
+        height={192}
+        className="h-9 w-auto dark:hidden"
+      />
+      <img
+        src="/branding/teachforfree-apple-dark.png"
+        alt="TeachForFree"
+        width={804}
+        height={192}
+        className="hidden h-9 w-auto dark:block"
+      />
     </span>
   )
 }

@@ -3,7 +3,10 @@ import { NotebookPen, School } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import type { Me } from '#/lib/auth'
+import { ConnectionStatus } from '#/components/connection-status'
 import { CreateMenu } from '#/components/create-menu'
+import { UserMenu } from '#/components/user-menu'
 
 type NavLink = {
   to: '/classes' | '/lesson-plans'
@@ -24,7 +27,7 @@ const LESSON_PLANS: NavLink = {
  */
 export function HeaderNav({ className }: { className?: string }) {
   return (
-    <nav aria-label="Main" className={cn('items-center gap-1', className)}>
+    <nav aria-label="Main" className={cn('flex items-center gap-1', className)}>
       {[CLASSES, LESSON_PLANS].map(({ to, label, icon: Icon }) => (
         <Link
           key={to}
@@ -45,24 +48,39 @@ export function HeaderNav({ className }: { className?: string }) {
 }
 
 /**
- * The phone menu, fixed to the bottom of the screen: Classes, the + menu, and
- * Lesson Plans. The page leaves room for it (see _authed.tsx).
+ * The phone menu, fixed to the bottom of the screen: Classes, the + menu,
+ * Lesson Plans, and the avatar menu (last, where apps usually put the
+ * profile). Phones have no top bar, so the offline pill sits on its top edge.
+ * The page leaves room for it (see _authed.tsx).
  */
-export function BottomNav({ className }: { className?: string }) {
+export function BottomNav({
+  teacher,
+  className,
+}: {
+  teacher: Me['teacher']
+  className?: string
+}) {
   return (
     <nav
       aria-label="Main"
       className={cn(
         // Extra bottom padding keeps it above the home bar on newer phones.
-        'fixed inset-x-0 bottom-0 z-40 grid grid-cols-3 items-center border-t-2 border-border bg-card pb-[env(safe-area-inset-bottom)]',
+        'fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 items-center border-t-2 border-border bg-card pb-[env(safe-area-inset-bottom)]',
         className,
       )}
     >
+      {/* Half over the bar's top border. It floats, so the student cards
+          don't move (and get mis-tapped) when it appears. Empty while
+          online. */}
+      <div className="pointer-events-none absolute inset-x-0 -top-3.5 flex justify-center">
+        <ConnectionStatus />
+      </div>
       <BottomLink link={CLASSES} />
       <div className="flex justify-center">
         <CreateMenu side="top" />
       </div>
       <BottomLink link={LESSON_PLANS} />
+      <UserMenu teacher={teacher} placement="bottom-bar" />
     </nav>
   )
 }

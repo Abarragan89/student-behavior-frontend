@@ -17,7 +17,9 @@ import {
 import { Spinner } from '@/components/ui/spinner'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
+import { OfflineNote } from '#/components/offline-note'
 import { ApiError } from '#/lib/api'
+import { useOnline } from '#/lib/online'
 import { meQueryOptions } from '#/lib/auth'
 import { addStudents, formatStudentCount } from '#/lib/classroom'
 import type { AddStudentsResult } from '#/lib/classroom'
@@ -153,6 +155,7 @@ export default function AddStudentsForm({
     },
   })
   const isSaving = save.isPending
+  const online = useOnline()
 
   function onSubmit({ names }: AddStudentsOutput) {
     save.mutate(names)
@@ -215,14 +218,16 @@ export default function AddStudentsForm({
         </Alert>
       )}
 
+      <OfflineNote action="add students" />
+
       <Button
         type="submit"
-        disabled={isSaving}
+        disabled={isSaving || !online}
         aria-busy={isSaving}
         // The label stays in place (invisible) under the spinner, so the
         // button keeps its exact size: no layout shift. `relative` keeps the
         // spinner on the button, and the button stays solid while it spins.
-        className="relative disabled:opacity-100"
+        className={cn('relative', isSaving && 'disabled:opacity-100')}
       >
         <span className={cn(isSaving && 'invisible')}>Add students</span>
         {isSaving && (

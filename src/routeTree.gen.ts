@@ -15,6 +15,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedAccountRouteImport } from './routes/_authed/account'
 import { Route as AuthedClassesRouteImport } from './routes/_authed/classes'
 import { Route as AuthedLessonPlansRouteImport } from './routes/_authed/lesson-plans'
+import { Route as AuthedMarksRouteImport } from './routes/_authed/marks'
 import { Route as AuthedStudentsStudentIdRouteImport } from './routes/_authed/students.$studentId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -46,6 +47,11 @@ const AuthedLessonPlansRoute = AuthedLessonPlansRouteImport.update({
   path: '/lesson-plans',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedMarksRoute = AuthedMarksRouteImport.update({
+  id: '/marks',
+  path: '/marks',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedStudentsStudentIdRoute = AuthedStudentsStudentIdRouteImport.update({
   id: '/students/$studentId',
   path: '/students/$studentId',
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/account': typeof AuthedAccountRoute
   '/classes': typeof AuthedClassesRoute
   '/lesson-plans': typeof AuthedLessonPlansRoute
+  '/marks': typeof AuthedMarksRoute
   '/students/$studentId': typeof AuthedStudentsStudentIdRoute
 }
 export interface FileRoutesByTo {
@@ -66,6 +73,7 @@ export interface FileRoutesByTo {
   '/account': typeof AuthedAccountRoute
   '/classes': typeof AuthedClassesRoute
   '/lesson-plans': typeof AuthedLessonPlansRoute
+  '/marks': typeof AuthedMarksRoute
   '/students/$studentId': typeof AuthedStudentsStudentIdRoute
 }
 export interface FileRoutesById {
@@ -76,6 +84,7 @@ export interface FileRoutesById {
   '/_authed/account': typeof AuthedAccountRoute
   '/_authed/classes': typeof AuthedClassesRoute
   '/_authed/lesson-plans': typeof AuthedLessonPlansRoute
+  '/_authed/marks': typeof AuthedMarksRoute
   '/_authed/students/$studentId': typeof AuthedStudentsStudentIdRoute
 }
 export interface FileRouteTypes {
@@ -86,6 +95,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/classes'
     | '/lesson-plans'
+    | '/marks'
     | '/students/$studentId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -94,6 +104,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/classes'
     | '/lesson-plans'
+    | '/marks'
     | '/students/$studentId'
   id:
     | '__root__'
@@ -103,6 +114,7 @@ export interface FileRouteTypes {
     | '/_authed/account'
     | '/_authed/classes'
     | '/_authed/lesson-plans'
+    | '/_authed/marks'
     | '/_authed/students/$studentId'
   fileRoutesById: FileRoutesById
 }
@@ -156,6 +168,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedLessonPlansRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/marks': {
+      id: '/_authed/marks'
+      path: '/marks'
+      fullPath: '/marks'
+      preLoaderRoute: typeof AuthedMarksRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/students/$studentId': {
       id: '/_authed/students/$studentId'
       path: '/students/$studentId'
@@ -170,6 +189,7 @@ interface AuthedRouteChildren {
   AuthedAccountRoute: typeof AuthedAccountRoute
   AuthedClassesRoute: typeof AuthedClassesRoute
   AuthedLessonPlansRoute: typeof AuthedLessonPlansRoute
+  AuthedMarksRoute: typeof AuthedMarksRoute
   AuthedStudentsStudentIdRoute: typeof AuthedStudentsStudentIdRoute
 }
 
@@ -177,6 +197,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAccountRoute: AuthedAccountRoute,
   AuthedClassesRoute: AuthedClassesRoute,
   AuthedLessonPlansRoute: AuthedLessonPlansRoute,
+  AuthedMarksRoute: AuthedMarksRoute,
   AuthedStudentsStudentIdRoute: AuthedStudentsStudentIdRoute,
 }
 

@@ -37,8 +37,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
       toastOptions={{
         classNames: {
           toast: "cn-toast",
-          // Sonner picks a pale grey when the computer is in dark mode, but the
-          // app is always light, so that grey would be unreadable on white.
+          // The app's own muted text color, in light and dark mode, instead
+          // of Sonner's grey.
           description: "text-muted-foreground!",
         },
       }}

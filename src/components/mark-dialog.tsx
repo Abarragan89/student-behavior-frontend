@@ -4,6 +4,8 @@ import { Link } from '@tanstack/react-router'
 import {
   ChartNoAxesGantt,
   CircleAlert,
+  Pencil,
+  Plus,
   RefreshCw,
   ThumbsDown,
   ThumbsUp,
@@ -20,7 +22,7 @@ import { ResponsiveDialog } from '#/components/responsive-dialogue'
  * Picking a mark to give: positive marks on the left, negative on the right.
  * Used for one student, the picked students, or the whole class; the caller
  * says who in the title. One tap closes it and gives the mark (see
- * useGiveMark).
+ * useGiveMark). "Edit marks" goes to the Marks page.
  */
 export function MarkDialog({
   title,
@@ -40,6 +42,8 @@ export function MarkDialog({
   onPick: (markType: MarkType) => void
 }) {
   const markTypes = useQuery(markTypesQueryOptions)
+  // With none, the empty state has its own "Add marks" button instead.
+  const hasMarks = (markTypes.data?.length ?? 0) > 0
 
   function give(markType: MarkType) {
     onOpenChange(false)
@@ -79,9 +83,22 @@ export function MarkDialog({
           </Button>
         </div>
       ) : markTypes.data.length === 0 ? (
-        <p className="py-6 text-center text-sm text-muted-foreground">
-          You don’t have any marks yet.
-        </p>
+        <div className="flex flex-col items-center gap-3 py-4 text-center">
+          <p className="text-sm text-muted-foreground">
+            You don’t have any marks yet.
+          </p>
+          <Button
+            variant="outline"
+            nativeButton={false}
+            render={<Link to="/marks" />}
+            // Closed first, so it isn't left open behind the new page.
+            onClick={() => onOpenChange(false)}
+            className="h-11 rounded-lg border-2 border-border px-4 font-bold"
+          >
+            <Plus />
+            Add marks
+          </Button>
+        </div>
       ) : (
         <div className="grid grid-cols-2 gap-3">
           <MarkColumn
@@ -101,21 +118,38 @@ export function MarkDialog({
         </div>
       )}
 
-      {studentId && (
-        <div className="mt-5 flex justify-center border-t border-foreground/10 pt-3">
-          <Link
-            to="/students/$studentId"
-            params={{ studentId }}
-            // Closed first, so it isn't left open behind the new page.
-            onClick={() => onOpenChange(false)}
-            className={cn(
-              buttonVariants({ variant: 'link' }),
-              'text-base font-bold',
-            )}
-          >
-            <ChartNoAxesGantt className="size-5" />
-            View student
-          </Link>
+      {/* Links sit below a divider and look like links, so a rushed tap
+          lands on a mark, not here. "Edit marks" is the quieter one. */}
+      {(studentId || hasMarks) && (
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-x-6 border-t border-foreground/10 pt-3">
+          {studentId && (
+            <Link
+              to="/students/$studentId"
+              params={{ studentId }}
+              // Closed first, so it isn't left open behind the new page.
+              onClick={() => onOpenChange(false)}
+              className={cn(
+                buttonVariants({ variant: 'link' }),
+                'text-base font-bold',
+              )}
+            >
+              <ChartNoAxesGantt className="size-5" />
+              View student
+            </Link>
+          )}
+          {hasMarks && (
+            <Link
+              to="/marks"
+              onClick={() => onOpenChange(false)}
+              className={cn(
+                buttonVariants({ variant: 'link' }),
+                'text-base font-bold text-muted-foreground hover:text-foreground',
+              )}
+            >
+              <Pencil className="size-5" />
+              Edit marks
+            </Link>
+          )}
         </div>
       )}
     </ResponsiveDialog>

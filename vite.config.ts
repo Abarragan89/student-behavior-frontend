@@ -15,8 +15,8 @@ const config = defineConfig({
     tanstackRouter({ target: 'react', autoCodeSplitting: true }),
     viteReact(),
     // Makes the site installable: writes manifest.webmanifest and a service
-    // worker that caches the app's own files. Icons come from
-    // `npm run generate-pwa-assets` (see pwa-assets.config.ts).
+    // worker that caches the app's own files. Icons and launch images live in
+    // public/branding/ and come from `npm run generate-pwa-assets`.
     VitePWA({
       // Ask before switching to a new version (src/components/pwa-updater.tsx),
       // so a teacher typing a note isn't reloaded mid-sentence.
@@ -34,15 +34,24 @@ const config = defineConfig({
         scope: '/',
         display: 'standalone',
         // Android builds its launch screen from this color and the icon.
-        background_color: '#4f46e5',
+        // Same light background as #splash in index.html.
+        background_color: '#f7f9f3',
         theme_color: '#f7f9f3',
         categories: ['education', 'productivity'],
         icons: [
-          { src: 'pwa-64x64.png', sizes: '64x64', type: 'image/png' },
-          { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
-          { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
+          { src: 'branding/pwa-64x64.png', sizes: '64x64', type: 'image/png' },
           {
-            src: 'maskable-icon-512x512.png',
+            src: 'branding/pwa-192x192.png',
+            sizes: '192x192',
+            type: 'image/png',
+          },
+          {
+            src: 'branding/pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+          },
+          {
+            src: 'branding/maskable-icon-512x512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',
@@ -55,8 +64,13 @@ const config = defineConfig({
         ],
       },
       workbox: {
-        // No png: each phone only needs one of the 22 iOS launch images.
-        globPatterns: ['**/*.{js,css,html,svg,ico}'],
+        // Only the header logos of all the PNGs: the offline screen and
+        // #splash show them. The manifest icons are added automatically.
+        // Launch images are left out: each phone only needs one of the 22.
+        globPatterns: [
+          '**/*.{js,css,html,svg,ico}',
+          'branding/teachforfree-apple-*.png',
+        ],
         // The API lives on another origin and has no rule here, so it is
         // never cached. Only Google Fonts are.
         runtimeCaching: [

@@ -1,3 +1,4 @@
+import { useSyncExternalStore } from 'react'
 import { localDate } from './marks'
 
 // Working with one local calendar day ("YYYY-MM-DD") and times within it.
@@ -90,4 +91,40 @@ export function formatHourSpan(hour: number) {
   return startHalf && startHalf === endHalf
     ? `${startNumber}–${end}`
     : `${start}–${end}`
+}
+
+// Today changes at midnight, and an installed app can sit in the background
+// overnight. Check again just after midnight and whenever the app comes back.
+function subscribeToToday(onChange: () => void) {
+  let timer: ReturnType<typeof setTimeout>
+  const scheduleNext = () => {
+    const now = new Date()
+    const justAfterMidnight = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() + 1,
+      0,
+      0,
+      5,
+    )
+    timer = setTimeout(() => {
+      onChange()
+      scheduleNext()
+    }, justAfterMidnight.getTime() - now.getTime())
+  }
+  const onVisible = () => {
+    if (document.visibilityState === 'visible') onChange()
+  }
+
+  scheduleNext()
+  document.addEventListener('visibilitychange', onVisible)
+  return () => {
+    clearTimeout(timer)
+    document.removeEventListener('visibilitychange', onVisible)
+  }
+}
+
+/** Today's local date ("2026-10-31"), updated when the day changes. */
+export function useToday() {
+  return useSyncExternalStore(subscribeToToday, () => localDate())
 }

@@ -5,6 +5,7 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { Toaster } from '@/components/ui/sonner'
 import { PwaUpdater } from '#/components/pwa-updater'
+import { ThemeProvider } from '#/components/theme-provider'
 
 import '../styles.css'
 
@@ -17,7 +18,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootComponent() {
   return (
-    <>
+    <ThemeProvider>
       <Outlet />
       {/* For toast() anywhere in the app. Top center stays clear of the
           devtools button and is easy to spot on phones. */}
@@ -34,6 +35,6 @@ function RootComponent() {
           },
         ]}
       />
-    </>
+    </ThemeProvider>
   )
 }

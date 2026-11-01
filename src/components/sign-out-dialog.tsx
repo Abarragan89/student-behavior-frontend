@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useMutationState } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
   AlertDialog,
@@ -13,6 +14,9 @@ import {
 import { Spinner } from '@/components/ui/spinner'
 import { cn } from '@/lib/utils'
 import { useLogout } from '#/lib/auth'
+import { countUnsent } from '#/lib/mark-queue'
+import { MARK_MUTATION_KEY } from '#/lib/marks'
+import type { QueuedMark } from '#/lib/marks'
 
 /** Asks before signing out. Used by the avatar menu and the Account page. */
 export function SignOutDialog({
@@ -24,6 +28,13 @@ export function SignOutDialog({
 }) {
   const logout = useLogout()
   const [signingOut, setSigningOut] = useState(false)
+  // Marks given offline (or still on their way) are deleted by signing out.
+  const unsent = countUnsent(
+    useMutationState({
+      filters: { mutationKey: MARK_MUTATION_KEY, status: 'pending' },
+      select: (mutation) => mutation.state.variables as QueuedMark,
+    }),
+  )
 
   async function signOut() {
     setSigningOut(true)
@@ -49,7 +60,9 @@ export function SignOutDialog({
         <AlertDialogHeader>
           <AlertDialogTitle className="font-bold">Sign out?</AlertDialogTitle>
           <AlertDialogDescription>
-            You’ll need to sign in with Google again to see your classes.
+            {unsent > 0
+              ? `${unsent} ${unsent === 1 ? 'mark hasn’t' : 'marks haven’t'} been saved yet. Signing out now deletes ${unsent === 1 ? 'it' : 'them'}. To keep ${unsent === 1 ? 'it' : 'them'}, connect to the internet and wait a moment first.`
+              : 'You’ll need to sign in with Google again to see your classes.'}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -62,7 +75,9 @@ export function SignOutDialog({
             // label stays (invisible) under the spinner so the size holds.
             className="relative bg-destructive font-bold text-destructive-foreground hover:bg-destructive/90 disabled:opacity-100"
           >
-            <span className={cn(signingOut && 'invisible')}>Sign out</span>
+            <span className={cn(signingOut && 'invisible')}>
+              {unsent > 0 ? 'Sign out anyway' : 'Sign out'}
+            </span>
             {signingOut && (
               <Spinner
                 aria-label="Signing out"

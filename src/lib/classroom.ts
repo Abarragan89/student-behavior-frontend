@@ -1,12 +1,16 @@
 import { queryOptions } from '@tanstack/react-query'
+import type { QueryClient } from '@tanstack/react-query'
 import {
   ApiError,
+  GOOGLE_TIMEOUT_MS,
+  apiDelete,
   apiGet,
   apiPost,
   apiPut,
   classroomConnectUrl,
   refreshSession,
 } from './api'
+import { meQueryOptions } from './auth'
 import type { Me } from './auth'
 
 // Connecting Google Classroom is a separate Google consent step from sign-in,
@@ -47,6 +51,7 @@ export const googleCoursesQueryOptions = queryOptions({
   queryFn: async () => {
     const { courses } = await apiGet<{ courses: Array<GoogleCourse> }>(
       '/auth/google/classroom/courses',
+      { timeoutMs: GOOGLE_TIMEOUT_MS },
     )
     return courses
   },
@@ -68,6 +73,8 @@ export type CourseImportResult = {
 export function importGoogleCourse(courseId: string) {
   return apiPost<CourseImportResult>(
     `/auth/google/classroom/courses/${encodeURIComponent(courseId)}/import`,
+    undefined,
+    { timeoutMs: GOOGLE_TIMEOUT_MS },
   )
 }
 
@@ -90,6 +97,94 @@ export function switchClassroom(classroomId: string) {
   return apiPut<Me>('/users/me/default-classroom', {
     classroom_id: classroomId,
   })
+}
+
+// One of the teacher's archived classes, for the Account page.
+export type ArchivedClassroom = {
+  id: string
+  name: string
+  // The Google Classroom class it was imported from; null if made here.
+  google_course_id: string | null
+  archived_at: string
+  created_at: string
+}
+
+// Most recently archived first. Only the Account page shows it, so it isn't
+// saved on the device (see SAVED_QUERIES in persist.ts).
+export const archivedClassroomsQueryOptions = queryOptions({
+  queryKey: ['archived-classrooms'],
+  queryFn: () => apiGet<Array<ArchivedClassroom>>('/classrooms/archived'),
+  staleTime: 5 * 60 * 1000,
+})
+
+// "Archive class". The backend hides it from the class list (its students
+// and marks are kept) and sends back the dashboard. If it was the open class,
+// the oldest class left is open now. 409 when it's the teacher's only class.
+export function archiveClassroom(classroomId: string) {
+  return apiPost<Me>(`/classrooms/${encodeURIComponent(classroomId)}/archive`)
+}
+
+// Puts an archived class back in the class list and sends back the
+// dashboard. The open class doesn't change. 404 if it isn't archived.
+export function unarchiveClassroom(classroomId: string) {
+  return apiPost<Me>(`/classrooms/${encodeURIComponent(classroomId)}/unarchive`)
+}
+
+// Deletes an archived class forever, with all its marks and the students who
+// aren't in any of the teacher's other classes. 409 if it isn't archived.
+export function deleteClassroom(classroomId: string) {
+  return apiDelete(`/classrooms/${encodeURIComponent(classroomId)}`)
+}
+
+/** Takes one class off the cached archived list. */
+export function removeArchived(queryClient: QueryClient, classroomId: string) {
+  queryClient.setQueryData(archivedClassroomsQueryOptions.queryKey, (list) =>
+    list?.filter((c) => c.id !== classroomId),
+  )
+}
+
+/**
+ * After archiving: show the dashboard the backend sent (another class may be
+ * open now), and refresh the archived list. Student pages list a student's
+ * open classes, so they're refreshed too.
+ */
+export function cacheArchived(queryClient: QueryClient, me: Me) {
+  queryClient.setQueryData(meQueryOptions.queryKey, me)
+  void queryClient.invalidateQueries({
+    queryKey: archivedClassroomsQueryOptions.queryKey,
+  })
+  void queryClient.invalidateQueries({ queryKey: ['student'] })
+}
+
+/** After unarchiving: the class is back in the class list, off this one. */
+export function cacheUnarchived(
+  queryClient: QueryClient,
+  me: Me,
+  classroomId: string,
+) {
+  queryClient.setQueryData(meQueryOptions.queryKey, me)
+  removeArchived(queryClient, classroomId)
+  void queryClient.invalidateQueries({ queryKey: ['student'] })
+}
+
+/** After deleting a class forever: forget what's cached about it. */
+export function forgetDeletedClassroom(
+  queryClient: QueryClient,
+  classroom: ArchivedClassroom,
+) {
+  removeArchived(queryClient, classroom.id)
+  queryClient.removeQueries({ queryKey: ['mark-counts', classroom.id] })
+  // Students who were only in it are deleted too, and the backend doesn't say
+  // which, so every student page reloads.
+  void queryClient.invalidateQueries({ queryKey: ['student'] })
+  void queryClient.invalidateQueries({ queryKey: ['student-marks'] })
+  // Its Google Classroom class can be imported again, as a new class.
+  const courseId = classroom.google_course_id
+  if (courseId) {
+    queryClient.setQueryData(googleCoursesQueryOptions.queryKey, (list) =>
+      list?.map((c) => (c.id === courseId ? { ...c, imported: false } : c)),
+    )
+  }
 }
 
 export type AddStudentsResult = {
@@ -115,8 +210,9 @@ export function formatStudentCount(count: number) {
 export async function connectClassroom() {
   // The backend asks for a fresh session first: its flow lasts up to 10
   // minutes and a new access token 15, so the teacher is still signed in when
-  // Google sends them back.
-  await refreshSession()
+  // Google sends them back. If the refresh fails, go anyway: the backend
+  // sends a signed-out teacher back with an error to show.
+  await refreshSession().catch(() => {})
   window.location.assign(classroomConnectUrl)
 }
 
