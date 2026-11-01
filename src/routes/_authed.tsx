@@ -10,6 +10,7 @@ import { BottomNav, HeaderNav } from '#/components/app-nav'
 import { CreateDialogsProvider } from '#/components/create-dialogs'
 import { CreateMenu } from '#/components/create-menu'
 import { UserMenu } from '#/components/user-menu'
+import { InstallBanner } from '#/components/install/install-banner'
 import { meQueryOptions, useMe } from '#/lib/auth'
 
 // Layout for pages that need a login: put them in src/routes/_authed/.
@@ -49,6 +50,9 @@ function AuthedLayout() {
             <UserMenu teacher={me.teacher} />
           </div>
         </header>
+
+        {/* Phones in the browser only; hidden in the installed app. */}
+        <InstallBanner className="md:hidden" />
 
         <Outlet />
 

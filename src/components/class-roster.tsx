@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { Me, Student } from '#/lib/auth'
 import { formatStudentCount } from '#/lib/classroom'
@@ -11,15 +11,15 @@ import type { MarkTarget } from '#/hooks/useGiveMark'
 
 /**
  * The open class's students as a grid of cards (see StudentCard): initials
- * in a ring of today's marks, first name, and the + / − counts. 4 per row on
- * phones, up to 8 on laptops. Sorted by the backend.
+ * in a ring of today's marks, first name, and the + / − counts. 3 per row on
+ * phones, up to 8 on laptops. Sorted by the backend. Straight on the page,
+ * not in a card, so phones get the full width.
  *
  * Tapping a card opens the marks to give that student. Above the grid,
  * "Select all" gives a mark to the whole class, and "Select" lets the teacher
  * tap several cards and give them all one mark.
  */
 export function ClassRoster({ classroom }: { classroom: Me['classroom'] }) {
-  const headingId = useId()
   const { id: classroomId, name, students } = classroom
   const labels = cardLabels(students)
 
@@ -86,16 +86,7 @@ export function ClassRoster({ classroom }: { classroom: Me['classroom'] }) {
   }, [selecting, dialogOpen])
 
   return (
-    <section
-      aria-labelledby={headingId}
-      className="relative flex flex-col gap-4"
-    >
-      {/* The class name is already on its tab, so the page heading is for
-          screen readers only. */}
-      <h1 id={headingId} className="sr-only">
-        {name}
-      </h1>
-
+    <section aria-label="Students" className="flex flex-col gap-2">
       <RosterToolbar
         selecting={selecting}
         selectedCount={selected.length}

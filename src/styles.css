@@ -217,6 +217,10 @@ body {
   body {
     @apply bg-background text-foreground;
     letter-spacing: var(--tracking-normal);
+    /* Phones turned sideways: keep content clear of the notch. (Needs
+       viewport-fit=cover in index.html.) */
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
   }
   html {
     @apply font-sans;

@@ -4,6 +4,7 @@ import type { QueryClient } from '@tanstack/react-query'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { Toaster } from '@/components/ui/sonner'
+import { PwaUpdater } from '#/components/pwa-updater'
 
 import '../styles.css'
 
@@ -21,6 +22,7 @@ function RootComponent() {
       {/* For toast() anywhere in the app. Top center stays clear of the
           devtools button and is easy to spot on phones. */}
       <Toaster position="top-center" />
+      <PwaUpdater />
       <TanStackDevtools
         config={{
           position: 'bottom-right',

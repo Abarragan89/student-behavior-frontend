@@ -1,15 +1,14 @@
 import { useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { formatStudentCount } from '#/lib/classroom'
 
 const linkClass = 'h-9 px-2 text-base font-bold'
 
 /**
- * Above the student grid. Normally "Select" and "Select all". While picking
- * students, the button that gives them a mark, plus Cancel.
- *
- * It sticks to the top of the screen, so the Give button is in reach however
- * far down a long roster the teacher has scrolled.
+ * Beside the roster's heading, at the right. Normally "Select" and "Select
+ * all". While picking students, the button that gives them a mark, plus
+ * Cancel.
  */
 export function RosterToolbar({
   selecting,
@@ -38,9 +37,14 @@ export function RosterToolbar({
   }, [selecting])
 
   return (
-    // Pulled out over the folder's side padding, so cards scroll under a
-    // full-width bar.
-    <div className="absolute -top-14 right-3 z-10 -mx-4 flex min-h-13 items-center justify-end gap-2">
+    // With links at the end, their padding is pulled out, so the text lines
+    // up with the card's edge.
+    <div
+      className={cn(
+        'ml-auto flex min-h-9 mb-1 items-center justify-end gap-2',
+        !selecting && '-mr-2',
+      )}
+    >
       {selecting ? (
         <>
           <Button

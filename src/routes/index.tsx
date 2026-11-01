@@ -2,6 +2,7 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 import { LandingPage } from '#/components/landing/LandingPage'
 import { meQueryOptions } from '#/lib/auth'
 import { validateClassroomResult } from '#/lib/classroom'
+import { isStandalone } from '#/lib/pwa-install'
 
 export const Route = createFileRoute('/')({
   // The backend sends teachers here after "Connect Google Classroom".
@@ -15,6 +16,8 @@ export const Route = createFileRoute('/')({
       .catch(() => null)
     // Pass any Google Classroom result on for the Classes page to show.
     if (user) throw redirect({ to: '/classes', search })
+    // The installed app skips the marketing page and goes to sign-in.
+    if (isStandalone()) throw redirect({ to: '/login' })
   },
   component: LandingPage,
 })

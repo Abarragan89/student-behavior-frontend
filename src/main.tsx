@@ -1,3 +1,5 @@
+// First, so the browser's install offer is caught however early it comes.
+import '#/lib/pwa-install'
 import ReactDOM from 'react-dom/client'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { routeTree } from './routeTree.gen'
@@ -6,6 +8,7 @@ import {
   QueryClientProvider,
 } from '@tanstack/react-query'
 import { ApiError } from './lib/api'
+import { hideSplashAfterFirstRender } from './lib/splash'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -25,6 +28,9 @@ const router = createRouter({
   defaultPreload: 'intent',
   scrollRestoration: true,
 })
+
+// The installed app's launch screen stays up until the first page is ready.
+hideSplashAfterFirstRender(router)
 
 declare module '@tanstack/react-router' {
   interface Register {

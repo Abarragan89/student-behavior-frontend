@@ -1,7 +1,7 @@
 import { Link, createFileRoute, redirect } from '@tanstack/react-router'
-import { ArrowLeft, CircleAlert } from 'lucide-react'
+import { ArrowLeft, CircleAlert, Download } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { buttonVariants } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import {
   Card,
   CardContent,
@@ -14,6 +14,11 @@ import { GoogleIcon } from '#/components/GoogleIcon'
 import { Wordmark } from '#/components/Wordmark'
 import { loginUrl } from '#/lib/api'
 import { meQueryOptions } from '#/lib/auth'
+import { usePwaInstall } from '#/lib/pwa-install'
+import {
+  InstallAppDialog,
+  useInstallApp,
+} from '#/components/install/install-app'
 
 // Codes the Go backend puts in /login?error=… when Google sign-in fails.
 const errorMessages: Record<string, string> = {
@@ -42,6 +47,8 @@ export const Route = createFileRoute('/login')({
 
 function LoginPage() {
   const { error } = Route.useSearch()
+  // In the installed app, home is this page, so there's nowhere to go back to.
+  const { standalone } = usePwaInstall()
 
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center gap-8 bg-background px-4 py-12 text-foreground">
@@ -86,13 +93,41 @@ function LoginPage() {
         </CardContent>
       </Card>
 
-      <Link
-        to="/"
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="size-4" />
-        Back to home
-      </Link>
+      {!standalone && (
+        <>
+          <InstallAppPrompt />
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="size-4" />
+            Back to home
+          </Link>
+        </>
+      )}
     </main>
+  )
+}
+
+/** "Download the app" under the sign-in card, for teachers on the website. */
+function InstallAppPrompt() {
+  const { visible, start, dialogProps } = useInstallApp()
+  if (!visible) return null
+
+  return (
+    <div className="flex w-full max-w-sm flex-col items-center gap-2 text-center">
+      <p className="text-sm font-medium text-muted-foreground">
+        Using your phone in class?
+      </p>
+      <Button
+        variant="outline"
+        onClick={start}
+        className="h-12 w-full rounded-lg border-2 border-border bg-card text-base font-bold text-card-foreground shadow-md"
+      >
+        <Download />
+        Download the app
+      </Button>
+      <InstallAppDialog {...dialogProps} />
+    </div>
   )
 }

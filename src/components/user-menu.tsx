@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { LogOut, UserRound } from 'lucide-react'
+import { Download, LogOut, UserRound } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Popover,
@@ -14,11 +14,19 @@ import { Separator } from '@/components/ui/separator'
 import type { Me } from '#/lib/auth'
 import { SignOutDialog } from '#/components/sign-out-dialog'
 import { TeacherAvatar } from '#/components/teacher-avatar'
+import {
+  InstallAppDialog,
+  useInstallApp,
+} from '#/components/install/install-app'
 
-/** The teacher's avatar in the top bar. Opens their name, Account, and Sign out. */
+/**
+ * The teacher's avatar in the top bar. Opens their name, Account, Download
+ * the app (website only), and Sign out.
+ */
 export function UserMenu({ teacher }: { teacher: Me['teacher'] }) {
   const [open, setOpen] = useState(false)
   const [signOutOpen, setSignOutOpen] = useState(false)
+  const install = useInstallApp()
 
   return (
     <>
@@ -65,6 +73,19 @@ export function UserMenu({ teacher }: { teacher: Me['teacher'] }) {
               <UserRound />
               Account
             </Button>
+            {install.visible && (
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setOpen(false)
+                  void install.start()
+                }}
+                className="h-10 justify-start rounded-lg font-bold"
+              >
+                <Download />
+                Download the app
+              </Button>
+            )}
             <Button
               variant="ghost"
               onClick={() => {
@@ -82,6 +103,7 @@ export function UserMenu({ teacher }: { teacher: Me['teacher'] }) {
 
       {/* Outside the popover, so it stays open after the popover closes. */}
       <SignOutDialog open={signOutOpen} onOpenChange={setSignOutOpen} />
+      <InstallAppDialog {...install.dialogProps} />
     </>
   )
 }

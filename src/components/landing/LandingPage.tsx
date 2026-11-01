@@ -20,6 +20,7 @@ import {
 import { cn } from '@/lib/utils'
 import { loginUrl } from '#/lib/api'
 import { Wordmark } from '#/components/Wordmark'
+import { InstallAppButton } from '#/components/install/install-app'
 import { StudentGridDemo } from './StudentGridDemo'
 import { LessonNotesMockup } from './LessonNotesMockup'
 
@@ -46,13 +47,19 @@ function TopBar() {
     <header className="sticky top-0 z-10 border-b-2 border-border bg-background">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
         <Wordmark />
-        <ButtonLink
-          href={loginUrl}
-          variant="outline"
-          className="h-10 px-4 text-sm shadow-none"
-        >
-          Sign in
-        </ButtonLink>
+        <div className="flex items-center gap-2">
+          <InstallAppButton
+            compact
+            className="h-10 rounded-lg border-2 border-border px-3 text-sm"
+          />
+          <ButtonLink
+            href={loginUrl}
+            variant="outline"
+            className="h-10 px-4 text-sm shadow-none"
+          >
+            Sign in
+          </ButtonLink>
+        </div>
       </div>
     </header>
   )
@@ -79,6 +86,11 @@ function Hero() {
           <ButtonLink href={loginUrl}>
             Sign in with Google — it's free
           </ButtonLink>
+          {/* Phones only: the top bar has room for just an icon there. */}
+          <InstallAppButton
+            variant="outline"
+            className="h-12 rounded-lg border-2 border-border bg-card px-6 text-base text-card-foreground shadow-md sm:hidden"
+          />
           <ButtonLink href="#how-it-works" variant="outline">
             See how it works
             <ArrowDown className="size-5" />
