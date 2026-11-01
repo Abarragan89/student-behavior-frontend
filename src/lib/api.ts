@@ -59,7 +59,7 @@ export async function apiGet<T>(path: string): Promise<T> {
 
 // Sends body (if any) as JSON and resolves to the JSON response.
 async function apiSend<T>(
-  method: 'POST' | 'PUT',
+  method: 'POST' | 'PUT' | 'PATCH',
   path: string,
   body?: unknown,
 ): Promise<T> {
@@ -83,6 +83,10 @@ export function apiPost<T>(path: string, body?: unknown): Promise<T> {
 
 export function apiPut<T>(path: string, body?: unknown): Promise<T> {
   return apiSend<T>('PUT', path, body)
+}
+
+export function apiPatch<T>(path: string, body?: unknown): Promise<T> {
+  return apiSend<T>('PATCH', path, body)
 }
 
 // For routes that answer 204 with no body.

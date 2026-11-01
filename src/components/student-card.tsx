@@ -5,8 +5,8 @@ import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import type { Student } from '#/lib/auth'
 
-/** A student's marks today; null while they load (or if they can't). */
-type Today = { positive: number; negative: number } | null
+/** A student's marks for a day; null while they load (or if they can't). */
+export type Today = { positive: number; negative: number } | null
 
 // The ring's colors, pulled a little toward the text color (darker on a light
 // card, lighter on a dark one) so the small numbers are easy to read. Mixed
@@ -140,7 +140,16 @@ const GAP = 2.5
  * that were positive, the red part the negative ones, going clockwise from
  * the top. Grey with no marks yet. The parts slide when the counts change.
  */
-function MarkRing({ today, children }: { today: Today; children: ReactNode }) {
+export function MarkRing({
+  today,
+  className,
+  children,
+}: {
+  today: Today
+  /** Sizes it; the card's size by default. */
+  className?: string
+  children: ReactNode
+}) {
   const positive = today?.positive ?? 0
   const negative = today?.negative ?? 0
   const total = positive + negative
@@ -167,7 +176,7 @@ function MarkRing({ today, children }: { today: Today; children: ReactNode }) {
   ]
 
   return (
-    <div className="relative size-14 shrink-0 sm:size-16">
+    <div className={cn('relative size-14 shrink-0 sm:size-16', className)}>
       {/* Turned a quarter, so the ring starts at the top. */}
       <svg
         viewBox="0 0 100 100"
@@ -212,6 +221,6 @@ function MarkRing({ today, children }: { today: Today; children: ReactNode }) {
 }
 
 /** "Ava", "Johnson" → "AJ"; "Ava", "" → "A" */
-function initials(first: string, last: string) {
+export function initials(first: string, last: string) {
   return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase()
 }

@@ -15,6 +15,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedAccountRouteImport } from './routes/_authed/account'
 import { Route as AuthedClassesRouteImport } from './routes/_authed/classes'
 import { Route as AuthedLessonPlansRouteImport } from './routes/_authed/lesson-plans'
+import { Route as AuthedStudentsStudentIdRouteImport } from './routes/_authed/students.$studentId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -45,6 +46,11 @@ const AuthedLessonPlansRoute = AuthedLessonPlansRouteImport.update({
   path: '/lesson-plans',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedStudentsStudentIdRoute = AuthedStudentsStudentIdRouteImport.update({
+  id: '/students/$studentId',
+  path: '/students/$studentId',
+  getParentRoute: () => AuthedRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/account': typeof AuthedAccountRoute
   '/classes': typeof AuthedClassesRoute
   '/lesson-plans': typeof AuthedLessonPlansRoute
+  '/students/$studentId': typeof AuthedStudentsStudentIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -59,6 +66,7 @@ export interface FileRoutesByTo {
   '/account': typeof AuthedAccountRoute
   '/classes': typeof AuthedClassesRoute
   '/lesson-plans': typeof AuthedLessonPlansRoute
+  '/students/$studentId': typeof AuthedStudentsStudentIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -68,12 +76,25 @@ export interface FileRoutesById {
   '/_authed/account': typeof AuthedAccountRoute
   '/_authed/classes': typeof AuthedClassesRoute
   '/_authed/lesson-plans': typeof AuthedLessonPlansRoute
+  '/_authed/students/$studentId': typeof AuthedStudentsStudentIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/account' | '/classes' | '/lesson-plans'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/account'
+    | '/classes'
+    | '/lesson-plans'
+    | '/students/$studentId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/account' | '/classes' | '/lesson-plans'
+  to:
+    | '/'
+    | '/login'
+    | '/account'
+    | '/classes'
+    | '/lesson-plans'
+    | '/students/$studentId'
   id:
     | '__root__'
     | '/'
@@ -82,6 +103,7 @@ export interface FileRouteTypes {
     | '/_authed/account'
     | '/_authed/classes'
     | '/_authed/lesson-plans'
+    | '/_authed/students/$studentId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -134,6 +156,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedLessonPlansRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/students/$studentId': {
+      id: '/_authed/students/$studentId'
+      path: '/students/$studentId'
+      fullPath: '/students/$studentId'
+      preLoaderRoute: typeof AuthedStudentsStudentIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
   }
 }
 
@@ -141,12 +170,14 @@ interface AuthedRouteChildren {
   AuthedAccountRoute: typeof AuthedAccountRoute
   AuthedClassesRoute: typeof AuthedClassesRoute
   AuthedLessonPlansRoute: typeof AuthedLessonPlansRoute
+  AuthedStudentsStudentIdRoute: typeof AuthedStudentsStudentIdRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAccountRoute: AuthedAccountRoute,
   AuthedClassesRoute: AuthedClassesRoute,
   AuthedLessonPlansRoute: AuthedLessonPlansRoute,
+  AuthedStudentsStudentIdRoute: AuthedStudentsStudentIdRoute,
 }
 
 const AuthedRouteWithChildren =

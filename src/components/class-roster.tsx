@@ -142,6 +142,7 @@ export function ClassRoster({ classroom }: { classroom: Me['classroom'] }) {
 
       <MarkDialog
         {...dialogText(target, name)}
+        studentId={target?.kind === 'student' ? target.student.id : undefined}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         onPick={pick}

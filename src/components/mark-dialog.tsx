@@ -1,8 +1,15 @@
 import { useId } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { CircleAlert, RefreshCw, ThumbsDown, ThumbsUp } from 'lucide-react'
+import { Link } from '@tanstack/react-router'
+import {
+  ChartNoAxesGantt,
+  CircleAlert,
+  RefreshCw,
+  ThumbsDown,
+  ThumbsUp,
+} from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { cn } from '@/lib/utils'
 import { markTypesQueryOptions } from '#/lib/marks'
@@ -18,6 +25,7 @@ import { ResponsiveDialog } from '#/components/responsive-dialogue'
 export function MarkDialog({
   title,
   description,
+  studentId,
   open,
   onOpenChange,
   onPick,
@@ -25,6 +33,8 @@ export function MarkDialog({
   /** Who it's for: "Ava Adams", "3 students", "All 14 students". */
   title: string
   description: string
+  /** For one student: adds a link to their page. */
+  studentId?: string
   open: boolean
   onOpenChange: (open: boolean) => void
   onPick: (markType: MarkType) => void
@@ -88,6 +98,24 @@ export function MarkDialog({
             buttonClassName="bg-destructive text-destructive-foreground hover:bg-destructive/80"
             onGive={give}
           />
+        </div>
+      )}
+
+      {studentId && (
+        <div className="mt-5 flex justify-center border-t border-foreground/10 pt-3">
+          <Link
+            to="/students/$studentId"
+            params={{ studentId }}
+            // Closed first, so it isn't left open behind the new page.
+            onClick={() => onOpenChange(false)}
+            className={cn(
+              buttonVariants({ variant: 'link' }),
+              'text-base font-bold',
+            )}
+          >
+            <ChartNoAxesGantt className="size-5" />
+            View student
+          </Link>
         </div>
       )}
     </ResponsiveDialog>
