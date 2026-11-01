@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Theme colors: primary #4f46e5, border #000, primary-foreground #fff -->
+  <rect x="1.5" y="1.5" width="29" height="29" rx="7" fill="#4f46e5" stroke="#000" stroke-width="3"/>
+  <path d="M16 9v14M9 16h14" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+</svg>

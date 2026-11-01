@@ -5,12 +5,23 @@ import {
   QueryClient,
   QueryClientProvider,
 } from '@tanstack/react-query'
+import { ApiError } from './lib/api'
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // A 401 means "not logged in"; retrying won't change that.
+      retry: (failureCount, error) =>
+        !(error instanceof ApiError && error.status === 401) &&
+        failureCount < 3,
+    },
+  },
+})
 
 
 const router = createRouter({
   routeTree,
+  context: { queryClient },
   defaultPreload: 'intent',
   scrollRestoration: true,
 })

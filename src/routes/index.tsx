@@ -1,35 +1,20 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
+import { createFileRoute, redirect } from '@tanstack/react-router'
+import { LandingPage } from '#/components/landing/LandingPage'
+import { meQueryOptions } from '#/lib/auth'
+import { validateClassroomResult } from '#/lib/classroom'
 
-export const Route = createFileRoute('/')({ component: Home })
-
-function Home() {
-
-  // TanStack Query handles the state, loading spinners, and caching for you
-  const { data: students, isLoading, error } = useQuery({
-    queryKey: ['students'],
-    queryFn: async () => {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/users`)
-      if (!res.ok) throw new Error('Failed to fetch')
-      return res.json()
-    },
-  })
-
-  console.log("studnets", students)
-  console.log("isloading", isLoading)
-  console.log('error', error)
-
-
-  return (
-    <div className="p-8">
-      <h1 className="text-4xl font-bold">Welcome to Student Behavior</h1>
-      <a
-        href="http://localhost:8080/auth/google/login"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        Sign On With Google
-      </a>
-    </div>
-  )
-}
+export const Route = createFileRoute('/')({
+  // The backend sends teachers here after "Connect Google Classroom".
+  validateSearch: validateClassroomResult,
+  // Logged-in teachers skip the landing page and go straight to their class.
+  // No retries and errors ignored, so the page still shows right away if the
+  // backend is down.
+  beforeLoad: async ({ context, search }) => {
+    const user = await context.queryClient
+      .query({ ...meQueryOptions, retry: false })
+      .catch(() => null)
+    // Pass any Google Classroom result on for the Classes page to show.
+    if (user) throw redirect({ to: '/classes', search })
+  },
+  component: LandingPage,
+})
