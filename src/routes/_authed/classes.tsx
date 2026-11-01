@@ -59,7 +59,6 @@ function ClassesContent({ me }: { me: Me }) {
   const hasStudents = classroom.students.length > 0
   // Adding students (typed, or from Google Classroom) is in the + menu.
   const { openAddStudents } = useCreateDialogs()
-  console.log('me ', me)
 
   // Back from "Connect Google Classroom": reopen Add Students, where the
   // Connect button and the class cards are, with how it went. Then take it
