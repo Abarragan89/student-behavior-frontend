@@ -7,6 +7,7 @@ import {
   CircleAlert,
   Printer,
   RefreshCw,
+  Trash2,
   UserX,
 } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -46,6 +47,8 @@ import {
 } from '#/lib/students'
 import type { StudentDetail } from '#/lib/students'
 import { DayTimeline } from '#/components/day-timeline'
+import { DeleteStudentDialog } from '#/components/delete-student-dialog'
+import type { DeleteStudentTarget } from '#/components/delete-student-dialog'
 import { StudentNameForm } from '#/components/forms/student-name-form'
 import { StudentReport } from '#/components/student-report'
 import { MarkRing, initials } from '#/components/student-card'
@@ -136,6 +139,8 @@ function StudentPage() {
       today={today}
       onShowDay={showDay}
       teacherName={me?.teacher.name ?? ''}
+      openClassId={me?.classroom.id}
+      onDeleted={() => navigate({ to: '/classes' })}
       classroomNames={
         new Map([
           ...(me?.classrooms ?? []).map((c) => [c.id, c.name] as const),
@@ -152,6 +157,8 @@ function StudentDay({
   today,
   onShowDay,
   teacherName,
+  openClassId,
+  onDeleted,
   classroomNames,
 }: {
   student: StudentDetail
@@ -159,8 +166,20 @@ function StudentDay({
   today: string
   onShowDay: (date: string) => void
   teacherName: string
+  /** The class open on the Classes page. */
+  openClassId?: string
+  /** The student was deleted: leave their page. */
+  onDeleted: () => Promise<void>
   classroomNames: Map<string, string>
 }) {
+  // "Delete student" at the bottom. A snapshot of the student when it was
+  // opened, and a fresh dialog each time (so the typing and class start over).
+  const [deleteTarget, setDeleteTarget] = useState<DeleteStudentTarget | null>(
+    null,
+  )
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleteKey, setDeleteKey] = useState(0)
+
   // The teacher's own time zone: the day is fetched in it, and every time on
   // the page is shown on its clock.
   const zone = timeZone()
@@ -308,7 +327,42 @@ function StudentDay({
             />
           </Card>
         )}
+
+        {/* Not for a student in no current class: there's nothing to delete
+            them from here. */}
+        {student.classrooms.length > 0 && (
+          <div className="border-t-2 border-border pt-6">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteTarget({
+                  id: student.id,
+                  first_name: student.first_name,
+                  last_name: student.last_name,
+                  classrooms: student.classrooms,
+                })
+                setDeleteKey((k) => k + 1)
+                setDeleteOpen(true)
+              }}
+              className="h-11 rounded-lg border-2 px-4 font-bold"
+            >
+              <Trash2 />
+              Delete student
+            </Button>
+          </div>
+        )}
       </main>
+
+      {deleteTarget && (
+        <DeleteStudentDialog
+          key={deleteKey}
+          target={deleteTarget}
+          openClassId={openClassId}
+          open={deleteOpen}
+          onOpenChange={setDeleteOpen}
+          onDeleted={onDeleted}
+        />
+      )}
 
       {/* Only on paper. Rendered once the day is in (not while a different
         day's marks stand in), so Print never shows the wrong day. */}

@@ -1,6 +1,6 @@
 import { queryOptions } from '@tanstack/react-query'
 import type { QueryClient } from '@tanstack/react-query'
-import { ApiError, apiGet, apiPatch } from './api'
+import { ApiError, apiErrorFrom, apiFetch, apiGet, apiPatch } from './api'
 import { meQueryOptions } from './auth'
 import type { Me } from './auth'
 import { timeZone } from './marks'
@@ -141,4 +141,59 @@ export function cacheStudentName(
       },
     }
   })
+}
+
+/**
+ * Takes a student out of one class. If it was their last class, the backend
+ * deletes the student and all of their marks (student_deleted: true);
+ * otherwise they stay in their other classes with every mark kept.
+ */
+export async function removeStudentFromClass(
+  classroomId: string,
+  studentId: string,
+): Promise<{ student_deleted: boolean }> {
+  const res = await apiFetch(
+    `/classrooms/${encodeURIComponent(classroomId)}/students/${encodeURIComponent(studentId)}`,
+    { method: 'DELETE' },
+  )
+  if (!res.ok) throw apiErrorFrom(res)
+  return res.json() as Promise<{ student_deleted: boolean }>
+}
+
+/**
+ * After removeStudentFromClass: off the class grid at once (if that's the
+ * open class), and gone from every cache if the student was deleted.
+ */
+export function forgetRemovedStudent(
+  queryClient: QueryClient,
+  studentId: string,
+  classroomId: string,
+  deleted: boolean,
+) {
+  queryClient.setQueryData(meQueryOptions.queryKey, (me) => {
+    if (me?.classroom.id !== classroomId) return me
+    return {
+      ...me,
+      classroom: {
+        ...me.classroom,
+        students: me.classroom.students.filter((s) => s.id !== studentId),
+      },
+    }
+  })
+  void queryClient.invalidateQueries({ queryKey: meQueryOptions.queryKey })
+  void queryClient.invalidateQueries({
+    queryKey: ['mark-counts', classroomId],
+  })
+
+  if (deleted) {
+    for (const key of ['student', 'student-marks', 'student-daily']) {
+      queryClient.removeQueries({ queryKey: [key, studentId] })
+    }
+    return
+  }
+  queryClient.setQueryData(studentQueryOptions(studentId).queryKey, (s) =>
+    s
+      ? { ...s, classrooms: s.classrooms.filter((c) => c.id !== classroomId) }
+      : s,
+  )
 }
