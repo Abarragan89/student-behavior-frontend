@@ -1,0 +1,7 @@
+/* The app's colors, fonts and Tailwind setup, so the pages look the same. */
+@import '../../../src/styles.css';
+/* Tailwind only looks for class names under site/; the shared components
+   (buttons, cards, the install dialog) are in the app's src/. */
+@source '../../../src/components';
+/* Long-form text: the privacy policy and terms. */
+@plugin '@tailwindcss/typography';

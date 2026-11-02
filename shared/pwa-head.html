@@ -1,0 +1,156 @@
+<!-- Shared by the app shell (app.html) and every Astro page
+     (site/src/layouts/BaseLayout.astro), so the app can be installed from any
+     page. /branding/ URLs get ?v=<hash> at build time (shared/branding.ts).
+     No manifest link here: vite-plugin-pwa adds one to app.html, and
+     BaseLayout adds its own. -->
+<meta name="theme-color" content="#f7f9f3" />
+
+<!-- Installed app (home screen). -->
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="TeachForFree" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+<!-- Icons: the apple from the logo. `npm run generate-pwa-assets` writes
+     them to public/branding/ (see pwa-assets.config.ts). -->
+<link rel="icon" href="/branding/favicon.ico" sizes="48x48" />
+<link rel="apple-touch-icon" href="/branding/apple-touch-icon-180x180.png" />
+
+<!-- iPhone launch screens: the full logo, made by
+     scripts/generate-branding.mjs. Don't add "and (device-height: …px)"
+     to these media queries: iOS 27 reads Safari's window height for it,
+     nothing matches, and the app opens on a black screen (WebKit bug
+     326500). Width + pixel ratio is still unique for every size below. -->
+<link
+  rel="apple-touch-startup-image"
+  media="screen and (device-width: 440px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+  href="/branding/apple-splash-portrait-1320x2868.png"
+/>
+<link
+  rel="apple-touch-startup-image"
+  media="screen and (device-width: 440px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+  href="/branding/apple-splash-landscape-2868x1320.png"
+/>
+<link
+  rel="apple-touch-startup-image"
+  media="screen and (device-width: 430px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+  href="/branding/apple-splash-portrait-1290x2796.png"
+/>
+<link
+  rel="apple-touch-startup-image"
+  media="screen and (device-width: 430px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+  href="/branding/apple-splash-landscape-2796x1290.png"
+/>
+<link
+  rel="apple-touch-startup-image"
+  media="screen and (device-width: 428px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+  href="/branding/apple-splash-portrait-1284x2778.png"
+/>
+<link
+  rel="apple-touch-startup-image"
+  media="screen and (device-width: 428px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+  href="/branding/apple-splash-landscape-2778x1284.png"
+/>
+<link
+  rel="apple-touch-startup-image"
+  media="screen and (device-width: 420px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+  href="/branding/apple-splash-portrait-1260x2736.png"
+/>
+<link
+  rel="apple-touch-startup-image"
+  media="screen and (device-width: 420px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+  href="/branding/apple-splash-landscape-2736x1260.png"
+/>
+<link
+  rel="apple-touch-startup-image"
+  media="screen and (device-width: 414px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+  href="/branding/apple-splash-portrait-1242x2688.png"
+/>
+<link
+  rel="apple-touch-startup-image"
+  media="screen and (device-width: 414px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+  href="/branding/apple-splash-landscape-2688x1242.png"
+/>
+<link
+  rel="apple-touch-startup-image"
+  media="screen and (device-width: 402px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+  href="/branding/apple-splash-portrait-1206x2622.png"
+/>
+<link
+  rel="apple-touch-startup-image"
+  media="screen and (device-width: 402px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+  href="/branding/apple-splash-landscape-2622x1206.png"
+/>
+<link
+  rel="apple-touch-startup-image"
+  media="screen and (device-width: 393px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+  href="/branding/apple-splash-portrait-1179x2556.png"
+/>
+<link
+  rel="apple-touch-startup-image"
+  media="screen and (device-width: 393px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+  href="/branding/apple-splash-landscape-2556x1179.png"
+/>
+<link
+  rel="apple-touch-startup-image"
+  media="screen and (device-width: 390px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+  href="/branding/apple-splash-portrait-1170x2532.png"
+/>
+<link
+  rel="apple-touch-startup-image"
+  media="screen and (device-width: 390px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+  href="/branding/apple-splash-landscape-2532x1170.png"
+/>
+<link
+  rel="apple-touch-startup-image"
+  media="screen and (device-width: 375px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+  href="/branding/apple-splash-portrait-1125x2436.png"
+/>
+<link
+  rel="apple-touch-startup-image"
+  media="screen and (device-width: 375px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+  href="/branding/apple-splash-landscape-2436x1125.png"
+/>
+<link
+  rel="apple-touch-startup-image"
+  media="screen and (device-width: 414px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+  href="/branding/apple-splash-portrait-828x1792.png"
+/>
+<link
+  rel="apple-touch-startup-image"
+  media="screen and (device-width: 414px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+  href="/branding/apple-splash-landscape-1792x828.png"
+/>
+<link
+  rel="apple-touch-startup-image"
+  media="screen and (device-width: 375px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+  href="/branding/apple-splash-portrait-750x1334.png"
+/>
+<link
+  rel="apple-touch-startup-image"
+  media="screen and (device-width: 375px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+  href="/branding/apple-splash-landscape-1334x750.png"
+/>
+
+<!-- Dark mode, if the teacher turned it on (src/components/theme-provider.tsx).
+     Runs before the page paints, so it doesn't flash light first. -->
+<script>
+  try {
+    if (localStorage.getItem('theme') === 'dark') {
+      document.documentElement.classList.add('dark')
+      document.documentElement.style.colorScheme = 'dark'
+      document
+        .querySelector('meta[name="theme-color"]')
+        .setAttribute('content', '#000000')
+    }
+  } catch (e) {}
+</script>
+
+<!-- Chrome/Edge can offer "install" before the app's code has loaded.
+     Keep that offer for the "Download the app" button (src/lib/pwa-install.ts). -->
+<script>
+  addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault()
+    window.__tffInstallPrompt = e
+  })
+</script>

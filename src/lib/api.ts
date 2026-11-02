@@ -4,7 +4,7 @@
 // request needs `credentials: 'include'` or the browser leaves the cookies off
 // and the backend answers 401.
 
-const API_URL = import.meta.env.VITE_API_URL
+export const API_URL = import.meta.env.VITE_API_URL
 
 export const loginUrl = `${API_URL}/auth/google/login`
 

@@ -1,0 +1,14 @@
+{
+  "extends": "astro/tsconfigs/strict",
+  "include": [".astro/types.d.ts", "src/**/*", "../shared/**/*"],
+  "exclude": ["../dist"],
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
+    "types": ["vite/client", "node"],
+    "paths": {
+      "#/*": ["../src/*"],
+      "@/*": ["../src/*"]
+    }
+  }
+}

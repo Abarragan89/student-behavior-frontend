@@ -1,0 +1,28 @@
+---
+import Logo from './Logo.astro'
+import ButtonLink from './ButtonLink.astro'
+import InstallApp from './islands/InstallApp'
+import { loginUrl } from '../site'
+---
+
+<header class="sticky top-0 z-10 border-b-2 border-border bg-background">
+  <div
+    class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6"
+  >
+    <Logo />
+    <div class="flex items-center gap-2">
+      <!-- Needs the browser (install offer, which phone this is), so it
+           appears once the page's script runs. -->
+      <InstallApp client:only="react" placement="header" />
+      <!-- nofollow: the API's sign-in URL isn't a page to index. -->
+      <ButtonLink
+        href={loginUrl}
+        rel="nofollow"
+        variant="outline"
+        class="h-10 px-4 text-sm shadow-none"
+      >
+        Sign in
+      </ButtonLink>
+    </div>
+  </div>
+</header>

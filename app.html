@@ -1,0 +1,65 @@
+<!doctype html>
+<!-- The app's page (src/main.tsx). nginx serves it for every app URL
+     (/classes, /login, …); the marketing pages (/, /privacy, …) are built by
+     Astro from site/. Never indexed by search engines: it has no content of
+     its own until the app signs the teacher in. -->
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- viewport-fit=cover lets env(safe-area-inset-*) work (bottom nav, notch). -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>TeachForFree</title>
+    <meta name="robots" content="noindex" />
+
+    <!-- Theme color, icons, iPhone launch screens, dark mode, install offer:
+         shared/pwa-head.html, put here by vite.config.ts. vite-plugin-pwa
+         adds the manifest link. -->
+    <!-- tff:pwa-head -->
+
+    <!-- Launch screen for the installed app only (never on the website). It
+         continues the phone's own launch screen while the app loads and
+         checks the sign-in, then fades out (src/lib/splash.ts). The logo is
+         the same size and place as on the iPhone launch images
+         (scripts/generate-branding.mjs), on the light background. -->
+    <style>
+      #splash {
+        display: none;
+      }
+      @media (display-mode: standalone) {
+        #splash {
+          position: fixed;
+          inset: 0;
+          z-index: 2147483647;
+          display: grid;
+          place-items: center;
+          background: #f7f9f3;
+          transition: opacity 0.2s ease-out;
+        }
+      }
+      #splash.is-hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #splash img {
+        width: calc(min(100vw, 100vh) * 0.5);
+        height: auto;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #splash {
+          transition: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Outside #app on purpose: main.tsx only renders into an empty #app. -->
+    <div id="splash" aria-hidden="true">
+      <img src="/branding/chalkboard.png" alt="" width="1024" height="749" />
+    </div>
+    <div id="app"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

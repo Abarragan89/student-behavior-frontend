@@ -1,0 +1,21 @@
+---
+import { logoUrl } from 'virtual:tff-head'
+import { cn } from '@/lib/utils'
+
+interface Props {
+  class?: string
+}
+const { class: className } = Astro.props
+---
+
+<!-- The chalkboard logo (public/branding/chalkboard.png), linking home. Same
+     image as the app's Wordmark (src/components/Wordmark.tsx). -->
+<a href="/" aria-label="TeachForFree home" class="shrink-0">
+  <img
+    src={logoUrl}
+    alt="TeachForFree"
+    width="1024"
+    height="749"
+    class={cn('h-12 w-auto', className)}
+  />
+</a>

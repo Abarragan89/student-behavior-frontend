@@ -1,0 +1,57 @@
+---
+// A long-form text page (privacy policy, terms), from a Markdown file in
+// src/content/legal/.
+import BaseLayout from './BaseLayout.astro'
+import { SITE_NAME } from '../site'
+
+interface Props {
+  title: string
+  description: string
+  path: string
+  /** `updated: 2026-11-02` in the Markdown, which YAML reads as a date. */
+  updated: Date | string
+  /** The text still has [TODO …] placeholders. */
+  draft?: boolean
+}
+const { title, description, path, updated, draft = false } = Astro.props
+
+// Legal text with blanks must never go live. `TFF_ALLOW_DRAFTS=1 npm run
+// build` builds it anyway, for a local preview.
+if (draft && import.meta.env.PROD && !process.env.TFF_ALLOW_DRAFTS) {
+  throw new Error(
+    `${path} is still a draft: fill in every [TODO …] in site/src/content/legal/ before deploying.`,
+  )
+}
+const updatedDate = new Date(updated)
+const updatedIso = updatedDate.toISOString().slice(0, 10)
+const updatedLabel = updatedDate.toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+  timeZone: 'UTC',
+})
+---
+
+<BaseLayout
+  title={`${title} | ${SITE_NAME}`}
+  description={description}
+  path={path}
+  noindex={draft}
+>
+  {
+    draft && (
+      <p class="bg-accent px-4 py-3 text-center font-mono text-sm font-bold text-accent-foreground">
+        Draft: not in effect yet.
+      </p>
+    )
+  }
+  <article
+    class="prose prose-lg mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:py-16 dark:prose-invert prose-headings:tracking-tight prose-a:text-primary prose-a:underline-offset-4"
+  >
+    <h1>{title}</h1>
+    <p class="font-mono text-sm text-muted-foreground">
+      Last updated <time datetime={updatedIso}>{updatedLabel}</time>
+    </p>
+    <slot />
+  </article>
+</BaseLayout>

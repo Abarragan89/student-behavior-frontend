@@ -1,0 +1,14 @@
+---
+import LegalLayout from '../layouts/LegalLayout.astro'
+import { Content, frontmatter, rawContent } from '../content/legal/privacy.md'
+---
+
+<LegalLayout
+  title={frontmatter.title}
+  description={frontmatter.description}
+  updated={frontmatter.updated}
+  path="/privacy"
+  draft={rawContent().includes('[TODO')}
+>
+  <Content />
+</LegalLayout>

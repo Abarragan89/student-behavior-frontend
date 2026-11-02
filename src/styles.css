@@ -1,4 +1,9 @@
 @import 'tailwindcss';
+/* Fonts are served from our own domain (no Google Fonts request): faster,
+   and they work offline in the installed app. */
+@import '@fontsource-variable/dm-sans/opsz.css';
+@import '@fontsource/space-mono/400.css';
+@import '@fontsource/space-mono/700.css';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 
@@ -51,9 +56,9 @@ body {
   --sidebar-accent-foreground: oklch(0 0 0);
   --sidebar-border: oklch(0 0 0);
   --sidebar-ring: oklch(0.7853 0.1041 274.7134);
-  --font-sans: DM Sans, sans-serif;
-  --font-serif: DM Sans, sans-serif;
-  --font-mono: Space Mono, monospace;
+  --font-sans: 'DM Sans Variable', sans-serif;
+  --font-serif: 'DM Sans Variable', sans-serif;
+  --font-mono: 'Space Mono', monospace;
   --radius: 1rem;
   --shadow-x: 0px;
   --shadow-y: 0px;
@@ -116,9 +121,9 @@ body {
   --sidebar-accent-foreground: oklch(0 0 0);
   --sidebar-border: oklch(1 0 0);
   --sidebar-ring: oklch(0.6801 0.1583 276.9349);
-  --font-sans: DM Sans, sans-serif;
-  --font-serif: DM Sans, sans-serif;
-  --font-mono: Space Mono, monospace;
+  --font-sans: 'DM Sans Variable', sans-serif;
+  --font-serif: 'DM Sans Variable', sans-serif;
+  --font-mono: 'Space Mono', monospace;
   --radius: 1rem;
   --shadow-x: 0px;
   --shadow-y: 0px;
@@ -218,7 +223,7 @@ body {
     @apply bg-background text-foreground;
     letter-spacing: var(--tracking-normal);
     /* Phones turned sideways: keep content clear of the notch. (Needs
-       viewport-fit=cover in index.html.) */
+       viewport-fit=cover, set in app.html and BaseLayout.astro.) */
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
   }

@@ -10,17 +10,21 @@ RUN npm ci
 
 COPY . .
 
-# Vite bakes VITE_* variables into the JS bundle at build time,
-# so the API URL must be passed with --build-arg, not at `docker run`.
+# Vite (the app) and Astro (the marketing pages) bake VITE_* variables in at
+# build time, so the API URL must be passed with --build-arg, not at
+# `docker run`. The build fails without it.
 ARG VITE_API_URL
 ENV VITE_API_URL=${VITE_API_URL}
 
+ENV ASTRO_TELEMETRY_DISABLED=1
 RUN npm run build
 
 # ---- Runtime stage: serve the static files with nginx (runs as non-root) ----
 FROM nginxinc/nginx-unprivileged:stable-alpine
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Not in conf.d/: nginx loads everything there on its own.
+COPY nginx-security-headers.conf /etc/nginx/snippets/security-headers.conf
 COPY --from=build /app/dist /usr/share/nginx/html
 
 EXPOSE 3000

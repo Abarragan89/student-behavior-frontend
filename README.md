@@ -1,20 +1,47 @@
-Welcome to your new TanStack Start app!
+# TeachForFree frontend
 
-# Getting Started
+Two builds served from one domain (teachforfree.com):
 
-To run this application:
+| | Where | What | URLs |
+|---|---|---|---|
+| Marketing site | `site/` (Astro) | Plain HTML for search engines and link previews | `/`, `/privacy`, `/terms` |
+| App | `src/` (Vite + TanStack Router) | The installable app (PWA) | `/classes`, `/login`, `/sub`, … |
+
+`shared/app-routes.ts` lists which top-level URLs belong to the app. Add new app routes there; the build fails if you forget.
+
+## Running locally
 
 ```bash
 npm install
-npm run dev
+npm run dev        # the app, http://localhost:3000
+npm run dev:site   # the marketing pages, http://localhost:4321
 ```
 
-# Building For Production
+Open http://localhost:3000. App pages are served there, and anything else (like `/`) is sent to the Astro server on :4321. The homepage's "already signed in?" check needs the API's allowed origin, so try the real flow with `npm run build && npm run preview` (http://localhost:3000).
 
-To build this application for production:
+`VITE_API_URL` (in `.env`) is required for builds.
+
+## Building for production
 
 ```bash
-npm run build
+npm run build      # Astro, then Vite, into dist/
+npm run preview    # serves dist/ the way nginx.conf does
+```
+
+The privacy policy and terms (`site/src/content/legal/`) fail the build while they still contain `[TODO …]` placeholders. To preview a draft locally: `TFF_ALLOW_DRAFTS=1 npm run build`.
+
+Deploys use the `Dockerfile` (nginx, `nginx.conf`):
+
+```bash
+docker build --build-arg VITE_API_URL=https://api.example.com -t tff .
+```
+
+## Checks
+
+```bash
+npx tsc --noEmit     # the app
+npm run check:site   # the Astro pages
+npm run lint
 ```
 
 ## Styling

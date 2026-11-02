@@ -1,4 +1,4 @@
-import { Link, createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { ArrowLeft, CircleAlert, Download } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -57,9 +57,10 @@ function LoginPage() {
 
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center gap-8 bg-background px-4 py-12 text-foreground">
-      <Link to="/" aria-label="TeachForFree home">
+      {/* A full page load: the homepage is a separate page (site/). */}
+      <a href="/" aria-label="TeachForFree home">
         <Wordmark className="h-24" />
-      </Link>
+      </a>
 
       <Card className="w-full max-w-sm rounded-lg border-2 border-border shadow-md ring-0 [--card-spacing:--spacing(6)]">
         <CardHeader className="text-center">
@@ -111,13 +112,13 @@ function LoginPage() {
       {!standalone && (
         <>
           <InstallAppPrompt />
-          <Link
-            to="/"
+          <a
+            href="/"
             className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="size-4" />
             Back to home
-          </Link>
+          </a>
         </>
       )}
     </main>

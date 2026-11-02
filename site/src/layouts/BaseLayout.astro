@@ -1,0 +1,107 @@
+---
+// Every marketing page: the search and link-preview tags, the PWA head (so
+// the app can be installed from any page), header and footer.
+import { ogImageUrl, pwaHead } from 'virtual:tff-head'
+// Preloaded: the hero heading is the first thing on screen.
+import dmSansLatin from '@fontsource-variable/dm-sans/files/dm-sans-latin-opsz-normal.woff2?url'
+import SiteHeader from '../components/SiteHeader.astro'
+import SiteFooter from '../components/SiteFooter.astro'
+import { SITE_NAME } from '../site'
+import '../styles/site.css'
+
+interface Props {
+  /** The whole <title>, including the site name. */
+  title: string
+  /** For search results and link previews, about 150 characters. */
+  description: string
+  /** The page's URL path, e.g. "/privacy". The canonical URL is built from it. */
+  path: string
+  noindex?: boolean
+  /** schema.org data for search engines. */
+  jsonLd?: Record<string, unknown>
+}
+
+const { title, description, path, noindex = false, jsonLd } = Astro.props
+const site = Astro.site!
+const canonical = new URL(path, site).href
+const ogImage = new URL(ogImageUrl, site).href
+---
+
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- viewport-fit=cover lets env(safe-area-inset-*) work (notch). -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex" />}
+    <link
+      rel="preload"
+      href={dmSansLatin}
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+
+    <!-- Link previews (iMessage, Slack, Facebook, LinkedIn, X…). -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:site_name" content={SITE_NAME} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <!-- scripts/generate-branding.mjs -->
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="TeachForFree logo" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+
+    <!-- Made by vite-plugin-pwa (vite.config.ts). iPhones read its start_url
+         (/classes) when a teacher adds the site to the home screen from here. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <Fragment set:html={pwaHead} />
+
+    {
+      jsonLd && (
+        <script
+          is:inline
+          type="application/ld+json"
+          set:html={JSON.stringify(jsonLd)}
+        />
+      )
+    }
+    <slot name="head" />
+  </head>
+  <body>
+    <div class="min-h-screen bg-background text-foreground">
+      <SiteHeader />
+      <main>
+        <slot />
+      </main>
+      <SiteFooter />
+    </div>
+
+    {
+      import.meta.env.PROD && (
+        <script is:inline>
+          // The app's offline copy (vite.config.ts), saved in the background so
+          // an app installed from this page opens offline from day one. The
+          // app itself offers updates (src/components/pwa-updater.tsx).
+          if ('serviceWorker' in navigator) {
+            addEventListener('load', function () {
+              navigator.serviceWorker.register('/sw.js').catch(function () {})
+            })
+          }
+        </script>
+      )
+    }
+  </body>
+</html>

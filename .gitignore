@@ -13,3 +13,5 @@ __unconfig*
 todos.json
 mock-ups
 daily-schedule-accordion
+# Astro (site/)
+.astro

@@ -29,7 +29,7 @@ import type { Me } from '#/lib/auth'
 import { markTypesQueryOptions } from '#/lib/marks'
 
 export const Route = createFileRoute('/_authed/classes')({
-  // ?classroom=connected or ?classroom_error=…, passed on from / after
+  // ?classroom=connected or ?classroom_error=…, from the backend after
   // "Connect Google Classroom".
   validateSearch: validateClassroomResult,
   // Started early but not waited for, so the page shows at once (and

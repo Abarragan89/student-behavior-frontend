@@ -216,7 +216,7 @@ export async function connectClassroom() {
   window.location.assign(classroomConnectUrl)
 }
 
-// When the flow ends, the backend sends the browser to the site root with
+// When the flow ends, the backend sends the browser to /classes with
 // ?classroom=connected or ?classroom_error=<code>.
 export type ClassroomResult = {
   classroom?: string

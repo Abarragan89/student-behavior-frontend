@@ -4,7 +4,7 @@ import { ThemeProvider as NextThemesProvider, useTheme } from 'next-themes'
 
 /**
  * Light or dark mode, saved on this device. Dark adds the `dark` class to
- * <html>, which switches the colors in styles.css. index.html applies the
+ * <html>, which switches the colors in styles.css. shared/pwa-head.html applies the
  * saved choice before the first paint, so dark mode doesn't flash light.
  */
 export function ThemeProvider({ children }: { children: ReactNode }) {
@@ -16,7 +16,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       // Swap colors at once instead of animating every button and card.
       disableTransitionOnChange
       // next-themes' early script never runs in an app rendered in the
-      // browser (index.html does that job). Marked as data so React doesn't
+      // browser (shared/pwa-head.html does that job). Marked as data so React doesn't
       // warn about it.
       scriptProps={{ type: 'application/json' }}
     >
@@ -26,7 +26,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   )
 }
 
-/** --background in styles.css (:root and .dark). Also used in index.html. */
+/** --background in styles.css (:root and .dark). Also used in shared/pwa-head.html. */
 const BAR_COLORS = { light: '#f7f9f3', dark: '#000000' }
 
 /** Keeps the phone's status bar and browser bar the page's color. */

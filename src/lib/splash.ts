@@ -2,7 +2,7 @@ import type { AnyRouter } from '@tanstack/react-router'
 import { isStandalone } from '#/lib/pwa-install'
 
 /**
- * Fades out the installed app's launch screen (#splash in index.html) once the
+ * Fades out the installed app's launch screen (#splash in app.html) once the
  * first page has rendered, including any sign-in redirect. Gives up after
  * `maxWaitMs` so a slow or offline start never hides the app.
  */
@@ -26,7 +26,7 @@ export function hideSplashAfterFirstRender(
     unsubscribe()
     clearTimeout(timer)
     splash.classList.add('is-hidden')
-    // Matches the 0.2s fade in index.html.
+    // Matches the 0.2s fade in app.html.
     setTimeout(() => splash.remove(), 250)
   }
 

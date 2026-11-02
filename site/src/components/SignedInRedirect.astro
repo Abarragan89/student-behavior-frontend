@@ -1,0 +1,58 @@
+---
+// Homepage only. Teachers who are already signed in skip the marketing page
+// and go to their class, like before the homepage was a separate page.
+//
+// Never holds up the page: it draws first, and the check runs alongside.
+// Visitors who have never signed in on this device (and search engines,
+// which keep no storage or cookies) are never checked at all, so they see
+// the same page and the API isn't called for them. The flag is set by the
+// app (rememberSignedIn in src/lib/auth.ts).
+import { API_URL } from '../site'
+---
+
+<script is:inline define:vars={{ api: API_URL }}>
+  try {
+    var search = location.search
+    var standalone =
+      matchMedia('(display-mode: standalone)').matches ||
+      navigator.standalone === true
+
+    if (/[?&]classroom(_error)?=/.test(search)) {
+      // "Connect Google Classroom" results used to come here; the Classes
+      // page shows them.
+      location.replace('/classes' + search)
+    } else if (standalone) {
+      // The installed app's home is the sign-in page.
+      location.replace('/login')
+    } else if (localStorage.getItem('tff:signed-in') && navigator.onLine) {
+      var send = function (path, method) {
+        return fetch(api + path, {
+          method: method || 'GET',
+          credentials: 'include',
+          signal: AbortSignal.timeout && AbortSignal.timeout(8000),
+        })
+      }
+      // Like apiFetch in src/lib/api.ts: an expired access token is renewed
+      // once, under the same lock, so two tabs don't both use the refresh
+      // token (it works once).
+      var refresh = function () {
+        return send('/auth/refresh', 'POST')
+      }
+      send('/users/me')
+        .then(function (res) {
+          if (res.status !== 401) return res
+          var renewed = navigator.locks
+            ? navigator.locks.request('tff-refresh', refresh)
+            : refresh()
+          return renewed.then(function (r) {
+            return r.ok ? send('/users/me') : r
+          })
+        })
+        .then(function (res) {
+          if (res.ok) location.replace('/classes' + search)
+          else if (res.status === 401) localStorage.removeItem('tff:signed-in')
+        })
+        .catch(function () {})
+    }
+  } catch (e) {}
+</script>

@@ -9,7 +9,7 @@ import {
   onlineManager,
 } from '@tanstack/react-query'
 import { ApiError } from './lib/api'
-import { forgetOnTeacherChange } from './lib/auth'
+import { forgetOnTeacherChange, rememberSignedIn } from './lib/auth'
 import {
   prefetchLessonPlans,
   reapplyPendingOps,
@@ -105,6 +105,7 @@ async function boot() {
     }
   }
   forgetOnTeacherChange(queryClient)
+  rememberSignedIn(queryClient)
 
   ReactDOM.createRoot(rootElement).render(
     <QueryClientProvider client={queryClient}>

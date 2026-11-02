@@ -11,3 +11,4 @@ dist-ssr
 Dockerfile
 .dockerignore
 README.md
+.astro

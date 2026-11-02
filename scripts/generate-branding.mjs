@@ -23,11 +23,11 @@ const LOGO_WIDTH = 1024
 const BACKGROUND = '#f7f9f3'
 
 // The logo is half the screen's shorter side wide, same as #splash in
-// index.html.
+// app.html.
 const LOGO_SHARE = 0.5
 
 // One iPhone per screen size; iPads get a plain launch. Each has a unique
-// width + pixel ratio, which the media queries in index.html rely on.
+// width + pixel ratio, which the media queries in shared/pwa-head.html rely on.
 const DEVICES = [
   'iPhone 17 Pro Max',
   'iPhone 17 Pro',

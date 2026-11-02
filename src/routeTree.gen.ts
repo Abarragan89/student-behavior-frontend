@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as SubRouteImport } from './routes/sub'
@@ -21,11 +20,6 @@ import { Route as AuthedLessonPlansDateRouteImport } from './routes/_authed/less
 import { Route as AuthedStudentsStudentIdRouteImport } from './routes/_authed/students.$studentId'
 import { Route as AuthedLessonPlansDatePresentRouteImport } from './routes/_authed/lesson-plans.$date_.present'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
   getParentRoute: () => rootRouteImport,
@@ -78,7 +72,7 @@ const AuthedLessonPlansDatePresentRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/': typeof AuthedRouteWithChildren
   '/login': typeof LoginRoute
   '/sub': typeof SubRoute
   '/account': typeof AuthedAccountRoute
@@ -90,7 +84,7 @@ export interface FileRoutesByFullPath {
   '/lesson-plans/$date/present': typeof AuthedLessonPlansDatePresentRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
+  '/': typeof AuthedRouteWithChildren
   '/login': typeof LoginRoute
   '/sub': typeof SubRoute
   '/account': typeof AuthedAccountRoute
@@ -103,7 +97,6 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
   '/_authed': typeof AuthedRouteWithChildren
   '/login': typeof LoginRoute
   '/sub': typeof SubRoute
@@ -142,7 +135,6 @@ export interface FileRouteTypes {
     | '/lesson-plans/$date/present'
   id:
     | '__root__'
-    | '/'
     | '/_authed'
     | '/login'
     | '/sub'
@@ -156,7 +148,6 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
   AuthedRoute: typeof AuthedRouteWithChildren
   LoginRoute: typeof LoginRoute
   SubRoute: typeof SubRoute
@@ -164,13 +155,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_authed': {
       id: '/_authed'
       path: ''
@@ -268,7 +252,6 @@ const AuthedRouteWithChildren =
   AuthedRoute._addFileChildren(AuthedRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
   AuthedRoute: AuthedRouteWithChildren,
   LoginRoute: LoginRoute,
   SubRoute: SubRoute,

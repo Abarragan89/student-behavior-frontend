@@ -19,7 +19,7 @@ export interface BeforeInstallPromptEvent extends Event {
 
 declare global {
   interface Window {
-    /** Set by the inline script in index.html if the offer came early. */
+    /** Set by the inline script in shared/pwa-head.html if the offer came early. */
     __tffInstallPrompt?: BeforeInstallPromptEvent | null
   }
   interface WindowEventMap {

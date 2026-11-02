@@ -61,7 +61,7 @@ export function InstallAppDialog(props: InstallAppDialogProps) {
  * installed app.
  *
  * `compact` shortens the label on narrow phones ("Get app", then icon only),
- * for tight spots like the landing page's top bar.
+ * for tight spots like the homepage's top bar (site/src/components/SiteHeader.astro).
  */
 export function InstallAppButton({
   compact = false,

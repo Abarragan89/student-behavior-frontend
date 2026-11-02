@@ -9,6 +9,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { ApiError, apiFetch } from './api'
 import { SHARED_STALE_MS } from './freshness'
 import { clearPersistedCache } from './persist'
+import { isStandalone } from './pwa-install'
 
 export type Role = 'teacher' | 'admin'
 
@@ -86,8 +87,35 @@ export function useLogout() {
     // anything saved on the device (installed app).
     queryClient.getMutationCache().clear()
     await clearPersistedCache()
-    await navigate({ to: '/' })
+    // The installed app's home is the sign-in page. On the website, the
+    // homepage is a separate page (site/), so leave the app for it; the full
+    // reload also clears everything still in memory on a shared computer.
+    if (isStandalone()) await navigate({ to: '/login' })
+    else window.location.assign('/')
   }
+}
+
+/** Read by the homepage (site/src/components/SignedInRedirect.astro). */
+const SIGNED_IN_KEY = 'tff:signed-in'
+
+/**
+ * Remembers on this device whether a teacher is signed in: one flag, nothing
+ * about who. The homepage only checks the session (and sends the teacher to
+ * their class) when it's set, so most visitors and search engines never wait
+ * on the API from there.
+ */
+export function rememberSignedIn(queryClient: QueryClient) {
+  return queryClient.getQueryCache().subscribe((event) => {
+    if (event.type !== 'updated' || event.query.queryKey[0] !== 'me') return
+    const me = event.query.state.data as Me | null | undefined
+    if (me === undefined) return
+    try {
+      if (me) localStorage.setItem(SIGNED_IN_KEY, '1')
+      else localStorage.removeItem(SIGNED_IN_KEY)
+    } catch {
+      // Storage blocked (private mode): the homepage just won't redirect.
+    }
+  })
 }
 
 /**
@@ -115,7 +143,7 @@ export function forgetOnTeacherChange(queryClient: QueryClient) {
 }
 
 /**
- * For pages that only redirect (landing, login): the signed-in teacher if
+ * For pages that only redirect (login): the signed-in teacher if
  * already known (this visit or saved on the device), else a quick check.
  * Never waits on a missing connection, and treats errors as signed out, so
  * those pages always show right away.

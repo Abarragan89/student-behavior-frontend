@@ -1,0 +1,22 @@
+---
+import ButtonLink from '../ButtonLink.astro'
+import { loginUrl } from '../../site'
+---
+
+<section class="border-y-2 border-border bg-primary text-primary-foreground">
+  <div
+    class="mx-auto flex max-w-6xl flex-col items-start gap-6 px-4 py-16 sm:px-6 md:flex-row md:items-center md:justify-between"
+  >
+    <div>
+      <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">
+        Ready for tomorrow’s class?
+      </h2>
+      <p class="mt-2 text-lg text-primary-foreground/80">
+        Sign in with Google to get started. It’s free.
+      </p>
+    </div>
+    <ButtonLink href={loginUrl} rel="nofollow" variant="outline">
+      Sign in with Google
+    </ButtonLink>
+  </div>
+</section>

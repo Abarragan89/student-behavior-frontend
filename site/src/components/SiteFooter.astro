@@ -1,0 +1,29 @@
+---
+const year = new Date().getFullYear()
+const links = [
+  { href: '/privacy', label: 'Privacy' },
+  { href: '/terms', label: 'Terms' },
+]
+---
+
+<footer
+  class="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8 font-mono text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6"
+>
+  <p>© {year} TeachForFree</p>
+  <nav aria-label="Site">
+    <ul class="flex gap-6">
+      {
+        links.map((link) => (
+          <li>
+            <a
+              href={link.href}
+              class="underline-offset-4 hover:text-foreground hover:underline"
+            >
+              {link.label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
+</footer>
