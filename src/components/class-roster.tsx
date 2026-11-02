@@ -15,8 +15,9 @@ import type { MarkTarget } from '#/hooks/useGiveMark'
  * not in a card, so phones get the full width.
  *
  * Tapping a card opens the marks to give that student. Above the grid,
- * "Select all" gives a mark to the whole class, and "Select" lets the teacher
- * tap several cards and give them all one mark.
+ * "Select" lets the teacher tap several cards and give them all one mark.
+ * "Select all" starts with every card picked, so the teacher can untick the
+ * few who shouldn't get it.
  */
 export function ClassRoster({
   classroom,
@@ -108,13 +109,19 @@ export function ClassRoster({
         selecting={selecting}
         selectedCount={selected.length}
         onSelect={() => setSelecting(true)}
-        onSelectAll={() => openMarks({ kind: 'class', students })}
+        onSelectAll={() => {
+          setSelecting(true)
+          setSelectedIds(new Set(students.map((s) => s.id)))
+        }}
         onGive={() =>
           openMarks(
-            // Just one: the same as tapping their card.
+            // Just one: the same as tapping their card. Everyone (nobody
+            // unticked): the whole class.
             selected.length === 1
               ? { kind: 'student', student: selected[0] }
-              : { kind: 'selected', students: selected },
+              : selected.length === students.length
+                ? { kind: 'class', students }
+                : { kind: 'selected', students: selected },
           )
         }
         onCancel={stopSelecting}
