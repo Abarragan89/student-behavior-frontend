@@ -12,3 +12,6 @@ if (!API_URL) {
 export { API_URL, loginUrl }
 
 export const SITE_NAME = 'TeachForFree'
+
+/** Also written out in content/legal/*.md. */
+export const CONTACT_EMAIL = 'a.barragan.89@gmail.com'

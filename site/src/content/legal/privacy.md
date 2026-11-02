@@ -127,7 +127,7 @@ In plain words, information we receive from Google:
 
 ### Disconnecting
 
-You can disconnect Google Classroom in TeachForFree at any time. This cancels TeachForFree's access at Google and deletes the stored key. You can also remove TeachForFree's access from your Google account at [myaccount.google.com/permissions](https://myaccount.google.com/permissions). Either way, Google cancels all of TeachForFree's access to that account, so the next time you sign in, Google may ask you to allow your name and email again.
+You can disconnect Google Classroom on your TeachForFree Account page at any time. This cancels TeachForFree's access at Google and deletes the stored key. You can also remove TeachForFree's access from your Google account at [myaccount.google.com/permissions](https://myaccount.google.com/permissions). Either way, Google cancels all of TeachForFree's access to that account, so the next time you sign in, Google may ask you to allow your name and email again.
 
 Disconnecting doesn't delete the classes and students you already imported. You can delete those in the app, or ask us to.
 
@@ -189,7 +189,7 @@ So it opens instantly and works on spotty Wi-Fi, the installed app saves a copy 
 - your name and email, your class names, and the roster of the class you have open
 - your mark types and recent mark counts
 - student pages you've opened
-- lesson plans from yesterday through 7 days ahead, plus the dots on this month's calendar
+- lesson plans for today and the next school day, any others you've opened from yesterday through 7 days ahead, and the dots on this month's calendar
 
 This copy is deleted when you sign out, when your session ends, and when a different teacher signs in on the same device. If you don't open the app for 7 days, the saved copy expires and is deleted the next time the app starts.
 

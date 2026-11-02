@@ -1,0 +1,151 @@
+---
+import {
+  CalendarClock,
+  Eye,
+  KeyRound,
+  Power,
+  Printer,
+  Smartphone,
+  X,
+} from 'lucide-react'
+import BaseLayout from '../layouts/BaseLayout.astro'
+import PageHero from '../components/PageHero.astro'
+import Section from '../components/Section.astro'
+import FaqList from '../components/FaqList.astro'
+import RelatedPages from '../components/RelatedPages.astro'
+import ClosingBand from '../components/landing/ClosingBand.astro'
+import {
+  CheckList,
+  FeatureCards,
+  MoreLink,
+  StepList,
+} from '../components/landing/LandingSections'
+import type { Feature, Step } from '../components/landing/LandingSections'
+import { SubPlanMockup } from '../components/landing/SubPlanMockup'
+import { faqItems } from '../content/faq'
+
+const steps: Array<Step> = [
+  {
+    title: 'Open the day and tap Share',
+    text: 'Make a link for today, or for any day up to 60 days ahead.',
+  },
+  {
+    title: 'Pick the classes',
+    text: 'Choose which classes the sub can open, or none for a link to the plan only.',
+  },
+  {
+    title: 'Send it, or print it',
+    text: 'Share the link however you like, or print the plan with a QR code on the first page.',
+  },
+]
+
+const cannot = [
+  'See other days or past marks',
+  'Open student pages',
+  'Change your plan',
+]
+
+const safety: Array<Feature> = [
+  {
+    title: 'One day only',
+    text: 'The link works from midnight to midnight on that date, in your time zone. Before then it says when it opens.',
+    icon: CalendarClock,
+  },
+  {
+    title: 'Turn it off anytime',
+    text: 'It stops working right away. Marks and checkmarks the sub already gave stay.',
+    icon: Power,
+  },
+  {
+    title: 'See when it was used',
+    text: 'The share screen shows whether the link has been opened, and when it was last used.',
+    icon: Eye,
+  },
+  {
+    title: 'Nothing left behind',
+    text: 'Nothing is saved on the substitute’s phone, and they don’t need an account.',
+    icon: Smartphone,
+  },
+  {
+    title: 'A private key',
+    text: 'The link’s key never appears in a web address a server or link preview sees, and it’s hidden from the address bar once the page opens.',
+    icon: KeyRound,
+  },
+  {
+    title: 'Ready to print',
+    text: 'The QR code sits in the corner of page one. The print screen reminds you that anyone who scans it can see the plan that day.',
+    icon: Printer,
+  },
+]
+---
+
+<BaseLayout
+  title="Share Sub Plans with a Link — Free for Teachers | TeachForFree"
+  description="Share one day’s lesson plan with a substitute using a link or a printed QR code. They check off the plan and give behavior marks. No account needed. Free."
+  path="/substitute-plans"
+>
+  <PageHero
+    eyebrow="Substitute plans"
+    eyebrowClass="bg-secondary text-foreground"
+    title="Sub plans your substitute can actually use."
+    lead="Send one link, or print your plan with a QR code. Your sub gets that day’s plan and your class on their phone, with no account and no password."
+    secondary={{ href: '#how-it-works', label: 'See how it works' }}
+  >
+    <div slot="visual"><SubPlanMockup /></div>
+  </PageHero>
+
+  <Section id="how-it-works" title="How it works" muted>
+    <div class="max-w-2xl">
+      <StepList steps={steps} />
+    </div>
+  </Section>
+
+  <Section title="What your sub can do">
+    <div class="grid gap-10 md:grid-cols-2">
+      <div>
+        <h3 class="mb-4 text-xl font-bold">With the link, they can</h3>
+        <CheckList
+          items={[
+            'See that day’s plan and check off lines as they go',
+            'See the class list and today’s marks',
+            'Give behavior marks, labeled “Sub” for you',
+            'Undo marks they gave',
+          ]}
+        />
+      </div>
+      <div>
+        <h3 class="mb-4 text-xl font-bold">They can’t</h3>
+        <ul class="flex flex-col gap-3">
+          {
+            cannot.map((text) => (
+              <li class="flex items-center gap-3 text-base font-medium">
+                <span class="grid size-6 shrink-0 place-items-center rounded-sm border-2 border-border bg-card">
+                  <X className="size-4" strokeWidth={3} aria-hidden />
+                </span>
+                {text}
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+    </div>
+  </Section>
+
+  <Section
+    title="Safe to share"
+    intro="Student names are school records, so sub links are built to open one day and nothing more."
+    muted
+  >
+    <FeatureCards items={safety} />
+  </Section>
+
+  <Section title="Questions about sub plans">
+    <FaqList
+      items={faqItems(['share-with-sub', 'sub-account', 'sub-wrong-person'])}
+    />
+    <MoreLink href="/faq" label="All questions" />
+  </Section>
+
+  <RelatedPages current="/substitute-plans" />
+  <ClosingBand />
+</BaseLayout>

@@ -4,11 +4,16 @@ import BaseLayout from '../layouts/BaseLayout.astro'
 import SignedInRedirect from '../components/SignedInRedirect.astro'
 import Hero from '../components/landing/Hero.astro'
 import ClosingBand from '../components/landing/ClosingBand.astro'
+import Section from '../components/Section.astro'
+import FaqList from '../components/FaqList.astro'
 import {
   BehaviorSection,
   Highlights,
   LessonNotesSection,
+  MoreLink,
+  SubstituteSection,
 } from '../components/landing/LandingSections'
+import { faqItems } from '../content/faq'
 import { SITE_NAME } from '../site'
 
 const title = 'TeachForFree — Free behavior tracking & lesson notes for teachers'
@@ -56,6 +61,20 @@ const jsonLd = {
   <Hero />
   <BehaviorSection />
   <LessonNotesSection />
+  <SubstituteSection />
   <Highlights />
+  <Section title="Questions teachers ask" muted>
+    <div class="max-w-3xl">
+      <FaqList
+        items={faqItems([
+          'is-it-free',
+          'google-classroom',
+          'offline',
+          'student-data',
+        ])}
+      />
+      <MoreLink href="/faq" label="All questions" />
+    </div>
+  </Section>
   <ClosingBand />
 </BaseLayout>

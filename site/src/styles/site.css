@@ -5,3 +5,9 @@
 @source '../../../src/components';
 /* Long-form text: the privacy policy and terms. */
 @plugin '@tailwindcss/typography';
+
+/* Two bands in a row (grey or violet, lines above and below) share one line
+   instead of drawing two. */
+[data-band] + [data-band] {
+  border-top-width: 0;
+}

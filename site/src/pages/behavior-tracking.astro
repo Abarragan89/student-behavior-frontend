@@ -1,0 +1,124 @@
+---
+import { Clock, Printer, Tags, UserPlus, UsersRound, WifiOff } from 'lucide-react'
+import BaseLayout from '../layouts/BaseLayout.astro'
+import PageHero from '../components/PageHero.astro'
+import Section from '../components/Section.astro'
+import FaqList from '../components/FaqList.astro'
+import RelatedPages from '../components/RelatedPages.astro'
+import ClosingBand from '../components/landing/ClosingBand.astro'
+import {
+  CheckList,
+  FeatureCards,
+  MoreLink,
+  StepList,
+} from '../components/landing/LandingSections'
+import type { Feature, Step } from '../components/landing/LandingSections'
+import { StudentGridDemo } from '../components/landing/StudentGridDemo'
+import { faqItems } from '../content/faq'
+
+const steps: Array<Step> = [
+  {
+    title: 'Open your class',
+    text: 'Every student is a card showing today’s positive and negative marks.',
+  },
+  {
+    title: 'Tap a student',
+    text: 'Your marks pop up, positive on one side and negative on the other.',
+  },
+  {
+    title: 'Tap a mark',
+    text: 'It’s saved with the time. Tapped the wrong one? Undo it for 5 seconds.',
+  },
+]
+
+const features: Array<Feature> = [
+  {
+    title: 'Your own behaviors',
+    text: 'Start with six, like On task and Helping others. Add your own, rename them, or remove the ones you don’t use.',
+    icon: Tags,
+  },
+  {
+    title: 'The whole class at once',
+    text: 'Select a few students, or the whole class, and give everyone the same mark in one tap. One Undo takes it all back.',
+    icon: UsersRound,
+  },
+  {
+    title: 'Every mark, by the hour',
+    text: 'A student’s page shows when each mark happened on any day, and their busiest hour.',
+    icon: Clock,
+  },
+  {
+    title: 'Reports for families',
+    text: 'Print a report or save it as a PDF: the day’s marks, the last 10 school days, what the marks were for, and talking points for home.',
+    icon: Printer,
+  },
+  {
+    title: 'Spotty Wi-Fi is fine',
+    text: 'In the installed app, marks you give offline wait on your phone and are sent when you’re back online.',
+    icon: WifiOff,
+  },
+  {
+    title: 'Bring your class list',
+    text: 'Import a class from Google Classroom, or paste names straight from a spreadsheet.',
+    icon: UserPlus,
+  },
+]
+---
+
+<BaseLayout
+  title="Free Classroom Behavior Tracker for Teachers | TeachForFree"
+  description="Track student behavior from your phone: tap a student, tap a mark. Your own positive and negative marks, whole-class marking, and printable reports. Free."
+  path="/behavior-tracking"
+>
+  <PageHero
+    eyebrow="Behavior tracking"
+    title="A free classroom behavior tracker that takes two taps."
+    lead="Tap a student, tap a mark, keep teaching. TeachForFree keeps a simple record of positive and negative behavior for every student, on your phone, tablet or laptop."
+    secondary={{ href: '#how-it-works', label: 'See how it works' }}
+  >
+    <div slot="visual">
+      <p class="mb-4 text-center font-mono text-sm font-bold">
+        Try it: tap a student
+      </p>
+      <StudentGridDemo client:visible />
+    </div>
+  </PageHero>
+
+  <Section id="how-it-works" title="How it works" muted>
+    <div class="max-w-2xl">
+      <StepList steps={steps} />
+    </div>
+  </Section>
+
+  <Section
+    title="Built for the middle of a lesson"
+    intro="Everything a busy teacher needs to keep track, and nothing that slows you down."
+  >
+    <FeatureCards items={features} />
+  </Section>
+
+  <Section
+    title="Simple on purpose"
+    intro="TeachForFree is a record, not a game. Marks are moments you chose to note, so you can talk them through with students and families."
+    muted
+  >
+    <CheckList
+      items={[
+        'Positive and negative marks, each with the behavior and the time',
+        'No points, avatars or leaderboards',
+        'No messages sent to parents: you decide when to share a report',
+        'Reports are colorblind-safe and print clearly in black and white',
+      ]}
+    />
+  </Section>
+
+  <Section title="Questions about behavior tracking">
+    <FaqList
+      items={faqItems(['customize-marks', 'whole-class', 'parents', 'export'])}
+    />
+    <MoreLink href="/faq" label="All questions" />
+  </Section>
+
+  <RelatedPages current="/behavior-tracking" />
+  <ClosingBand />
+</BaseLayout>

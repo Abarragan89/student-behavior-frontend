@@ -44,7 +44,7 @@ By signing in or otherwise using TeachForFree, including opening a substitute li
 
 ## Google Classroom
 
-Connecting Google Classroom is optional. Only import classes you teach and are allowed to use with TeachForFree. Google's terms apply to your Google Classroom account. You can disconnect at any time. The [Privacy Policy](/privacy#google-user-data) explains what we read from Google and how we use it.
+Connecting Google Classroom is optional. Only import classes you teach and are allowed to use with TeachForFree. Google's terms apply to your Google Classroom account. You can disconnect it at any time from your Account page. The [Privacy Policy](/privacy#google-user-data) explains what we read from Google and how we use it.
 
 ## Substitute links
 

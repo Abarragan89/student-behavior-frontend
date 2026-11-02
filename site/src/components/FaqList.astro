@@ -1,0 +1,58 @@
+---
+// Questions that open and close (plain <details>, no JavaScript). Each one
+// has an id, so /faq#is-it-free opens straight to it.
+import { Plus } from 'lucide-react'
+import type { FaqItem } from '../content/faq'
+
+interface Props {
+  items: Array<FaqItem>
+  /** The questions sit under a page's h2 by default. */
+  headingLevel?: 'h2' | 'h3'
+}
+const { items, headingLevel = 'h3' } = Astro.props
+const Heading = headingLevel
+---
+
+<div class="flex flex-col gap-3">
+  {
+    items.map((item) => (
+      <details
+        id={item.id}
+        class="group scroll-mt-20 rounded-lg border-2 border-border bg-card text-card-foreground shadow-md"
+      >
+        <summary class="flex cursor-pointer list-none items-center justify-between gap-4 rounded-lg p-5 [&::-webkit-details-marker]:hidden">
+          <Heading class="text-lg font-bold">{item.question}</Heading>
+          <span class="grid size-8 shrink-0 place-items-center rounded-md border-2 border-border bg-background transition-transform group-open:rotate-45 motion-reduce:transition-none">
+            <Plus className="size-4" strokeWidth={3} aria-hidden />
+          </span>
+        </summary>
+        <div class="space-y-3 px-5 pb-5 text-base text-muted-foreground">
+          {item.answer.map((paragraph) => (
+            <p>{paragraph}</p>
+          ))}
+          {item.link && (
+            <p>
+              <a
+                href={item.link.href}
+                class="font-bold text-primary underline underline-offset-4 dark:text-foreground"
+              >
+                {item.link.label}
+              </a>
+            </p>
+          )}
+        </div>
+      </details>
+    ))
+  }
+</div>
+
+<script>
+  // /faq#question opens that question, also when the link is on this page.
+  // (Astro adds this once per page, however many lists there are.)
+  function openFromHash() {
+    const target = location.hash && document.getElementById(location.hash.slice(1))
+    if (target instanceof HTMLDetailsElement) target.open = true
+  }
+  openFromHash()
+  addEventListener('hashchange', openFromHash)
+</script>

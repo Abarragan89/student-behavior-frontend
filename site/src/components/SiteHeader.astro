@@ -2,14 +2,36 @@
 import Logo from './Logo.astro'
 import ButtonLink from './ButtonLink.astro'
 import InstallApp from './islands/InstallApp'
+import { FAQ_PAGE, FEATURE_PAGES } from '../nav'
 import { loginUrl } from '../site'
+
+const links = [...FEATURE_PAGES, FAQ_PAGE]
+const current = Astro.url.pathname.replace(/\.html$/, '')
 ---
 
 <header class="sticky top-0 z-10 border-b-2 border-border bg-background">
   <div
-    class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6"
+    class="mx-auto flex max-w-6xl items-center justify-between gap-6 px-4 py-3 sm:px-6"
   >
     <Logo />
+    <!-- Wide screens only; phones get the same links in the footer. -->
+    <nav aria-label="Main" class="hidden flex-1 lg:block">
+      <ul class="flex items-center justify-center gap-6 text-sm font-bold">
+        {
+          links.map((link) => (
+            <li>
+              <a
+                href={link.href}
+                aria-current={current === link.href ? 'page' : undefined}
+                class="underline-offset-4 hover:underline aria-[current=page]:underline"
+              >
+                {link.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
     <div class="flex items-center gap-2">
       <!-- Needs the browser (install offer, which phone this is), so it
            appears once the page's script runs. -->

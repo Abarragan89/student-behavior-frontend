@@ -1,0 +1,48 @@
+---
+// The top of a feature page: label, heading, a sentence or two, the sign-in
+// button, and a picture or demo beside it (the "visual" slot).
+import ButtonLink from './ButtonLink.astro'
+import { Eyebrow } from './landing/LandingSections'
+import { loginUrl } from '../site'
+
+interface Props {
+  eyebrow: string
+  /** Colors for the label, e.g. "bg-accent text-accent-foreground". */
+  eyebrowClass?: string
+  title: string
+  lead: string
+  /** A second, outlined button, e.g. a jump to a section below. */
+  secondary?: { href: string; label: string }
+}
+const { eyebrow, eyebrowClass, title, lead, secondary } = Astro.props
+---
+
+<section
+  class="mx-auto grid max-w-6xl items-center gap-12 px-4 py-12 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:py-20"
+>
+  <div>
+    <Eyebrow label={eyebrow} className={eyebrowClass} />
+    <h1
+      class="mt-5 text-4xl font-bold leading-tight tracking-tight sm:text-5xl"
+    >
+      {title}
+    </h1>
+    <p class="mt-6 max-w-xl text-lg text-muted-foreground">{lead}</p>
+    <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+      <ButtonLink href={loginUrl} rel="nofollow">
+        Sign in with Google — it's free
+      </ButtonLink>
+      {
+        secondary && (
+          <ButtonLink href={secondary.href} variant="outline">
+            {secondary.label}
+          </ButtonLink>
+        )
+      }
+    </div>
+  </div>
+
+  <div>
+    <slot name="visual" />
+  </div>
+</section>

@@ -1,29 +1,38 @@
 ---
+import { FAQ_PAGE, FEATURE_PAGES, LEGAL_PAGES } from '../nav'
+
 const year = new Date().getFullYear()
-const links = [
-  { href: '/privacy', label: 'Privacy' },
-  { href: '/terms', label: 'Terms' },
+const groups = [
+  { title: 'TeachForFree', links: [...FEATURE_PAGES, FAQ_PAGE] },
+  { title: 'Legal', links: LEGAL_PAGES },
 ]
 ---
 
-<footer
-  class="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8 font-mono text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6"
->
-  <p>© {year} TeachForFree</p>
-  <nav aria-label="Site">
-    <ul class="flex gap-6">
+<footer>
+  <div
+    class="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-10 font-mono text-sm text-muted-foreground sm:flex-row sm:justify-between sm:px-6"
+  >
+    <p>© {year} TeachForFree</p>
+    <div class="flex gap-12">
       {
-        links.map((link) => (
-          <li>
-            <a
-              href={link.href}
-              class="underline-offset-4 hover:text-foreground hover:underline"
-            >
-              {link.label}
-            </a>
-          </li>
+        groups.map((group) => (
+          <nav aria-label={group.title}>
+            <p class="mb-3 font-bold text-foreground">{group.title}</p>
+            <ul class="flex flex-col gap-2">
+              {group.links.map((link) => (
+                <li>
+                  <a
+                    href={link.href}
+                    class="underline-offset-4 hover:text-foreground hover:underline"
+                  >
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
         ))
       }
-    </ul>
-  </nav>
+    </div>
+  </div>
 </footer>

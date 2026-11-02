@@ -1,6 +1,6 @@
 import { PhoneFrame } from './PhoneFrame'
 
-// A sample of what a teacher's lesson notes look like. Decorative only.
+// A sample of what a teacher's lesson plan looks like. Decorative only.
 const OUTLINE: Array<{ title: string; notes: Array<string> }> = [
   { title: 'Warm-up · 5 min', notes: ['3 problems on the board'] },
   {
@@ -17,7 +17,7 @@ export function LessonNotesMockup() {
       <PhoneFrame>
         <div className="flex items-center justify-between border-b-2 border-border bg-card px-3 py-2 font-mono text-xs">
           <span className="font-bold">Thursday</span>
-          <span className="text-muted-foreground">Lesson notes</span>
+          <span className="text-muted-foreground">Lesson plan</span>
         </div>
 
         <div className="space-y-4 p-4">

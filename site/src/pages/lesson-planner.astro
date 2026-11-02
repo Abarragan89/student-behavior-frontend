@@ -1,0 +1,113 @@
+---
+import {
+  CalendarDays,
+  Clock,
+  Copy,
+  ListChecks,
+  Presentation,
+  Printer,
+} from 'lucide-react'
+import BaseLayout from '../layouts/BaseLayout.astro'
+import PageHero from '../components/PageHero.astro'
+import Section from '../components/Section.astro'
+import FaqList from '../components/FaqList.astro'
+import RelatedPages from '../components/RelatedPages.astro'
+import ClosingBand from '../components/landing/ClosingBand.astro'
+import {
+  FeatureCards,
+  MoreLink,
+  StepList,
+} from '../components/landing/LandingSections'
+import type { Feature, Step } from '../components/landing/LandingSections'
+import { LessonNotesMockup } from '../components/landing/LessonNotesMockup'
+import { faqItems } from '../content/faq'
+
+const steps: Array<Step> = [
+  {
+    title: 'Plan the day',
+    text: 'Add sections like “Warm-up” or “Period 3 — Fractions,” and a line for each step. It saves as you type.',
+  },
+  {
+    title: 'Teach from it',
+    text: 'Open Presenter view on your phone or laptop and tap each line as you finish it.',
+  },
+  {
+    title: 'Reuse it',
+    text: 'Next week, copy the day and change only what’s different.',
+  },
+]
+
+const features: Array<Feature> = [
+  {
+    title: 'Sections and checklists',
+    text: 'Every line is a checkbox, with up to three levels of sub-steps. Drag to reorder, or press Tab to indent.',
+    icon: ListChecks,
+  },
+  {
+    title: 'Times if you want them',
+    text: 'Give a section a start and end time. During class, the section whose time it is gets a “Now” label.',
+    icon: Clock,
+  },
+  {
+    title: 'Presenter view',
+    text: 'Your whole day, full screen, with big rows to tap and a clock. Open your class to give marks without leaving.',
+    icon: Presentation,
+  },
+  {
+    title: 'Copy last week',
+    text: 'Copy a whole day or one section to another day. It never overwrites a plan, and nothing comes over checked off.',
+    icon: Copy,
+  },
+  {
+    title: 'The month at a glance',
+    text: 'A calendar shows which days have a plan and which are all done.',
+    icon: CalendarDays,
+  },
+  {
+    title: 'Print it',
+    text: 'Print the day with boxes to tick by hand, and add a QR code so a substitute can open it on their phone.',
+    icon: Printer,
+  },
+]
+---
+
+<BaseLayout
+  title="Free Daily Lesson Planner for Teachers | TeachForFree"
+  description="Plan each school day as a simple checklist on your phone, then teach from it in Presenter view. Copy last week’s plan, add times, print, or share with a sub."
+  path="/lesson-planner"
+>
+  <PageHero
+    eyebrow="Lesson plans"
+    eyebrowClass="bg-accent text-accent-foreground"
+    title="A simple daily lesson planner you can teach from."
+    lead="Write tomorrow’s lesson the way you’d jot it on a sticky note: a few sections, a few lines each. Then open it on your phone and check things off as you teach."
+    secondary={{ href: '#how-it-works', label: 'See how it works' }}
+  >
+    <div slot="visual"><LessonNotesMockup /></div>
+  </PageHero>
+
+  <Section id="how-it-works" title="How it works" muted>
+    <div class="max-w-2xl">
+      <StepList steps={steps} />
+    </div>
+  </Section>
+
+  <Section
+    title="Plans that keep up with your day"
+    intro="No templates and no boxes to fill in. Just what you’ll teach, in the order you’ll teach it."
+  >
+    <FeatureCards items={features} />
+  </Section>
+
+  <Section title="Questions about lesson plans" muted>
+    <FaqList
+      items={faqItems(['reuse-plans', 'teach-from-it', 'templates', 'offline'])}
+    />
+    <MoreLink href="/faq" label="All questions" />
+  </Section>
+
+  <div class="pt-16 lg:pt-20">
+    <RelatedPages current="/lesson-planner" />
+  </div>
+  <ClosingBand />
+</BaseLayout>

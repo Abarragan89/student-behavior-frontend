@@ -1,0 +1,30 @@
+---
+// A page section with an h2: the same width and spacing everywhere.
+import { Eyebrow } from './landing/LandingSections'
+
+interface Props {
+  title: string
+  eyebrow?: string
+  /** A sentence under the heading. */
+  intro?: string
+  /** A grey band with lines above and below, to set it apart. */
+  muted?: boolean
+  id?: string
+}
+const { title, eyebrow, intro, muted = false, id } = Astro.props
+---
+
+<section
+  id={id}
+  data-band={muted ? '' : undefined}
+  class:list={['scroll-mt-16', muted && 'border-y-2 border-border bg-muted']}
+>
+  <div class="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-20">
+    {eyebrow && <Eyebrow label={eyebrow} className="mb-4" />}
+    <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">{title}</h2>
+    {intro && <p class="mt-4 max-w-2xl text-lg text-muted-foreground">{intro}</p>}
+    <div class="mt-8">
+      <slot />
+    </div>
+  </div>
+</section>

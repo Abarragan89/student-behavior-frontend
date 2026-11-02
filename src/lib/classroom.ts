@@ -61,6 +61,21 @@ export const googleCoursesQueryOptions = queryOptions({
     !(error instanceof ApiError && error.status < 500) && failureCount < 1,
 })
 
+// "Disconnect" on the Account page. The backend revokes TeachForFree's access
+// at Google and deletes the stored token. Imported classes and students stay.
+export function disconnectClassroom() {
+  return apiDelete('/auth/google/classroom')
+}
+
+/** After disconnecting: Add Students offers "Connect Google Classroom" again. */
+export function cacheDisconnected(queryClient: QueryClient) {
+  queryClient.setQueryData<ClassroomStatus>(
+    classroomStatusQueryOptions.queryKey,
+    { connected: false, scopes: [] },
+  )
+  queryClient.removeQueries({ queryKey: googleCoursesQueryOptions.queryKey })
+}
+
 export type CourseImportResult = {
   classroom: { id: string; name: string; is_default: boolean }
   created: boolean // false: imported before, so only new students were added

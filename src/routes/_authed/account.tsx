@@ -13,6 +13,7 @@ import {
 import { meQueryOptions } from '#/lib/auth'
 import { usePwaInstall } from '#/lib/pwa-install'
 import { ArchivedClasses } from '#/components/archived-classes'
+import { ClassroomConnection } from '#/components/classroom-connection'
 import { SignOutDialog } from '#/components/sign-out-dialog'
 import { TeacherAvatar } from '#/components/teacher-avatar'
 
@@ -65,6 +66,8 @@ function AccountPage() {
           out, or after 7 days without opening the app.
         </p>
       )}
+
+      <ClassroomConnection />
 
       <ArchivedClasses />
 
