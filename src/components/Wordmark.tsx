@@ -8,7 +8,8 @@ import { cn } from '#/lib/utils'
 export function Wordmark({ className }: { className?: string }) {
   return (
     <img
-      src="/branding/chalkboard.png"
+      // public/branding/chalkboard.png, with ?v= (see vite.config.ts).
+      src={import.meta.env.VITE_LOGO_URL}
       alt="TeachForFree"
       width={1024}
       height={749}
