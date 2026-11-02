@@ -4,6 +4,7 @@ import type { LucideIcon } from 'lucide-react'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { Me } from '#/lib/auth'
+import { bottomTabClass } from '#/components/bottom-tab'
 import { ConnectionStatus } from '#/components/connection-status'
 import { CreateMenu } from '#/components/create-menu'
 import { UserMenu } from '#/components/user-menu'
@@ -48,7 +49,7 @@ export function HeaderNav({ className }: { className?: string }) {
 }
 
 /**
- * The phone menu, fixed to the bottom of the screen: Classes, the + menu,
+ * The phone menu, fixed to the bottom of the screen: Classes, the Add menu,
  * Lesson Plans, and the avatar menu (last, where apps usually put the
  * profile). Phones have no top bar, so the offline pill sits on its top edge.
  * The page leaves room for it (see _authed.tsx).
@@ -76,9 +77,7 @@ export function BottomNav({
         <ConnectionStatus />
       </div>
       <BottomLink link={CLASSES} />
-      <div className="flex justify-center">
-        <CreateMenu side="top" />
-      </div>
+      <CreateMenu placement="bottom-bar" />
       <BottomLink link={LESSON_PLANS} />
       <UserMenu teacher={teacher} placement="bottom-bar" />
     </nav>
@@ -89,7 +88,7 @@ function BottomLink({ link: { to, label, icon: Icon } }: { link: NavLink }) {
   return (
     <Link
       to={to}
-      className="flex h-16 flex-col items-center justify-center gap-1 text-xs font-bold text-muted-foreground outline-none focus-visible:ring-4 focus-visible:ring-ring focus-visible:ring-inset data-[status=active]:text-primary"
+      className={`${bottomTabClass} data-[status=active]:text-primary`}
     >
       <Icon className="size-6" />
       {label}

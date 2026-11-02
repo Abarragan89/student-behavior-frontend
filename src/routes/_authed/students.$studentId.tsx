@@ -5,6 +5,7 @@ import {
   ChevronLeft,
   ChevronRight,
   CircleAlert,
+  Printer,
   RefreshCw,
   UserX,
 } from 'lucide-react'
@@ -36,7 +37,9 @@ import {
 } from '#/lib/day'
 import { localDate, markTime, timeZone } from '#/lib/marks'
 import type { Mark } from '#/lib/marks'
+import { busiestHour, schoolDaysEnding } from '#/lib/mark-stats'
 import {
+  studentDailyQueryOptions,
   studentFromMe,
   studentMarksQueryOptions,
   studentQueryOptions,
@@ -44,6 +47,7 @@ import {
 import type { StudentDetail } from '#/lib/students'
 import { DayTimeline } from '#/components/day-timeline'
 import { StudentNameForm } from '#/components/forms/student-name-form'
+import { StudentReport } from '#/components/student-report'
 import { MarkRing, initials } from '#/components/student-card'
 
 export const Route = createFileRoute('/_authed/students/$studentId')({
@@ -69,6 +73,9 @@ export const Route = createFileRoute('/_authed/students/$studentId')({
 
 const cardClass =
   'gap-5 rounded-xl border-2 border-border p-4 shadow-md ring-0 sm:p-6'
+
+// How many school days the printed report shows for context.
+const RECENT_DAYS = 10
 
 function StudentPage() {
   const { studentId } = Route.useParams()
@@ -128,6 +135,7 @@ function StudentPage() {
       date={date}
       today={today}
       onShowDay={showDay}
+      teacherName={me?.teacher.name ?? ''}
       classroomNames={
         new Map([
           ...(me?.classrooms ?? []).map((c) => [c.id, c.name] as const),
@@ -143,12 +151,14 @@ function StudentDay({
   date,
   today,
   onShowDay,
+  teacherName,
   classroomNames,
 }: {
   student: StudentDetail
   date: string
   today: string
   onShowDay: (date: string) => void
+  teacherName: string
   classroomNames: Map<string, string>
 }) {
   // The teacher's own time zone: the day is fetched in it, and every time on
@@ -156,6 +166,20 @@ function StudentDay({
   const zone = timeZone()
   const marks = useQuery(studentMarksQueryOptions(student.id, date))
   const now = useMinutesNow(date === today, zone)
+  // For the printed report only: the school days leading up to this one.
+  const trend = useQuery(
+    studentDailyQueryOptions(
+      student.id,
+      schoolDaysEnding(date, RECENT_DAYS)[0],
+      date,
+    ),
+  )
+  // The day's own marks are needed; recent days print if they can, but
+  // aren't waited for when offline or failing.
+  const reportReady =
+    marks.data !== undefined &&
+    !marks.isPlaceholderData &&
+    !(trend.isPending && trend.fetchStatus === 'fetching')
 
   const list = marks.data ?? []
   const positive = list.filter((m) => m.is_positive).length
@@ -167,112 +191,139 @@ function StudentDay({
       : undefined
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl min-w-0 flex-1 flex-col gap-6 px-4 py-6 sm:py-8">
-      <Link
-        to="/classes"
-        className={cn(
-          buttonVariants({ variant: 'link' }),
-          'h-auto self-start px-0 text-base font-bold',
-        )}
-      >
-        <ChevronLeft className="size-5" />
-        Classes
-      </Link>
-
-      <header className="flex items-start gap-4">
-        {/* The same ring as the class grid, for the day shown. */}
-        <MarkRing
-          today={marks.data ? { positive, negative } : null}
-          className="size-16 sm:size-20"
+    <>
+      <main className="mx-auto flex w-full max-w-3xl min-w-0 flex-1 flex-col gap-6 px-4 py-6 sm:py-8 print:hidden">
+        <Link
+          to="/classes"
+          className={cn(
+            buttonVariants({ variant: 'link' }),
+            'h-auto self-start px-0 text-base font-bold',
+          )}
         >
-          <Avatar aria-hidden className="size-full after:hidden">
-            <AvatarFallback className="bg-muted text-lg font-bold text-foreground sm:text-xl">
-              {initials(student.first_name, student.last_name)}
-            </AvatarFallback>
-          </Avatar>
-        </MarkRing>
-        <div className="flex min-w-0 flex-1 flex-col gap-1 sm:pt-2">
-          {/* A new form for each student, so an open edit doesn't carry over. */}
-          <StudentNameForm key={student.id} student={student} />
-          {student.classrooms.length > 0 && (
+          <ChevronLeft className="size-5" />
+          Classes
+        </Link>
+
+        <header className="flex items-start gap-4">
+          {/* The same ring as the class grid, for the day shown. */}
+          <MarkRing
+            today={marks.data ? { positive, negative } : null}
+            className="size-16 sm:size-20"
+          >
+            <Avatar aria-hidden className="size-full after:hidden">
+              <AvatarFallback className="bg-muted text-lg font-bold text-foreground sm:text-xl">
+                {initials(student.first_name, student.last_name)}
+              </AvatarFallback>
+            </Avatar>
+          </MarkRing>
+          <div className="flex min-w-0 flex-1 flex-col gap-1 sm:pt-2">
+            {/* A new form for each student, so an open edit doesn't carry over. */}
+            <StudentNameForm key={student.id} student={student} />
+            {student.classrooms.length > 0 && (
+              <p className="text-sm text-muted-foreground">
+                {student.classrooms.map((c) => c.name).join(' · ')}
+              </p>
+            )}
+          </div>
+        </header>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <DayPicker date={date} today={today} onChange={onShowDay} />
+          <Button
+            variant="outline"
+            onClick={() => window.print()}
+            disabled={!reportReady}
+            className="ml-auto h-10 rounded-lg border-2 border-border bg-card px-3 text-base font-bold"
+          >
+            <Printer className="size-5" />
+            Print report
+          </Button>
+        </div>
+
+        <Card className={cardClass}>
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-bold">
+              {date === today
+                ? `Today, ${formatLongDate(date)}`
+                : formatLongDate(date)}
+            </h2>
             <p className="text-sm text-muted-foreground">
-              {student.classrooms.map((c) => c.name).join(' · ')}
+              Each dot is one mark, placed at the time it was given. Times are
+              in {timeZoneLabel(date, zone)}.
+            </p>
+          </div>
+
+          {marks.data ? (
+            <>
+              <DaySummary
+                positive={positive}
+                negative={negative}
+                busiest={busiestHour(list, zone)}
+              />
+              <DayTimeline
+                marks={list}
+                timeZone={zone}
+                now={now}
+                classroomName={classroomName}
+                emptyText={
+                  date === today ? 'No marks yet today' : 'No marks this day'
+                }
+                faded={marks.isPlaceholderData}
+              />
+            </>
+          ) : marks.isError ? (
+            <div className="flex flex-col items-center gap-3 py-8 text-center">
+              <p className="flex items-center gap-2 text-sm font-medium">
+                <CircleAlert className="size-5 shrink-0 text-destructive" />
+                Couldn’t load this day’s marks.
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => void marks.refetch()}
+                disabled={marks.isFetching}
+                className="rounded-lg border-2 border-border font-bold"
+              >
+                <RefreshCw className={cn(marks.isFetching && 'animate-spin')} />
+                Try again
+              </Button>
+            </div>
+          ) : (
+            <p
+              role="status"
+              className="flex items-center justify-center gap-2 py-16 text-sm font-medium text-muted-foreground"
+            >
+              <Spinner aria-hidden className="size-4" />
+              Loading marks…
             </p>
           )}
-        </div>
-      </header>
+        </Card>
 
-      <DayPicker date={date} today={today} onChange={onShowDay} />
-
-      <Card className={cardClass}>
-        <div className="flex flex-col gap-1">
-          <h2 className="text-lg font-bold">
-            {date === today
-              ? `Today, ${formatLongDate(date)}`
-              : formatLongDate(date)}
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Each dot is one mark, placed at the time it was given. Times are in{' '}
-            {timeZoneLabel(date, zone)}.
-          </p>
-        </div>
-
-        {marks.data ? (
-          <>
-            <DaySummary
-              positive={positive}
-              negative={negative}
-              busiest={busiestHour(list, zone)}
-            />
-            <DayTimeline
+        {list.length > 0 && (
+          <Card className={cn(cardClass, 'gap-2')}>
+            <h2 className="text-lg font-bold">All marks</h2>
+            <MarkList
               marks={list}
               timeZone={zone}
-              now={now}
               classroomName={classroomName}
-              emptyText={
-                date === today ? 'No marks yet today' : 'No marks this day'
-              }
-              faded={marks.isPlaceholderData}
             />
-          </>
-        ) : marks.isError ? (
-          <div className="flex flex-col items-center gap-3 py-8 text-center">
-            <p className="flex items-center gap-2 text-sm font-medium">
-              <CircleAlert className="size-5 shrink-0 text-destructive" />
-              Couldn’t load this day’s marks.
-            </p>
-            <Button
-              variant="outline"
-              onClick={() => void marks.refetch()}
-              disabled={marks.isFetching}
-              className="rounded-lg border-2 border-border font-bold"
-            >
-              <RefreshCw className={cn(marks.isFetching && 'animate-spin')} />
-              Try again
-            </Button>
-          </div>
-        ) : (
-          <p
-            role="status"
-            className="flex items-center justify-center gap-2 py-16 text-sm font-medium text-muted-foreground"
-          >
-            <Spinner aria-hidden className="size-4" />
-            Loading marks…
-          </p>
+          </Card>
         )}
-      </Card>
+      </main>
 
-      {list.length > 0 && (
-        <Card className={cn(cardClass, 'gap-2')}>
-          <h2 className="text-lg font-bold">All marks</h2>
-          <MarkList
-            marks={list}
-            timeZone={zone}
-            classroomName={classroomName}
-          />
-        </Card>
+      {/* Only on paper. Rendered once the day is in (not while a different
+        day's marks stand in), so Print never shows the wrong day. */}
+      {reportReady && (
+        <StudentReport
+          student={student}
+          date={date}
+          marks={list}
+          trend={trend.data}
+          teacherName={teacherName}
+          timeZone={zone}
+          classroomName={classroomName}
+        />
       )}
-    </main>
+    </>
   )
 }
 
@@ -494,30 +545,6 @@ function StudentMissing({
       </EmptyContent>
     </Empty>
   )
-}
-
-/**
- * The hour (on the wall clock) with the most marks, earliest on a tie. Null
- * when no hour has more than one: one mark isn't a pattern.
- */
-function busiestHour(marks: Array<Mark>, zone: string) {
-  const perHour = new Map<number, number>()
-  for (const mark of marks) {
-    const hour = Math.floor(minutesIntoDay(markTime(mark), zone) / 60)
-    perHour.set(hour, (perHour.get(hour) ?? 0) + 1)
-  }
-  let best: { hour: number; count: number } | null = null
-  for (const [hour, count] of perHour) {
-    if (
-      count > 1 &&
-      (!best ||
-        count > best.count ||
-        (count === best.count && hour < best.hour))
-    ) {
-      best = { hour, count }
-    }
-  }
-  return best
 }
 
 /** Minutes into the day now, ticking every 30 seconds; null when off. */

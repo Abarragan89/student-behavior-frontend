@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { Me, Student } from '#/lib/auth'
 import { formatStudentCount } from '#/lib/classroom'
@@ -20,8 +20,16 @@ import type { MarkTarget } from '#/hooks/useGiveMark'
  * "Select all" gives a mark to the whole class, and "Select" lets the teacher
  * tap several cards and give them all one mark.
  */
-export function ClassRoster({ classroom }: { classroom: Me['classroom'] }) {
+export function ClassRoster({
+  classroom,
+  pageLinks = true,
+}: {
+  classroom: Me['classroom']
+  /** The marks dialog's links to other pages (see MarkDialog). */
+  pageLinks?: boolean
+}) {
   const { id: classroomId, name, students } = classroom
+  const sectionRef = useRef<HTMLElement>(null)
   const labels = cardLabels(students)
 
   // Today's counts, in the teacher's own time zone.
@@ -78,17 +86,26 @@ export function ClassRoster({ classroom }: { classroom: Me['classroom'] }) {
     if (!selecting || dialogOpen) return
     function onKeyDown(e: KeyboardEvent) {
       if (e.key !== 'Escape') return
+      // Not while hidden (the presenter's class view, closed).
+      if (sectionRef.current?.closest('[inert]')) return
       const inPopup =
         e.target instanceof Element &&
         e.target.closest('[role=dialog], [role=alertdialog], [role=menu]')
-      if (!inPopup) stopSelecting()
+      if (inPopup) return
+      stopSelecting()
+      // Used up, so the presenter's class view doesn't also close.
+      e.preventDefault()
     }
     window.addEventListener('keydown', onKeyDown, true)
     return () => window.removeEventListener('keydown', onKeyDown, true)
   }, [selecting, dialogOpen])
 
   return (
-    <section aria-label="Students" className="flex flex-col gap-2">
+    <section
+      ref={sectionRef}
+      aria-label="Students"
+      className="flex flex-col gap-2"
+    >
       <RosterToolbar
         selecting={selecting}
         selectedCount={selected.length}
@@ -136,6 +153,7 @@ export function ClassRoster({ classroom }: { classroom: Me['classroom'] }) {
       <MarkDialog
         {...dialogText(target, name)}
         studentId={target?.kind === 'student' ? target.student.id : undefined}
+        pageLinks={pageLinks}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         onPick={pick}

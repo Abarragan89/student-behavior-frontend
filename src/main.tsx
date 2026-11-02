@@ -11,6 +11,13 @@ import {
 import { ApiError } from './lib/api'
 import { forgetOnTeacherChange } from './lib/auth'
 import {
+  prefetchLessonPlans,
+  reapplyPendingOps,
+  registerLessonPlanMutations,
+  resumeLessonPlanQueue,
+  watchLessonPlanQueue,
+} from './lib/lesson-plan-queue'
+import {
   registerMarkMutations,
   resumeMarkQueue,
   watchMarkQueue,
@@ -61,8 +68,10 @@ async function boot() {
   const rootElement = document.getElementById('app')!
   if (rootElement.innerHTML) return
 
-  // How queued marks are sent. Before loading the saved queue, which needs it.
+  // How queued marks and lesson plan changes are sent. Before loading the
+  // saved queue, which needs it.
   registerMarkMutations(queryClient)
+  registerLessonPlanMutations(queryClient)
 
   // Installed app only (see persist.ts): load the data and the mark queue
   // saved on the device before the first page runs its login check, so the
@@ -73,10 +82,13 @@ async function boot() {
     ? restoreMarkQueue(queryClient)
     : Promise.resolve()
   if (standalone) {
-    await Promise.race([
-      Promise.all([restoreQueryCache(queryClient), queueRestored]),
-      wait(2000),
+    const restored = Promise.all([
+      restoreQueryCache(queryClient),
+      queueRestored,
     ])
+    // Checkmarks still queued go on the saved days, which can be a tap behind.
+    void restored.then(() => reapplyPendingOps(queryClient))
+    await Promise.race([restored, wait(2000)])
     // Ask the browser not to clear it to free up space.
     if ('persist' in navigator.storage) {
       void navigator.storage.persist().catch(() => {})
@@ -93,11 +105,12 @@ async function boot() {
   // Only once the saved queue is loaded: saving earlier could overwrite marks
   // that haven't been sent with an empty queue.
   await queueRestored
-  watchMarkQueue(
-    queryClient,
-    standalone ? () => saveMarkQueue(queryClient) : undefined,
-  )
+  const saveQueue = standalone ? () => saveMarkQueue(queryClient) : undefined
+  watchMarkQueue(queryClient, saveQueue)
+  watchLessonPlanQueue(queryClient, saveQueue)
   resumeMarkQueue(queryClient)
+  resumeLessonPlanQueue(queryClient)
+  if (standalone) prefetchLessonPlans(queryClient)
 }
 
 function wait(ms: number) {

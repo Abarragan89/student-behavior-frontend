@@ -14,12 +14,10 @@ const STEP = DOT + 2
 // Space between the center line and the first dot.
 const SPINE_GAP = 4
 
-type Placed = {
+type Placed = Stacked<{
   mark: Mark
   minute: number // into the day, on the wall clock
-  y: number
-  slot: number // 0 next to the center line, then outward
-}
+}>
 
 /**
  * One day of a student's marks as a vertical timeline: time runs down the
@@ -57,15 +55,7 @@ export function DayTimeline({
     }))
     .sort((a, b) => a.minute - b.minute)
 
-  // 6 AM to 5 PM, stretched to the hour to fit any mark outside it.
-  const startHour = Math.min(
-    FIRST_HOUR,
-    ...items.map((i) => Math.floor(i.minute / 60)),
-  )
-  const endHour = Math.max(
-    LAST_HOUR,
-    ...items.map((i) => Math.ceil(i.minute / 60)),
-  )
+  const { startHour, endHour } = hourRange(items.map((i) => i.minute))
   const yOf = (minute: number) => ((minute - startHour * 60) / 60) * HOUR_PX
   const height = (endHour - startHour) * HOUR_PX
   const hours = Array.from(
@@ -73,13 +63,15 @@ export function DayTimeline({
     (_, i) => startHour + i,
   )
 
-  const positive = place(
+  const positive = stackMarks(
     items.filter((i) => i.mark.is_positive),
     yOf,
+    STEP,
   )
-  const negative = place(
+  const negative = stackMarks(
     items.filter((i) => !i.mark.is_positive),
     yOf,
+    STEP,
   )
 
   // Each side is half the plot. A cluster wider than its side squeezes its
@@ -197,7 +189,7 @@ export function DayTimeline({
                     setActiveId((id) => (id === dot.mark.id ? null : id))
                   }
                   className="group absolute flex size-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full outline-none"
-                  style={{ left: xOf(dot), top: dot.y }}
+                  style={{ left: xOf(dot), top: dot.position }}
                 >
                   {/* The 2px ring in the card color keeps touching dots
                       apart. */}
@@ -246,7 +238,7 @@ function Tooltip({
   classroom?: string
 }) {
   // Above the dot, or below it near the top where there's no room.
-  const below = dot.y < 64
+  const below = dot.position < 64
   return (
     <div
       role="tooltip"
@@ -254,7 +246,7 @@ function Tooltip({
         'pointer-events-none absolute z-20 -translate-x-1/2 rounded-md border-2 border-border bg-card px-2.5 py-1.5 whitespace-nowrap shadow-md',
         below ? 'translate-y-3' : '-translate-y-[calc(100%+0.75rem)]',
       )}
-      style={{ left: x, top: dot.y }}
+      style={{ left: x, top: dot.position }}
     >
       <p className="text-sm font-bold tabular-nums">{time}</p>
       <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -274,22 +266,41 @@ function Tooltip({
   )
 }
 
+/** The hours a day's chart spans: 6 AM to 5 PM, stretched to fit any mark. */
+export function hourRange(minutes: Array<number>) {
+  return {
+    startHour: Math.min(FIRST_HOUR, ...minutes.map((m) => Math.floor(m / 60))),
+    endHour: Math.max(LAST_HOUR, ...minutes.map((m) => Math.ceil(m / 60))),
+  }
+}
+
+/** A mark laid out along the time axis by stackMarks. */
+export type Stacked<T> = T & {
+  position: number // along the time axis
+  slot: number // 0 next to the center line, then outward
+}
+
 /**
- * Lays out one side's dots: each at its time, in the first spot outward from
- * the center line that doesn't touch a dot already there.
+ * Lays out one side's marks, earliest first: each at its time, in the first
+ * slot outward from the center line with nothing within `step` of it.
  */
-function place(
-  items: Array<{ mark: Mark; minute: number }>,
-  yOf: (minute: number) => number,
-): Array<Placed> {
-  const placed: Array<Placed> = []
+export function stackMarks<T extends { minute: number }>(
+  items: Array<T>,
+  positionOf: (minute: number) => number,
+  step: number,
+): Array<Stacked<T>> {
+  const placed: Array<Stacked<T>> = []
   for (const item of items) {
-    const y = yOf(item.minute)
+    const position = positionOf(item.minute)
     let slot = 0
-    while (placed.some((p) => p.slot === slot && Math.abs(p.y - y) < STEP)) {
+    while (
+      placed.some(
+        (p) => p.slot === slot && Math.abs(p.position - position) < step,
+      )
+    ) {
       slot++
     }
-    placed.push({ ...item, y, slot })
+    placed.push({ ...item, position, slot })
   }
   return placed
 }

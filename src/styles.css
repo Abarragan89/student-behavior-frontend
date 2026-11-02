@@ -226,3 +226,29 @@ body {
     @apply font-sans;
   }
 }
+
+/* The printed report (src/components/student-report.tsx). Its own two colors,
+   not the screen's: they pass the colorblind checks on white paper, and one is
+   much darker than the other so they stay apart in black and white too. */
+@theme {
+  --color-report-positive: #17673a;
+  --color-report-negative: #e86a3e;
+}
+
+@media print {
+  /* No paper size: fits Letter and A4 alike. */
+  @page {
+    margin: 12mm;
+  }
+  /* Always white paper, in dark mode too, and no room kept for a notch. */
+  html,
+  body {
+    background: white;
+    color-scheme: light;
+    padding: 0;
+  }
+  /* Toasts float over the page; keep them off paper. */
+  [data-sonner-toaster] {
+    display: none !important;
+  }
+}

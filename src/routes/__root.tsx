@@ -24,7 +24,7 @@ function RootComponent() {
           devtools button and is easy to spot on phones. */}
       <Toaster position="top-center" />
       <PwaUpdater />
-      <TanStackDevtools
+      {/* <TanStackDevtools
         config={{
           position: 'bottom-right',
         }}
@@ -34,7 +34,7 @@ function RootComponent() {
             render: <TanStackRouterDevtoolsPanel />,
           },
         ]}
-      />
+      /> */}
     </ThemeProvider>
   )
 }

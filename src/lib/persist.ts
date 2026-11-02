@@ -7,6 +7,8 @@ import {
 import type { PersistQueryClientOptions } from '@tanstack/react-query-persist-client'
 import type { Mutation, Query, QueryClient } from '@tanstack/react-query'
 import { del, get, set } from 'idb-keyval'
+import { addDays } from './day'
+import { localDate } from './marks'
 
 // Saves the app's data on the device, so the installed app opens instantly
 // and still shows the class when offline.
@@ -15,6 +17,7 @@ import { del, get, set } from 'idb-keyval'
 // - Only in the installed app (the teacher's own phone), never the website,
 //   which may be open on a shared school computer.
 // - Only what the class page needs: the roster, mark types, the day's counts.
+//   And the lesson plans for the days around today, to check off in class.
 // - Deleted on sign-out, when the session can't be renewed (me → null), and
 //   after 7 days without opening the app.
 
@@ -33,6 +36,19 @@ export const MARK_QUEUE_KEY = 'tff:mark-queue'
 
 /** First part of the query keys worth saving. */
 const SAVED_QUERIES = new Set(['me', 'mark-types', 'mark-counts', 'student'])
+
+/**
+ * Lesson plans are saved only for yesterday through a week from today:
+ * enough to teach from offline. Older days drop off at the next save.
+ */
+function isSavedLessonPlan(key: ReadonlyArray<unknown>) {
+  const today = localDate()
+  if (key[0] === 'lesson-plan' && typeof key[1] === 'string') {
+    return key[1] >= addDays(today, -1) && key[1] <= addDays(today, 7)
+  }
+  // The calendar's dots for this month: counts only, no text.
+  return key[0] === 'lesson-plan-calendar' && key[1] === today.slice(0, 7)
+}
 
 /** IndexedDB through idb-keyval, in the shape the persisters expect. */
 export const idbStorage = {
@@ -61,7 +77,8 @@ function queryPersistOptions(
       shouldDehydrateQuery: (query: Query) =>
         query.state.status === 'success' &&
         query.state.data != null &&
-        SAVED_QUERIES.has(query.queryKey[0] as string) &&
+        (SAVED_QUERIES.has(query.queryKey[0] as string) ||
+          isSavedLessonPlan(query.queryKey)) &&
         // Signed out: save nothing, which also empties what was saved.
         queryClient.getQueryData(['me']) != null,
     },
@@ -90,6 +107,11 @@ export async function restoreQueryCache(queryClient: QueryClient) {
 // Saved separately from the cached data: it has to outlive it. The cache can
 // be thrown away any time (it's fetched again), but these are marks the
 // server doesn't have yet. Ids and times only, no names.
+//
+// Lesson plan checkmarks waiting to be sent are saved here too (ids and
+// true/false). Other lesson plan changes hold text and are never saved:
+// editing needs a connection. The key and version stay as they were, since
+// changing either would delete marks that haven't been sent.
 
 /** Matches the server's limit on how long ago a mark can be given. */
 const QUEUE_MAX_AGE = 30 * DAY
@@ -117,9 +139,14 @@ function queuePersistOptions(
       shouldDehydrateQuery: () => false,
       // Every mark not yet answered, including one on its way right now: if
       // the app closes before the answer, it's sent again (safely) next time.
-      shouldDehydrateMutation: (mutation: Mutation) =>
-        mutation.options.mutationKey?.[0] === 'marks' &&
-        mutation.state.status === 'pending',
+      shouldDehydrateMutation: (mutation: Mutation) => {
+        const key = mutation.options.mutationKey
+        return (
+          (key?.[0] === 'marks' ||
+            (key?.[0] === 'lesson-plans' && key[1] === 'done')) &&
+          mutation.state.status === 'pending'
+        )
+      },
     },
   }
 }

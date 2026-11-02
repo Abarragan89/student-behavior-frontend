@@ -5,6 +5,7 @@ import {
   Outlet,
   createFileRoute,
   redirect,
+  useMatches,
   useRouter,
 } from '@tanstack/react-router'
 import type { ErrorComponentProps } from '@tanstack/react-router'
@@ -25,6 +26,16 @@ import { isStandalone } from '#/lib/pwa-install'
 // The leading "_" keeps it out of the URL (_authed/classes.tsx → /classes).
 // Pages here read the teacher with useSuspenseQuery(meQueryOptions): this check
 // has already loaded it, and it stays up to date when 'me' is refetched.
+declare module '@tanstack/react-router' {
+  interface StaticDataRouteOption {
+    /**
+     * The page takes the whole screen: no header, bottom bar or install
+     * banner (e.g. a lesson plan's presenter view, used while teaching).
+     */
+    fullScreen?: boolean
+  }
+}
+
 export const Route = createFileRoute('/_authed')({
   beforeLoad: async ({ context: { queryClient } }) => {
     // Already known (this visit, or saved on the device): show the page now.
@@ -46,10 +57,21 @@ export const Route = createFileRoute('/_authed')({
 
 function AuthedLayout() {
   const { data: me } = useMe()
+  const fullScreen = useMatches({
+    select: (matches) => matches.some((m) => m.staticData.fullScreen),
+  })
 
   // Logged out while on the page (session ended, or logged out in another tab).
   if (me === null) return <Navigate to="/login" />
   if (!me) return null
+
+  if (fullScreen) {
+    return (
+      <CreateDialogsProvider me={me}>
+        <Outlet />
+      </CreateDialogsProvider>
+    )
+  }
 
   return (
     // The + menu's dialogs (Add Students, Create class), for every page here.
@@ -57,12 +79,13 @@ function AuthedLayout() {
       {/* Column layout so pages can fill the space under the header
           (flex-1). On phones the bottom padding leaves room for the fixed
           bottom bar, and the top padding keeps pages clear of the notch
-          (0 with today's status bar style, which keeps the page below it). */}
-      <div className="flex min-h-dvh flex-col bg-background pt-[env(safe-area-inset-top)] pb-[calc(4rem+env(safe-area-inset-bottom))] text-foreground md:pt-0 md:pb-0">
+          (0 with today's status bar style, which keeps the page below it).
+          On paper only the page itself shows (e.g. a student's report). */}
+      <div className="flex min-h-dvh flex-col bg-background pt-[env(safe-area-inset-top)] pb-[calc(4rem+env(safe-area-inset-bottom))] text-foreground md:pt-0 md:pb-0 print:min-h-0 print:bg-white print:p-0">
         {/* Tablets and laptops only. Phones get the bottom bar instead (links,
             +, the avatar, and the offline pill), so the first screen is all
             students. */}
-        <header className="hidden items-center gap-4 border-b-2 border-border bg-card px-4 py-3 md:flex">
+        <header className="hidden items-center gap-4 border-b-2 border-border bg-card px-4 py-3 md:flex print:hidden!">
           <Link to="/classes">
             <Wordmark />
           </Link>
@@ -75,11 +98,11 @@ function AuthedLayout() {
         </header>
 
         {/* Phones in the browser only; hidden in the installed app. */}
-        <InstallBanner className="md:hidden" />
+        <InstallBanner className="md:hidden print:hidden!" />
 
         <Outlet />
 
-        <BottomNav teacher={me.teacher} className="md:hidden" />
+        <BottomNav teacher={me.teacher} className="md:hidden print:hidden!" />
       </div>
     </CreateDialogsProvider>
   )

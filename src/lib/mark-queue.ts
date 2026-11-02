@@ -1,5 +1,5 @@
 import { MutationObserver } from '@tanstack/react-query'
-import type { QueryClient } from '@tanstack/react-query'
+import type { MutationKey, QueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { ApiError } from './api'
 import { meQueryOptions } from './auth'
@@ -58,18 +58,27 @@ export function registerMarkMutations(queryClient: QueryClient) {
 
 /** Adds a tap (or an Undo) to the queue. It's sent as soon as it can be. */
 export function enqueueMark(queryClient: QueryClient, mark: QueuedMark) {
+  enqueue(queryClient, [...MARK_MUTATION_KEY, mark.kind], mark)
+}
+
+/**
+ * Adds a change to a queue: a mutation whose functions come from
+ * setMutationDefaults for its key. Also used by lesson-plan-queue.ts.
+ */
+export function enqueue<T>(
+  queryClient: QueryClient,
+  mutationKey: MutationKey,
+  variables: T,
+) {
   const me = queryClient.getQueryData(meQueryOptions.queryKey)
-  const observer = new MutationObserver<unknown, unknown, QueuedMark>(
-    queryClient,
-    {
-      mutationKey: [...MARK_MUTATION_KEY, mark.kind],
-      // Whose it is, so a saved queue is only ever sent for the same teacher.
-      meta: { owner: me?.teacher.email },
-    },
-  )
+  const observer = new MutationObserver<unknown, unknown, T>(queryClient, {
+    mutationKey,
+    // Whose it is, so a saved queue is only ever sent for the same teacher.
+    meta: { owner: me?.teacher.email },
+  })
   void observer
-    .mutate(mark)
-    .catch(() => {}) // failures are handled in onMarkFailed
+    .mutate(variables)
+    .catch(() => {}) // failures are handled by each key's onError
     .finally(() => observer.reset()) // lets the finished mutation be cleared
 }
 
@@ -78,9 +87,17 @@ export function enqueueMark(queryClient: QueryClient, mark: QueuedMark) {
  * for a different teacher are dropped, never sent.
  */
 export function resumeMarkQueue(queryClient: QueryClient) {
+  resumeQueue(queryClient, MARK_MUTATION_KEY)
+}
+
+/** resumeMarkQueue for any queue, by its mutation key. */
+export function resumeQueue(
+  queryClient: QueryClient,
+  mutationKey: MutationKey,
+) {
   const restored = queryClient
     .getMutationCache()
-    .findAll({ mutationKey: MARK_MUTATION_KEY, status: 'pending' })
+    .findAll({ mutationKey, status: 'pending' })
   if (restored.length === 0) return
 
   const resume = (me: Me) => {
@@ -169,11 +186,11 @@ function sendUndo(mark: QueuedMark) {
 }
 
 /**
- * The session ended (the refresh failed too). Keep the mark queued instead
+ * The session ended (the refresh failed too). Keep the change queued instead
  * of failing it: the app goes to sign-in, and the saved queue is sent once
  * the same teacher is back.
  */
-async function waitIfSignedOut<T>(
+export async function waitIfSignedOut<T>(
   queryClient: QueryClient,
   send: () => Promise<T>,
 ): Promise<T> {
@@ -190,7 +207,7 @@ async function waitIfSignedOut<T>(
  * Network trouble and busy servers: keep trying until it gets through.
  * Answers that won't change (400, 403, 404, 409): give up and say so.
  */
-function shouldRetry(failureCount: number, error: unknown) {
+export function shouldRetry(failureCount: number, error: unknown) {
   if (!(error instanceof ApiError)) return true // offline, timeout, dropped
   const { status } = error
   if (status === 408 || status === 429 || status >= 502) return true
@@ -199,7 +216,7 @@ function shouldRetry(failureCount: number, error: unknown) {
 }
 
 /** What the server asked for (429), else 1s, 2s, 4s… up to a minute. */
-function retryDelay(failureCount: number, error: unknown) {
+export function retryDelay(failureCount: number, error: unknown) {
   if (error instanceof ApiError && error.retryAfterMs !== undefined) {
     return error.retryAfterMs
   }

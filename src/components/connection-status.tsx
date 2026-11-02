@@ -1,32 +1,25 @@
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
-import { useMutationState } from '@tanstack/react-query'
 import { RefreshCw, WifiOff } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { countUnsent } from '#/lib/mark-queue'
-import { MARK_MUTATION_KEY } from '#/lib/marks'
-import type { QueuedMark } from '#/lib/marks'
 import { useOnline } from '#/lib/online'
+import { describeUnsent, useUnsentChanges } from '#/hooks/useUnsentChanges'
 
 /**
  * In the top bar on wide screens, and on the top edge of the bottom bar on
- * phones (which have no top bar): "Offline" while there's no connection, with how many marks
- * are waiting to be sent, and "Syncing" while a backlog goes out. The page
+ * phones (which have no top bar): "Offline" while there's no connection, with
+ * how many marks and lesson plan checkmarks are waiting to be sent, and "Syncing" while a backlog goes out. The page
  * keeps showing what's saved; things that need the server say so where they
  * are.
  */
 export function ConnectionStatus() {
   const online = useOnline()
-  const unsent = countUnsent(
-    useMutationState({
-      filters: { mutationKey: MARK_MUTATION_KEY, status: 'pending' },
-      select: (mutation) => mutation.state.variables as QueuedMark,
-    }),
-  )
+  const changes = useUnsentChanges()
+  const unsent = changes.total
   // A tap online is sent in a moment; only show "Syncing" for a backlog.
   const syncing = useAfter(online && unsent > 0, 1500)
 
-  const marks = `${unsent} ${unsent === 1 ? 'mark' : 'marks'}`
+  const what = describeUnsent(changes)
   let content = null
   if (!online) {
     content = (
@@ -36,9 +29,7 @@ export function ConnectionStatus() {
         {unsent > 0 ? (
           <>
             <span aria-hidden>{unsent} to sync</span>
-            <span className="sr-only">
-              Offline. {marks} waiting to be sent.
-            </span>
+            <span className="sr-only">Offline. {what} waiting to be sent.</span>
           </>
         ) : (
           'Offline'
@@ -53,7 +44,7 @@ export function ConnectionStatus() {
           strokeWidth={2.5}
         />
         <span aria-hidden>Syncing {unsent}</span>
-        <span className="sr-only">Sending {marks}.</span>
+        <span className="sr-only">Sending {what}.</span>
       </Pill>
     )
   }

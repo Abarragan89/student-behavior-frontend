@@ -28,6 +28,7 @@ export function MarkDialog({
   title,
   description,
   studentId,
+  pageLinks = true,
   open,
   onOpenChange,
   onPick,
@@ -37,6 +38,11 @@ export function MarkDialog({
   description: string
   /** For one student: adds a link to their page. */
   studentId?: string
+  /**
+   * Links to other pages (the student's, Marks). Off in the lesson-plan
+   * presenter, which shouldn't be left mid-lesson.
+   */
+  pageLinks?: boolean
   open: boolean
   onOpenChange: (open: boolean) => void
   onPick: (markType: MarkType) => void
@@ -86,18 +92,21 @@ export function MarkDialog({
         <div className="flex flex-col items-center gap-3 py-4 text-center">
           <p className="text-sm text-muted-foreground">
             You don’t have any marks yet.
+            {!pageLinks && ' Add some on the Marks page after class.'}
           </p>
-          <Button
-            variant="outline"
-            nativeButton={false}
-            render={<Link to="/marks" />}
-            // Closed first, so it isn't left open behind the new page.
-            onClick={() => onOpenChange(false)}
-            className="h-11 rounded-lg border-2 border-border px-4 font-bold"
-          >
-            <Plus />
-            Add marks
-          </Button>
+          {pageLinks && (
+            <Button
+              variant="outline"
+              nativeButton={false}
+              render={<Link to="/marks" />}
+              // Closed first, so it isn't left open behind the new page.
+              onClick={() => onOpenChange(false)}
+              className="h-11 rounded-lg border-2 border-border px-4 font-bold"
+            >
+              <Plus />
+              Add marks
+            </Button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3">
@@ -120,7 +129,7 @@ export function MarkDialog({
 
       {/* Links sit below a divider and look like links, so a rushed tap
           lands on a mark, not here. "Edit marks" is the quieter one. */}
-      {(studentId || hasMarks) && (
+      {pageLinks && (studentId || hasMarks) && (
         <div className="mt-5 flex flex-wrap items-center justify-center gap-x-6 border-t border-foreground/10 pt-3">
           {studentId && (
             <Link

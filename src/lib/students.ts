@@ -75,6 +75,37 @@ export function studentMarksQueryOptions(studentId: string, date: string) {
   })
 }
 
+/** A student's + and − counts for each day of a range. */
+export type DailyCounts = {
+  timezone: string
+  from: string
+  to: string
+  // One per day from `from` to `to`, oldest first; days without marks are 0.
+  days: Array<{ date: string; positive: number; negative: number }>
+}
+
+/**
+ * The student's counts per local date, in all of the teacher's classes, for
+ * the printed report's recent-days chart. Not saved on the device (see
+ * SAVED_QUERIES in src/lib/persist.ts).
+ */
+export function studentDailyQueryOptions(
+  studentId: string,
+  from: string,
+  to: string,
+) {
+  return queryOptions({
+    queryKey: ['student-daily', studentId, from, to],
+    queryFn: () => {
+      const params = new URLSearchParams({ from, to, tz: timeZone() })
+      return apiGet<DailyCounts>(
+        `/students/${encodeURIComponent(studentId)}/marks/daily?${params}`,
+      )
+    },
+    retry: retryServerErrors,
+  })
+}
+
 /** Renames a student. The backend encrypts the new name before saving it. */
 export function updateStudentName(studentId: string, name: StudentName) {
   return apiPatch<StudentDetail>(

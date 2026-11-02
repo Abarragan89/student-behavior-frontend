@@ -14,6 +14,7 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 import type { Me } from '#/lib/auth'
+import { bottomTabClass } from '#/components/bottom-tab'
 import { SignOutDialog } from '#/components/sign-out-dialog'
 import { TeacherAvatar } from '#/components/teacher-avatar'
 import {
@@ -58,8 +59,7 @@ export function UserMenu({
                 // Includes the visible label, for voice control.
                 aria-label="Account menu"
                 data-active={active || undefined}
-                // The same look as the other bottom-bar tabs (BottomLink).
-                className="flex h-16 w-full flex-col items-center justify-center gap-1 text-xs font-bold text-muted-foreground outline-none focus-visible:ring-4 focus-visible:ring-ring focus-visible:ring-inset data-active:text-primary"
+                className={`${bottomTabClass} data-active:text-primary`}
               />
             }
           >

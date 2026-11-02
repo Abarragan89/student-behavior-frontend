@@ -40,6 +40,34 @@ export function formatLongDate(date: string) {
   })
 }
 
+/** "Friday, October 31, 2026": always with the year, for a printed record. */
+export function formatFullDate(date: string) {
+  return parseDate(date).toLocaleDateString(undefined, {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
+/** "Fri" and "10/31": a narrow, two-line label for a chart axis. */
+export function formatShortDay(date: string) {
+  const d = parseDate(date)
+  return {
+    weekday: d.toLocaleDateString(undefined, { weekday: 'short' }),
+    monthDay: d.toLocaleDateString(undefined, {
+      month: 'numeric',
+      day: 'numeric',
+    }),
+  }
+}
+
+/** Saturday or Sunday. */
+export function isWeekend(date: string) {
+  const day = parseDate(date).getDay()
+  return day === 0 || day === 6
+}
+
 /** How far into its day a moment falls on the wall clock, in minutes. */
 export function minutesIntoDay(when: string | Date, timeZone: string) {
   const parts = new Intl.DateTimeFormat('en-US', {

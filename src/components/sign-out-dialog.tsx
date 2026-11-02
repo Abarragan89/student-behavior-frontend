@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useMutationState } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
   AlertDialog,
@@ -14,9 +13,7 @@ import {
 import { Spinner } from '@/components/ui/spinner'
 import { cn } from '@/lib/utils'
 import { useLogout } from '#/lib/auth'
-import { countUnsent } from '#/lib/mark-queue'
-import { MARK_MUTATION_KEY } from '#/lib/marks'
-import type { QueuedMark } from '#/lib/marks'
+import { describeUnsent, useUnsentChanges } from '#/hooks/useUnsentChanges'
 
 /** Asks before signing out. Used by the avatar menu and the Account page. */
 export function SignOutDialog({
@@ -28,13 +25,10 @@ export function SignOutDialog({
 }) {
   const logout = useLogout()
   const [signingOut, setSigningOut] = useState(false)
-  // Marks given offline (or still on their way) are deleted by signing out.
-  const unsent = countUnsent(
-    useMutationState({
-      filters: { mutationKey: MARK_MUTATION_KEY, status: 'pending' },
-      select: (mutation) => mutation.state.variables as QueuedMark,
-    }),
-  )
+  // Marks and checkmarks made offline (or still on their way) are deleted by
+  // signing out.
+  const changes = useUnsentChanges()
+  const unsent = changes.total
 
   async function signOut() {
     setSigningOut(true)
@@ -61,7 +55,7 @@ export function SignOutDialog({
           <AlertDialogTitle className="font-bold">Sign out?</AlertDialogTitle>
           <AlertDialogDescription>
             {unsent > 0
-              ? `${unsent} ${unsent === 1 ? 'mark hasn’t' : 'marks haven’t'} been saved yet. Signing out now deletes ${unsent === 1 ? 'it' : 'them'}. To keep ${unsent === 1 ? 'it' : 'them'}, connect to the internet and wait a moment first.`
+              ? `${describeUnsent(changes)} ${unsent === 1 ? 'hasn’t' : 'haven’t'} been saved yet. Signing out now deletes ${unsent === 1 ? 'it' : 'them'}. To keep ${unsent === 1 ? 'it' : 'them'}, connect to the internet and wait a moment first.`
               : 'You’ll need to sign in with Google again to see your classes.'}
           </AlertDialogDescription>
         </AlertDialogHeader>
