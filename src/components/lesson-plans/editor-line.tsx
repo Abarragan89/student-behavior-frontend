@@ -5,8 +5,8 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { IndentDecrease, IndentIncrease, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { MAX_LINE_LENGTH, cachedSection } from '#/lib/lesson-plans'
-import type { PlanItem, PlanSection } from '#/lib/lesson-plans'
+import { MAX_INDENT, MAX_LINE_LENGTH, cachedSection } from '#/lib/lesson-plans'
+import type { Indent, PlanItem, PlanSection } from '#/lib/lesson-plans'
 import { runOp } from '#/lib/lesson-plan-queue'
 import { uuidv7 } from '#/lib/uuid'
 import { DragHandle } from '#/components/lesson-plans/drag-handle'
@@ -18,11 +18,19 @@ import {
   useFocusTarget,
 } from '#/components/lesson-plans/editor-text'
 
+// How each level looks: the checkbox's place and shape, and what a screen
+// reader calls the line.
+const LEVELS = {
+  0: { marker: 'size-4 rounded', label: 'Line' },
+  1: { marker: 'ml-6 size-3.5 rounded-full', label: 'Sub-step' },
+  2: { marker: 'ml-12 size-3 rounded-full', label: 'Sub-step of a sub-step' },
+} satisfies Record<Indent, { marker: string; label: string }>
+
 /**
  * One checklist line in edit mode. Keys work like a notes app: Enter starts
  * a new line (splitting this one at the cursor), Backspace at the start joins
- * it to the line above, Tab indents. Phones have no Tab, so the focused line
- * shows indent and delete buttons.
+ * it to the line above, Tab moves it in a level and Shift+Tab out. Phones
+ * have no Tab, so the focused line shows in, out and delete buttons.
  */
 export function EditorLine({
   item,
@@ -53,11 +61,20 @@ export function EditorLine({
     data: { type: 'item', sectionId: section.id },
   })
 
-  function setIndent(indent: 0 | 1) {
-    if (indent !== item.indent) {
+  /** In (+1) or out (-1) a level, from 0 up to MAX_INDENT. */
+  function move(by: 1 | -1) {
+    // The cache, not this render, so two quick Tabs go two levels.
+    const now =
+      cachedSection(queryClient, date, section.id)?.items.find(
+        (i) => i.id === item.id,
+      )?.indent ?? item.indent
+    const indent = Math.max(0, Math.min(now + by, MAX_INDENT)) as Indent
+    if (indent !== now) {
       runOp(queryClient, { kind: 'item-edit', date, id: item.id, indent })
     }
   }
+  const moveIn = () => move(1)
+  const moveOut = () => move(-1)
 
   function remove() {
     if (deleted.current) return
@@ -81,9 +98,9 @@ export function EditorLine({
 
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      // Enter on an empty sub-step makes it a main line, like most editors.
-      if (text === '' && item.indent === 1) {
-        setIndent(0)
+      // Enter on an empty sub-step moves it out a level, like most editors.
+      if (text === '' && item.indent > 0) {
+        moveOut()
         return
       }
       const before = text.slice(0, el.selectionStart)
@@ -108,10 +125,10 @@ export function EditorLine({
       el.selectionStart === 0 &&
       el.selectionEnd === 0
     ) {
-      // A sub-step first goes back to being a main line.
-      if (item.indent === 1) {
+      // A sub-step first moves out, a level at a time.
+      if (item.indent > 0) {
         e.preventDefault()
-        setIndent(0)
+        moveOut()
         return
       }
       const previous = at > 0 ? lines[at - 1] : undefined
@@ -141,7 +158,8 @@ export function EditorLine({
 
     if (e.key === 'Tab') {
       e.preventDefault()
-      setIndent(e.shiftKey ? 0 : 1)
+      if (e.shiftKey) moveOut()
+      else moveIn()
     }
   }
 
@@ -172,7 +190,7 @@ export function EditorLine({
         aria-hidden
         className={cn(
           'mt-3 shrink-0 border-2 border-border',
-          item.indent === 1 ? 'ml-6 size-3.5 rounded-full' : 'size-4 rounded',
+          LEVELS[item.indent].marker,
           item.done && 'bg-chart-5',
         )}
       />
@@ -181,7 +199,7 @@ export function EditorLine({
         rows={1}
         value={draft.text}
         maxLength={MAX_LINE_LENGTH}
-        aria-label={item.indent === 1 ? 'Sub-step' : 'Line'}
+        aria-label={LEVELS[item.indent].label}
         placeholder="Type here…"
         enterKeyHint="next"
         onChange={(e) => draft.change(e.target.value)}
@@ -204,21 +222,28 @@ export function EditorLine({
       />
       {focused && (
         <div className="flex shrink-0 items-center">
-          <button
-            type="button"
-            onPointerDown={keepFocus}
-            onClick={() => setIndent(item.indent === 1 ? 0 : 1)}
-            aria-label={
-              item.indent === 1 ? 'Make it a main line' : 'Make it a sub-step'
-            }
-            className="flex size-10 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
-          >
-            {item.indent === 1 ? (
+          {item.indent > 0 && (
+            <button
+              type="button"
+              onPointerDown={keepFocus}
+              onClick={moveOut}
+              aria-label="Move line out"
+              className="flex size-10 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
               <IndentDecrease className="size-5" />
-            ) : (
+            </button>
+          )}
+          {item.indent < MAX_INDENT && (
+            <button
+              type="button"
+              onPointerDown={keepFocus}
+              onClick={moveIn}
+              aria-label="Move line in"
+              className="flex size-10 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
               <IndentIncrease className="size-5" />
-            )}
-          </button>
+            </button>
+          )}
           <button
             type="button"
             onPointerDown={keepFocus}

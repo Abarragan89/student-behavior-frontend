@@ -320,14 +320,14 @@ function PlanOutline({ day }: { day: PlanDay }) {
                     key={i.id}
                     className={cn(
                       'flex items-start gap-2',
-                      i.indent === 1 && 'ml-7',
+                      { 0: '', 1: 'ml-7', 2: 'ml-14' }[i.indent],
                     )}
                   >
                     <span
                       aria-hidden
                       className={cn(
                         'mt-1 flex size-4 shrink-0 items-center justify-center border-2 border-border',
-                        i.indent === 1 ? 'rounded-full' : 'rounded',
+                        i.indent > 0 ? 'rounded-full' : 'rounded',
                         i.done && 'bg-chart-5',
                       )}
                     >

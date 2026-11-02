@@ -242,7 +242,7 @@ function PresenterRow({
   item: PlanItem
   onCheck: () => void
 }) {
-  const sub = item.indent === 1
+  const sub = item.indent > 0
   return (
     <button
       type="button"
@@ -251,7 +251,7 @@ function PresenterRow({
       onClick={onCheck}
       className={cn(
         'flex min-h-14 w-full items-start gap-3 py-2.5 pr-4 text-left outline-none select-none hover:bg-muted/50 focus-visible:ring-4 focus-visible:ring-ring focus-visible:ring-inset active:bg-muted',
-        sub ? 'pl-14' : 'pl-4',
+        { 0: 'pl-4', 1: 'pl-14', 2: 'pl-24' }[item.indent],
       )}
     >
       <span

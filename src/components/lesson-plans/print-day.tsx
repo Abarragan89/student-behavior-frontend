@@ -71,16 +71,12 @@ export function PrintDay({
                   {lines.map((i) => (
                     <li
                       key={i.id}
-                      className={
-                        i.indent === 1
-                          ? 'ml-8 flex items-start gap-2'
-                          : 'flex items-start gap-2'
-                      }
+                      className={`flex items-start gap-2 ${{ 0: '', 1: 'ml-8', 2: 'ml-16' }[i.indent]}`}
                     >
                       <span
                         aria-hidden
                         className={
-                          i.indent === 1
+                          i.indent > 0
                             ? 'mt-1 size-3.5 shrink-0 rounded-full border-[1.5px] border-black'
                             : 'mt-0.5 size-4 shrink-0 border-[1.5px] border-black'
                         }

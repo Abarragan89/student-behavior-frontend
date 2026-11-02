@@ -17,10 +17,14 @@ export type PlanItem = {
   id: string
   section_id: string
   text: string
-  /** 1 is a sub-step of the line above. */
-  indent: 0 | 1
+  /** 1 is a sub-step of the line above; 2 is a sub-step of that sub-step. */
+  indent: Indent
   done: boolean
 }
+
+/** How far in a line sits: 0 is a main line. */
+export type Indent = 0 | 1 | 2
+export const MAX_INDENT = 2
 
 export type PlanSection = {
   id: string
@@ -78,7 +82,7 @@ export type Op =
       sectionId: string
       id: string
       text: string
-      indent: 0 | 1
+      indent: Indent
       position: number
     }
   | {
@@ -86,7 +90,7 @@ export type Op =
       date: string
       id: string
       text?: string
-      indent?: 0 | 1
+      indent?: Indent
     }
   | { kind: 'item-delete'; date: string; id: string }
   | {
