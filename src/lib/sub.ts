@@ -11,6 +11,7 @@ import type { Student } from './auth'
 import { applyOp } from './lesson-plans'
 import type { Op, PlanDay, PlanItem } from './lesson-plans'
 import type { MarkSource } from './mark-source'
+import { LIVE_REFRESH_MS, SHARED_STALE_MS } from './freshness'
 import { enqueue, retryDelay, shouldRetry } from './mark-queue'
 import { withQueuedMarks } from './marks'
 import type { MarkBatch, MarkCounts, MarkType, QueuedMark } from './marks'
@@ -183,7 +184,7 @@ export const subDayQueryOptions = queryOptions({
       throw error
     }
   },
-  staleTime: 60_000,
+  staleTime: SHARED_STALE_MS,
   retry: retryUnlessRefused,
 })
 
@@ -228,7 +229,7 @@ export function subCountsQueryOptions(classroomId: string) {
     },
     // Like the teacher's: every tap edits it, and it's fetched again once
     // the queue is empty.
-    staleTime: 5 * 60_000,
+    staleTime: SHARED_STALE_MS,
     retry: retryUnlessRefused,
   })
 }
@@ -243,7 +244,12 @@ export function subMarkSource(planDate: string): MarkSource {
     dayOf: () => planDate,
     countsKey: (classroomId) => subCountsQueryOptions(classroomId).queryKey,
     useCounts: (classroomId, enabled = true) =>
-      useQuery({ ...subCountsQueryOptions(classroomId), enabled }),
+      useQuery({
+        ...subCountsQueryOptions(classroomId),
+        enabled,
+        // Marks the teacher (or anyone else) gives meanwhile.
+        refetchInterval: LIVE_REFRESH_MS,
+      }),
     useMarkTypes: () => useQuery(subMarkTypesQueryOptions),
     enqueue: (queryClient, mark) =>
       enqueue(queryClient, [...SUB_MARK_KEY, mark.kind], mark),

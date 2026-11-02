@@ -6,6 +6,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { cn } from '@/lib/utils'
 import { formatShortDate } from '#/lib/calendar'
 import { isDateString, useToday } from '#/lib/day'
+import { LIVE_REFRESH_MS } from '#/lib/freshness'
 import { lessonPlanDayQueryOptions } from '#/lib/lesson-plans'
 import type { PlanDay, PlanItem } from '#/lib/lesson-plans'
 import { flushDrafts, runOp } from '#/lib/lesson-plan-queue'
@@ -37,6 +38,9 @@ function PresentPage() {
   const day = useQuery({
     ...lessonPlanDayQueryOptions(date),
     enabled: isDateString(date),
+    // Lines checked off on another device (or by a sub) while teaching. Not
+    // in the planner, where it would only get in the way of typing.
+    refetchInterval: LIVE_REFRESH_MS,
   })
 
   if (day.data) {

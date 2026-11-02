@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { cn } from '@/lib/utils'
 import { ApiError } from '#/lib/api'
+import { LIVE_REFRESH_MS } from '#/lib/freshness'
 import { formatLongDate } from '#/lib/day'
 import { useOnline } from '#/lib/online'
 import {
@@ -101,7 +102,11 @@ function SubSessionPage() {
 /** The day: the plan, checkmarks through the link, and the classes. */
 function SubPresenter({ session }: { session: SubSession }) {
   const queryClient = useQueryClient()
-  const day = useQuery(subDayQueryOptions)
+  // Checkmarks made meanwhile by the teacher (or on another device).
+  const day = useQuery({
+    ...subDayQueryOptions,
+    refetchInterval: LIVE_REFRESH_MS,
+  })
   const classrooms = session.classrooms ?? []
   usePrefetchClasses(classrooms)
   useLeaveWarning()

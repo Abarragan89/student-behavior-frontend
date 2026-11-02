@@ -7,6 +7,7 @@ import {
 import type { QueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { ApiError, apiFetch } from './api'
+import { SHARED_STALE_MS } from './freshness'
 import { clearPersistedCache } from './persist'
 
 export type Role = 'teacher' | 'admin'
@@ -62,7 +63,8 @@ export const meQueryOptions = queryOptions({
     if (!res.ok) throw new ApiError(res.status)
     return res.json()
   },
-  staleTime: 5 * 60 * 1000,
+  // Classes and rosters change on the teacher's other devices too.
+  staleTime: SHARED_STALE_MS,
 })
 
 // data: Me = logged in, null = logged out, undefined = still checking.

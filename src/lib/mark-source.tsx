@@ -6,6 +6,7 @@ import type {
   UseQueryResult,
 } from '@tanstack/react-query'
 import { useToday } from './day'
+import { LIVE_REFRESH_MS } from './freshness'
 import { enqueueMark } from './mark-queue'
 import {
   localDate,
@@ -45,7 +46,12 @@ const teacherSource: MarkSource = {
     markCountsQueryOptions(classroomId, date).queryKey,
   useCounts: (classroomId, enabled = true) => {
     const date = useToday()
-    return useQuery({ ...markCountsQueryOptions(classroomId, date), enabled })
+    return useQuery({
+      ...markCountsQueryOptions(classroomId, date),
+      enabled,
+      // Marks given on the teacher's other devices (or by a sub).
+      refetchInterval: LIVE_REFRESH_MS,
+    })
   },
   useMarkTypes: () => useQuery(markTypesQueryOptions),
   enqueue: enqueueMark,

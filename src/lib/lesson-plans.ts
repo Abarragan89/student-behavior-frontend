@@ -2,6 +2,7 @@ import { queryOptions } from '@tanstack/react-query'
 import type { QueryClient } from '@tanstack/react-query'
 import { ApiError, apiDelete, apiGet, apiPatch, apiPost, apiPut } from './api'
 import { monthGrid } from './calendar'
+import { SHARED_STALE_MS } from './freshness'
 
 // Lesson plans: for each date, an ordered list of sections ("Period 3 —
 // Fractions", "Lunch duty"), each with checklist lines. A date has a plan when
@@ -257,8 +258,9 @@ export function lessonPlanDayQueryOptions(date: string) {
     queryFn: async ({ client }) =>
       withPendingOps(client, await apiGet<PlanDay>(`/lesson-plans/${date}`)),
     // Every change here edits this cache directly. Refetched when old, for
-    // changes made on another device.
-    staleTime: 60 * 1000,
+    // changes made on another device; changes not sent yet are put back on
+    // top (withPendingOps).
+    staleTime: SHARED_STALE_MS,
   })
 }
 
@@ -288,7 +290,7 @@ export function lessonPlanCalendarQueryOptions(month: string) {
       })
       return apiGet<Array<DaySummary>>(`/lesson-plans?${params}`)
     },
-    staleTime: 60 * 1000,
+    staleTime: SHARED_STALE_MS,
   })
 }
 

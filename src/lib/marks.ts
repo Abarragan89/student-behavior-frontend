@@ -1,6 +1,7 @@
 import { queryOptions } from '@tanstack/react-query'
 import type { MutationKey, QueryClient, QueryKey } from '@tanstack/react-query'
 import { ApiError, apiDelete, apiGet, apiPatch, apiPost } from './api'
+import { SHARED_STALE_MS } from './freshness'
 
 // Behavior marks. A mark type is one of the teacher's buttons ("Helping
 // others", "Off task"); a mark is one tap of it for one student. Every teacher
@@ -62,7 +63,7 @@ export function localDate(d: Date = new Date()) {
 export const markTypesQueryOptions = queryOptions({
   queryKey: ['mark-types'],
   queryFn: () => apiGet<Array<MarkType>>('/mark-types'),
-  staleTime: 5 * 60 * 1000,
+  staleTime: SHARED_STALE_MS,
 })
 
 // The backend's limit for a mark type's name, counted in characters. Names
@@ -137,10 +138,12 @@ export function markCountsQueryOptions(classroomId: string, date: string) {
         counts,
       )
     },
-    // Every tap and undo here edits this cache directly, so it stays right
-    // without refetching. Refetched only when old (another device, a new day)
-    // and once the offline queue has been sent.
-    staleTime: 5 * 60 * 1000,
+    // Every tap and undo here edits this cache directly, so this device's own
+    // marks show at once. Fetched again for marks given on another device
+    // (on return to the app, and every so often on screen; see
+    // freshness.ts), for a new day, and once the offline queue has been sent.
+    // Taps not sent yet are added back on top (withQueuedMarks).
+    staleTime: SHARED_STALE_MS,
     // A missing or failing route just means no badges; don't keep retrying.
     retry: (failureCount, error) =>
       !(error instanceof ApiError && error.status < 500) && failureCount < 1,

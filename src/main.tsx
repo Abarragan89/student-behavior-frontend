@@ -89,8 +89,15 @@ async function boot() {
       restoreQueryCache(queryClient),
       queueRestored,
     ])
-    // Checkmarks still queued go on the saved days, which can be a tap behind.
-    void restored.then(() => reapplyPendingOps(queryClient))
+    void restored.then(() => {
+      // Checkmarks still queued go on the saved days, which can be a tap
+      // behind.
+      reapplyPendingOps(queryClient)
+      // The saved copy shows at once, but may be days old, or older than
+      // changes made on another device: ask the server again (in the
+      // background, and only once online).
+      void queryClient.invalidateQueries()
+    })
     await Promise.race([restored, wait(2000)])
     // Ask the browser not to clear it to free up space.
     if ('persist' in navigator.storage) {
