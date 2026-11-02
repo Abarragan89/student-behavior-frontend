@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { CirclePlus, Plus, School, UserPlus } from 'lucide-react'
+import { CalendarClock, CirclePlus, Plus, School, UserPlus } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { useNavigate } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import {
   Popover,
@@ -23,6 +24,7 @@ export function CreateMenu({
 }) {
   const [open, setOpen] = useState(false)
   const { openAddStudents, openCreateClass } = useCreateDialogs()
+  const navigate = useNavigate()
   const inBar = placement === 'bottom-bar'
 
   const items: Array<{
@@ -36,6 +38,12 @@ export function CreateMenu({
       onSelect: () => openAddStudents(),
     },
     { label: 'Create class', icon: School, onSelect: openCreateClass },
+    {
+      label: 'Conference sign-ups',
+      icon: CalendarClock,
+      onSelect: () =>
+        void navigate({ to: '/conferences', search: { new: true } }),
+    },
   ]
 
   return (

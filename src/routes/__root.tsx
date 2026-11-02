@@ -25,11 +25,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   },
 )
 
+/** Pages opened from a link by someone without an account. */
+const LINK_PAGES = new Set(['/sub', '/conference'])
+
 function RootComponent() {
-  // A substitute's link (/sub) is a one-day visit: no "new version" offers,
-  // and the app isn't downloaded for offline use.
-  const isSub = useRouterState({
-    select: (s) => s.location.pathname === '/sub',
+  // A substitute's link (/sub) and a family's conference page (/conference)
+  // are visits, not the app: no "new version" offers, and the app isn't
+  // downloaded for offline use.
+  const isLinkPage = useRouterState({
+    select: (s) => LINK_PAGES.has(s.location.pathname),
   })
   return (
     <ThemeProvider>
@@ -37,7 +41,7 @@ function RootComponent() {
       {/* For toast() anywhere in the app. Top center stays clear of the
           devtools button and is easy to spot on phones. */}
       <Toaster position="top-center" />
-      {!isSub && <PwaUpdater />}
+      {!isLinkPage && <PwaUpdater />}
       {/* <TanStackDevtools
         config={{
           position: 'bottom-right',

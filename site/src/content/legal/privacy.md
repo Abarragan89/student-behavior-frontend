@@ -6,7 +6,7 @@ updated: 2026-11-02
 
 ## Who we are
 
-TeachForFree (teachforfree.com) is a free web app for K–12 teachers. You can tap a student to give a positive or negative behavior mark, keep short lesson notes, share a day with a substitute through a link, and, if you want, import class rosters from Google Classroom.
+TeachForFree (teachforfree.com) is a free web app for K–12 teachers. You can tap a student to give a positive or negative behavior mark, keep short lesson notes, share a day with a substitute through a link, schedule parent conferences, and, if you want, import class rosters from Google Classroom.
 
 TeachForFree is a personal project made and run by Anthony Barragan, an independent developer in Ventura, California. It isn't a company. When this policy says "we" or "us," it means Anthony.
 
@@ -20,6 +20,7 @@ This policy covers the TeachForFree website, the installed app (the version you 
 - There are no analytics tools, ad trackers, or third-party tracking scripts.
 - Student names and lesson plan text are encrypted in our database.
 - Marks have no free-text notes. A mark records only which student, which class, which kind of mark, and when.
+- Families can change their parent conference time with a code on a printed notice. Other families never see which student has which time, and we don't collect anything about parents.
 - Google Classroom is optional. We only read your classes and rosters, and only when you ask. We never store student email addresses.
 - You can delete marks, students, and classes yourself, and you can ask us to delete your whole account at any time.
 
@@ -58,6 +59,10 @@ The sections and lines you write for each day, any start and end times you add, 
 
 When you share a day with a substitute, we store the date, your time zone (so we know when that day starts and ends), the classes you picked, when you made the link, when it was last opened, and whether you turned it off. See [Substitute links](#substitute-links) below.
 
+### Parent conferences
+
+When you set up parent conferences, we store the conference's name, the name you sign notices with, the location you type, your time zone, the classes you picked, the conference times, which student has which time, when you printed each student's notice, and each change a family makes (which student, from which time, to which time, and when). We don't collect anything about parents: no names, email addresses, or phone numbers. See [Conference sign-ups](#conference-sign-ups) below.
+
 ### Google Classroom (optional)
 
 See [Google user data](#google-user-data) below.
@@ -66,7 +71,7 @@ See [Google user data](#google-user-data) below.
 
 - **Sign-in cookies.** See [Cookies](#cookies).
 - **Your time zone,** which the app sends so marks are counted on the right days.
-- **IP addresses.** To stop abuse, our server keeps short-lived counters of how many requests come in. Sign-in pages and substitute links are counted by IP address. Everything else is counted by account. The counters delete themselves once they're no longer needed: within about a minute for IP addresses, and within an hour at most for accounts. If a request is refused for going over a limit, our server log records the IP address or account it came from.
+- **IP addresses.** To stop abuse, our server keeps short-lived counters of how many requests come in. Sign-in pages, substitute links, and conference codes are counted by IP address. Everything else is counted by account. The counters delete themselves once they're no longer needed: within about a minute for IP addresses, and within an hour at most for accounts. If a request is refused for going over a limit, our server log records the IP address or account it came from.
 - **Server logs.** Our server logs events like sign-ins, sign-outs, and errors, along with your account's internal ID. We don't write student names or lesson plan text to our logs.
 - **Our providers.** Like any website, Cloudflare and our hosting provider handle IP addresses and basic request details (such as browser type) to deliver and protect the site.
 
@@ -166,6 +171,18 @@ The link doesn't show other days, past marks, or student charts. Marks given thr
 
 The link's secret key comes after the "#" in the web address. Browsers don't send that part of an address to servers, and the app moves the key out of the address bar as soon as the page opens. We look links up by a scrambled (hashed) copy of the key. We also keep an encrypted copy so the teacher can copy the same link again, and we erase it within an hour after the day ends.
 
+## Conference sign-ups
+
+A teacher can schedule parent conferences and print a notice for each student's family, in English and Spanish, with the student's conference time and a QR code. The family doesn't need an account. Anyone who has a student's code can:
+
+- see the student's first name, the name the teacher signs notices with, the location, and the student's conference time
+- see the conference's other times as open or unavailable, but never who has them
+- move the student to an open time, if the teacher allows changes online, until 24 hours before the conference
+
+A code works for one student only, and a student has one time, so a code can hold only one time. The page updates live while it's open, so families see right away when a time is taken. The teacher sees every change a family makes, can turn online changes off, and can replace a student's code at any time. The old code stops working right away.
+
+The code's secret key comes after the "#" in the web address, like a substitute link's, and the app moves it out of the address bar as soon as the page opens. We look codes up by a scrambled (hashed) copy of the key. We also keep an encrypted copy so the teacher can print the same notice again, and we erase it within an hour after the conference's last time. Conferences are deleted 30 days after their last time.
+
 ## What's stored on your device
 
 This depends on how you use TeachForFree.
@@ -199,6 +216,10 @@ Marks and checkmarks you give while offline wait in a queue until they can be se
 
 The link's key moves into that browser tab's session storage, which the browser clears when the tab is closed. Nothing else is saved on the substitute's device, even in the installed app.
 
+### For families
+
+A conference code's key, and whether the family chose English or Spanish, move into that browser tab's session storage, which the browser clears when the tab is closed. Nothing else is saved on the family's device, and the app's offline files aren't installed for them.
+
 ### The app's own files
 
 Like most installable web apps, TeachForFree uses a service worker to keep a copy of the app's code, styles, fonts, and logo, so it loads quickly and works offline. It never stores student information or answers from our server. Our fonts come from TeachForFree itself, not from Google Fonts or any other font service.
@@ -228,6 +249,7 @@ We share information only with service providers that help us run TeachForFree. 
 We may also share information:
 
 - **With the substitute you choose.** Whoever has a substitute link sees what that link opens (see [Substitute links](#substitute-links)).
+- **With the families you give notices to.** Whoever has a conference notice's code sees what that code opens (see [Conference sign-ups](#conference-sign-ups)).
 - **When the law requires it,** such as a valid subpoena or court order. Where we're allowed to, we'll tell the teacher, and the school for student information, first.
 - **To protect people,** if we believe it's needed to prevent serious harm, or to protect TeachForFree from fraud or abuse.
 - **If TeachForFree changes hands.** Anyone who takes over TeachForFree must keep the promises in this policy for information we already have. If they won't, we'll tell you ahead of time so you can delete your data first.
@@ -237,19 +259,19 @@ We never sell or rent personal information, and we never share it with advertise
 ## Security
 
 - Connections to TeachForFree use HTTPS.
-- Student names, lesson plan text, Google Classroom access keys, and the copies of substitute links are encrypted in our database with AES-256-GCM. The encryption keys are kept separate from the database, so a copy of the database on its own doesn't reveal them. Our server holds the keys so it can show your information to you.
-- Google student IDs are stored only as a keyed hash. Sign-in tokens are stored only as hashes, and substitute links are looked up by a hash of their key.
+- Student names, lesson plan text, Google Classroom access keys, and the copies of substitute links and conference codes are encrypted in our database with AES-256-GCM. The encryption keys are kept separate from the database, so a copy of the database on its own doesn't reveal them. Our server holds the keys so it can show your information to you.
+- Google student IDs are stored only as a keyed hash. Sign-in tokens are stored only as hashes, and substitute links and conference codes are looked up by a hash of their key.
 - Each teacher's information is kept separate. The database itself refuses to mix one teacher's students, classes, or marks with another's.
 - Our server tells browsers and proxies not to cache its answers, so student names don't end up in a shared computer's browser cache.
 - Sessions are short and limited, and request limits slow down anyone trying to guess or flood.
 
 No system is perfectly secure. If we learn of a breach that affects your information, we'll tell you promptly, as the law requires. If student information is involved, we'll tell the school too.
 
-You can help: turn on 2-step verification for your Google account, sign out on shared computers, and share a substitute link only with the substitute.
+You can help: turn on 2-step verification for your Google account, sign out on shared computers, share a substitute link only with the substitute, and send conference notices home with each family.
 
 ## Keeping and deleting data
 
-We keep your account and everything you've added until you delete it or ask us to.
+We keep your account and everything you've added until you delete it or ask us to. Parent conferences are the exception: they're deleted automatically (see [Automatic cleanup](#automatic-cleanup)).
 
 ### Deleting things yourself
 
@@ -258,17 +280,20 @@ We keep your account and everything you've added until you delete it or ask us t
 - **A class:** archive it first, then delete it. Deleting a class removes all of its marks, plus any of its students who aren't in another of your classes.
 - **Lesson plan sections and lines** are deleted when you delete them.
 - **A substitute link** can be turned off at any time, and it stops working right away. We keep the record of the link (its date and classes) so marks given through it stay labeled as the substitute's.
+- **A parent conference** can be deleted with all its times, codes, and families' changes, and its codes stop working right away. A single time can be removed, and a student's code replaced, at any time.
 - **Google Classroom** can be disconnected at any time (see [Disconnecting](#disconnecting)).
 
 ### Automatic cleanup
 
 - Expired sign-in sessions are deleted every hour.
 - The encrypted copy of a substitute link is erased within an hour after its day ends.
+- The encrypted copies of a conference's codes are erased within an hour after its last time.
+- Parent conferences are deleted 30 days after their last time, with every time, code, and family change in them. A conference that never gets a time is deleted after 90 days.
 - Rate-limit counters delete themselves within an hour at most.
 
 ### Deleting your account
 
-There isn't a delete button yet. Email [a.barragan.89@gmail.com](mailto:a.barragan.89@gmail.com) from the address you sign in with, and we'll delete your account and everything in it: classes, students, marks, mark types, lesson plans, substitute links, and your Google Classroom connection. We'll let you know when it's done.
+There isn't a delete button yet. Email [a.barragan.89@gmail.com](mailto:a.barragan.89@gmail.com) from the address you sign in with, and we'll delete your account and everything in it: classes, students, marks, mark types, lesson plans, substitute links, parent conferences, and your Google Classroom connection. We'll let you know when it's done.
 
 ### No backups
 

@@ -1,6 +1,14 @@
 import { useState } from 'react'
 import { Link, useMatchRoute } from '@tanstack/react-router'
-import { Download, LogOut, Moon, Sun, Tags, UserRound } from 'lucide-react'
+import {
+  CalendarClock,
+  Download,
+  LogOut,
+  Moon,
+  Sun,
+  Tags,
+  UserRound,
+} from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { Button } from '@/components/ui/button'
 import {
@@ -25,8 +33,8 @@ import {
 /**
  * The teacher's avatar: in the top bar on wide screens, and as the last tab
  * of the phone bottom bar (placement="bottom-bar", opens upward). Opens their
- * name, Account, Edit marks, Download the app (website only), Dark/Light
- * mode, and Sign out.
+ * name, Account, Edit marks, Parent conferences, Download the app (website
+ * only), Dark/Light mode, and Sign out.
  */
 export function UserMenu({
   teacher,
@@ -46,7 +54,12 @@ export function UserMenu({
   // Classes is on /classes.
   const matchRoute = useMatchRoute()
   const active =
-    inBar && !!(matchRoute({ to: '/account' }) || matchRoute({ to: '/marks' }))
+    inBar &&
+    !!(
+      matchRoute({ to: '/account' }) ||
+      matchRoute({ to: '/marks' }) ||
+      matchRoute({ to: '/conferences', fuzzy: true })
+    )
 
   return (
     <>
@@ -128,6 +141,16 @@ export function UserMenu({
             >
               <Tags />
               Edit marks
+            </Button>
+            <Button
+              variant="ghost"
+              nativeButton={false}
+              render={<Link to="/conferences" />}
+              onClick={() => setOpen(false)}
+              className="h-10 justify-start rounded-lg font-bold"
+            >
+              <CalendarClock />
+              Parent conferences
             </Button>
             {install.visible && (
               <Button

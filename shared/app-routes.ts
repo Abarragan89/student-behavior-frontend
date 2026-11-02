@@ -20,6 +20,8 @@ export const APP_ROUTES = [
   'students',
   'login',
   'sub',
+  'conferences',
+  'conference',
 ] as const
 
 /** Matches an app URL. Workbox tests path + query string, hence the `?`. */

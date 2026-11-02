@@ -268,4 +268,14 @@ body {
   [data-slot='alert-dialog-content'] {
     display: none !important;
   }
+  /* Conference notices (src/components/conferences/print-notices.tsx): one
+     page per student. The old name is for older Safari. */
+  .notice-page {
+    break-after: page;
+    page-break-after: always;
+  }
+  .notice-page:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
 }

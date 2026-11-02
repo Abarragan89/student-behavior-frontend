@@ -1,0 +1,137 @@
+import { useEffect } from 'react'
+import {
+  capitalize,
+  formatFullDay,
+  formatRange,
+  noticeStrings,
+} from '#/lib/conference-i18n'
+import type { Lang } from '#/lib/conference-i18n'
+import { CUTOFF_HOURS, fullName } from '#/lib/conferences'
+import type { Conference, ConferenceNotice } from '#/lib/conferences'
+import { QrSvg } from '#/components/qr-svg'
+
+/**
+ * The notices on paper, one page per student: English on the top half,
+ * Spanish on the bottom, each complete with its own QR code, so a family can
+ * keep just their half. On the page only while printing (`print:block`).
+ * Dark ink on white, borders instead of fills, so it prints the same on any
+ * printer and with "background graphics" off.
+ *
+ * Sizes are in millimeters and points, for paper. A page is 250mm tall,
+ * which fits both Letter (255mm) and A4 (273mm) inside the 12mm margins in
+ * styles.css.
+ */
+export function PrintNotices({
+  conference,
+  notices,
+}: {
+  conference: Conference
+  notices: Array<ConferenceNotice> | null
+}) {
+  // The saved PDF is named after the page title.
+  const title = `Conference notices – ${conference.title}`
+  useEffect(() => {
+    let saved: string | null = null
+    const before = () => {
+      saved ??= document.title
+      document.title = title
+    }
+    const after = () => {
+      if (saved !== null) document.title = saved
+      saved = null
+    }
+    window.addEventListener('beforeprint', before)
+    window.addEventListener('afterprint', after)
+    return () => {
+      window.removeEventListener('beforeprint', before)
+      window.removeEventListener('afterprint', after)
+      after()
+    }
+  }, [title])
+
+  if (!notices) return null
+  return (
+    <div className="hidden bg-white text-black print:block">
+      {notices.map((n) => (
+        <section
+          key={n.student_id}
+          className="notice-page flex h-[250mm] flex-col overflow-hidden"
+        >
+          <NoticeHalf lang="en" notice={n} conference={conference} />
+          <div
+            aria-hidden
+            className="my-[4mm] border-t-[1.5px] border-dashed border-black/60"
+          />
+          <NoticeHalf lang="es" notice={n} conference={conference} />
+        </section>
+      ))}
+    </div>
+  )
+}
+
+function NoticeHalf({
+  lang,
+  notice,
+  conference,
+}: {
+  lang: Lang
+  notice: ConferenceNotice
+  conference: Conference
+}) {
+  const s = noticeStrings[lang]
+  const tz = conference.timezone
+  const teacher = conference.notice_name
+  const canChange = conference.parent_changes
+  const url = lang === 'es' ? notice.url_es : notice.url
+
+  return (
+    <article
+      lang={lang}
+      className="grid h-[120mm] grid-cols-[1fr_50mm] gap-[6mm] overflow-hidden"
+    >
+      <div className="flex min-w-0 flex-col gap-[3mm]">
+        <header>
+          <h2 className="text-[20pt] leading-tight font-bold">{s.heading}</h2>
+          <p className="line-clamp-2 text-[12pt]">
+            {s.forFamily(fullName(notice))}
+          </p>
+        </header>
+        <div className="rounded-[2mm] border-2 border-black px-[4mm] py-[3mm]">
+          <p className="text-[10pt] font-bold tracking-wide uppercase">
+            {s.yourConference}
+          </p>
+          <p className="text-[15pt] font-bold">
+            {capitalize(formatFullDay(notice.starts_at, tz, lang))}
+          </p>
+          <p className="text-[26pt] leading-tight font-bold">
+            {formatRange(notice.starts_at, notice.ends_at, tz, lang)}
+          </p>
+          <p className="line-clamp-2 text-[12pt]">
+            {s.withTeacher(teacher, conference.location)}
+          </p>
+        </div>
+        <p className="text-[12pt] leading-snug">
+          {canChange ? s.canChange(CUTOFF_HOURS) : s.cannotChange}
+        </p>
+        <p className="mt-auto text-[12pt] italic">{s.thanks(teacher)}</p>
+      </div>
+
+      <div className="flex flex-col items-center gap-[2mm] pt-[2mm] text-center">
+        {/* The white border is the quiet zone phones need around the code. */}
+        <div className="border border-black bg-white p-[3mm]">
+          <QrSvg
+            value={url}
+            label={canChange ? s.scanChange : s.scanSee}
+            className="size-[42mm]"
+          />
+        </div>
+        <p className="text-[11pt] leading-tight font-bold">
+          {canChange ? s.scanChange : s.scanSee}
+        </p>
+        <p className="text-[9.5pt] leading-tight">
+          {s.private(notice.first_name)}
+        </p>
+      </div>
+    </article>
+  )
+}

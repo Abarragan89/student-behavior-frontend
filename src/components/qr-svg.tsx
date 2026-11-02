@@ -18,12 +18,21 @@ export function QrSvg({
 }) {
   const { size, path } = useMemo(() => {
     const qr = encode(value, { ecc: 'M', border: 0 })
+    // One rectangle per run of dark modules in a row, not one per module:
+    // a page of notices has dozens of codes.
     let d = ''
-    qr.data.forEach((row, y) =>
-      row.forEach((dark, x) => {
-        if (dark) d += `M${x} ${y}h1v1h-1z`
-      }),
-    )
+    qr.data.forEach((row, y) => {
+      let x = 0
+      while (x < row.length) {
+        if (!row[x]) {
+          x++
+          continue
+        }
+        const start = x
+        while (x < row.length && row[x]) x++
+        d += `M${start} ${y}h${x - start}v1h-${x - start}z`
+      }
+    })
     return { size: qr.size, path: d }
   }, [value])
 
