@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import type { ReactNode } from 'react'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { ArrowLeft, CircleAlert, NotebookText, Users } from 'lucide-react'
 import { Spinner } from '@/components/ui/spinner'
@@ -17,6 +18,7 @@ import { ClassHeader } from '#/components/class-header'
 import { ClassRoster } from '#/components/class-roster'
 import { ConnectionStatus } from '#/components/connection-status'
 import { MarkRing } from '#/components/student-card'
+import type { Today } from '#/components/student-card'
 import { SwitchClassDialog } from '#/components/switch-class-dialog'
 import { useClassToday } from '#/hooks/useClassToday'
 import { useClassroomSwitch } from '#/hooks/useClassroomSwitch'
@@ -45,7 +47,7 @@ export const PresenterClass = memo(function PresenterClass({
   const { data: me } = useSuspenseQuery(meQueryOptions)
   if (!me) return null
   return (
-    <ClassLayer
+    <TeacherClass
       me={me}
       open={open}
       onOpenChange={onOpenChange}
@@ -54,7 +56,7 @@ export const PresenterClass = memo(function PresenterClass({
   )
 })
 
-function ClassLayer({
+function TeacherClass({
   me,
   open,
   onOpenChange,
@@ -72,9 +74,103 @@ function ClassLayer({
   const shownName =
     me.classrooms.find((c) => c.id === shownId)?.name ?? classroom.name
   const today = useClassToday(classroom.id, !isLoading)
-
-  const layerId = useId()
   const headingId = useId()
+
+  return (
+    <ClassLayerShell
+      open={open}
+      onOpenChange={onOpenChange}
+      isToday={isToday}
+      today={today}
+      busy={isLoading}
+      headingId={headingId}
+    >
+      <ClassHeader
+        classroom={classroom}
+        name={shownName}
+        loading={isLoading}
+        onSwitch={() => setSwitchOpen(true)}
+        headingLevel="h2"
+        headingId={headingId}
+      />
+
+      {/* Red icon, black text: small red text on white is hard to read. */}
+      {error && (
+        <p role="alert" className="flex items-center gap-2 text-sm font-medium">
+          <CircleAlert className="size-5 shrink-0 text-destructive" />
+          {error}
+        </p>
+      )}
+
+      {isLoading ? (
+        <OpeningClass name={shownName} />
+      ) : classroom.students.length > 0 ? (
+        // Keyed by class, so switching classes starts fresh (no picks
+        // carried over).
+        <ClassRoster
+          key={classroom.id}
+          classroom={classroom}
+          pageLinks={false}
+        />
+      ) : (
+        // Adding students opens the Classes page, so it waits for later.
+        <p className="py-16 text-center text-muted-foreground">
+          No students in {classroom.name} yet. Add them on the Classes page
+          after class.
+        </p>
+      )}
+
+      <SwitchClassDialog
+        classrooms={me.classrooms}
+        openId={shownId}
+        open={switchOpen}
+        onOpenChange={setSwitchOpen}
+        onPick={select}
+      />
+    </ClassLayerShell>
+  )
+}
+
+/** While a class's students are on their way. */
+export function OpeningClass({ name }: { name: string }) {
+  return (
+    <p
+      role="status"
+      className="flex items-center justify-center gap-2 py-16 font-medium text-muted-foreground"
+    >
+      <Spinner aria-hidden className="size-5" />
+      Opening {name}…
+    </p>
+  )
+}
+
+/**
+ * The layer that slides over the presenter's notes, and the round button
+ * that brings it in and out: a top bar with "Back to notes", the clock and
+ * the connection, then children (the class). The teacher's (above) and a
+ * substitute's (components/sub) fill it with their own class.
+ */
+export function ClassLayerShell({
+  open,
+  onOpenChange,
+  isToday,
+  today,
+  busy,
+  headingId,
+  children,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  isToday: boolean
+  /** Today's marks for the whole class, for the button's ring. */
+  today: Today
+  /** The class is loading (a switch). */
+  busy: boolean
+  /** The class name's heading, which names the layer. */
+  headingId: string
+  children: ReactNode
+}) {
+  const layerId = useId()
   const layerRef = useRef<HTMLElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
 
@@ -105,7 +201,7 @@ function ClassLayer({
         ref={layerRef}
         id={layerId}
         aria-labelledby={headingId}
-        aria-busy={isLoading || undefined}
+        aria-busy={busy || undefined}
         tabIndex={-1}
         inert={!open}
         className={cn(
@@ -141,58 +237,8 @@ function ClassLayer({
         {/* Room at the bottom for the round button, so it never covers
             the last row of students. */}
         <div className="mx-auto flex w-full max-w-5xl min-w-0 flex-col gap-2 px-4 pt-4 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:pt-6">
-          <ClassHeader
-            me={me}
-            name={shownName}
-            loading={isLoading}
-            onSwitch={() => setSwitchOpen(true)}
-            headingLevel="h2"
-            headingId={headingId}
-          />
-
-          {/* Red icon, black text: small red text on white is hard to read. */}
-          {error && (
-            <p
-              role="alert"
-              className="flex items-center gap-2 text-sm font-medium"
-            >
-              <CircleAlert className="size-5 shrink-0 text-destructive" />
-              {error}
-            </p>
-          )}
-
-          {isLoading ? (
-            <p
-              role="status"
-              className="flex items-center justify-center gap-2 py-16 font-medium text-muted-foreground"
-            >
-              <Spinner aria-hidden className="size-5" />
-              Opening {shownName}…
-            </p>
-          ) : classroom.students.length > 0 ? (
-            // Keyed by class, so switching classes starts fresh (no picks
-            // carried over).
-            <ClassRoster
-              key={classroom.id}
-              classroom={classroom}
-              pageLinks={false}
-            />
-          ) : (
-            // Adding students opens the Classes page, so it waits for later.
-            <p className="py-16 text-center text-muted-foreground">
-              No students in {classroom.name} yet. Add them on the Classes page
-              after class.
-            </p>
-          )}
+          {children}
         </div>
-
-        <SwitchClassDialog
-          classrooms={me.classrooms}
-          openId={shownId}
-          open={switchOpen}
-          onOpenChange={setSwitchOpen}
-          onPick={select}
-        />
       </section>
 
       {/* Outside the class, so it's never hidden with it. Its name says

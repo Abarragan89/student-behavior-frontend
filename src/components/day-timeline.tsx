@@ -179,7 +179,7 @@ export function DayTimeline({
                 <button
                   key={dot.mark.id}
                   type="button"
-                  aria-label={`${time}, ${dot.mark.name}, ${kind}`}
+                  aria-label={`${time}, ${dot.mark.name}, ${kind}${dot.mark.from_sub ? ', by a substitute' : ''}`}
                   onPointerEnter={() => setActiveId(dot.mark.id)}
                   onPointerLeave={() =>
                     setActiveId((id) => (id === dot.mark.id ? null : id))
@@ -258,6 +258,7 @@ function Tooltip({
           )}
         />
         {dot.mark.name}
+        {dot.mark.from_sub && ' · by sub'}
       </p>
       {classroom && (
         <p className="text-xs text-muted-foreground">{classroom}</p>

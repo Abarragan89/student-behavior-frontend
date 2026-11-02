@@ -1,34 +1,54 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { Link } from '@tanstack/react-router'
-import { useQueryClient } from '@tanstack/react-query'
-import { Check, Maximize, Minimize, X } from 'lucide-react'
+import type { ReactNode } from 'react'
+import { Check, Maximize, Minimize } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { clockMinutes, formatClockRange, formatShortDate } from '#/lib/calendar'
+import { clockMinutes, formatClockRange } from '#/lib/calendar'
 import { isBlank, progress } from '#/lib/lesson-plans'
 import type { PlanDay, PlanItem, PlanSection } from '#/lib/lesson-plans'
-import { flushDrafts, runOp } from '#/lib/lesson-plan-queue'
 import { isStandalone } from '#/lib/pwa-install'
 import { ConnectionStatus } from '#/components/connection-status'
 import { useWakeLock } from '#/hooks/useWakeLock'
 import { Clock } from './clock'
-import { PresenterClass } from './presenter-class'
+
+/** The class over the notes is open (see classView). */
+export type ClassViewState = {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
 
 /**
  * The day's plan filling the whole screen, for the phone in a teacher's hand
  * while teaching: every section with its time, every line a big row that
- * crosses off with a tap. The screen stays on while it's open. Checkmarks
- * work offline in the installed app and are sent when the connection is back.
- * A round button in the corner brings up the class, to give marks without
- * losing the place (see PresenterClass).
+ * crosses off with a tap. The screen stays on while it's open. A round
+ * button in the corner can bring up the class, to give marks without losing
+ * the place (classView).
+ *
+ * Used by the teacher (lesson-plans.$date_.present.tsx) and by a substitute
+ * opening a shared link (components/sub), who each say how a checkmark is
+ * saved and what the corner and top bar hold.
  */
 export function PresenterView({
   day,
   isToday,
+  heading,
+  onCheck,
+  exit,
+  emptyAction,
+  classView,
 }: {
   day: PlanDay
   isToday: boolean
+  /** The top bar's title: "Today", "Tue, Nov 5", "Ms. Lee’s plan". */
+  heading: string
+  /** A line was tapped: check it off, or uncheck it. */
+  onCheck: (item: PlanItem) => void
+  /** Top left, e.g. the teacher's close button. */
+  exit?: ReactNode
+  /** Under "Nothing planned for this day.", e.g. a link to plan it. */
+  emptyAction?: ReactNode
+  /** The class over the notes, with the round button that opens it. */
+  classView?: (state: ClassViewState) => ReactNode
 }) {
-  const queryClient = useQueryClient()
   const now = useMinutesNow()
   useWakeLock()
   // The class over the notes. Not in the address, so flipping is instant.
@@ -56,15 +76,6 @@ export function PresenterView({
     }
   }, [day.sections, isToday])
 
-  function check(item: PlanItem) {
-    runOp(queryClient, {
-      kind: 'done',
-      date: day.date,
-      id: item.id,
-      done: !item.done,
-    })
-  }
-
   return (
     <>
       {/* Covered, and out of reach of keyboards and screen readers, while
@@ -74,20 +85,15 @@ export function PresenterView({
         className="flex min-h-dvh flex-col bg-background text-foreground"
       >
         <header className="sticky top-0 z-10 border-b-2 border-border bg-card pt-[env(safe-area-inset-top)]">
-          <div className="flex items-center gap-2 py-1.5 pr-3 pl-1.5">
-            <Link
-              to="/lesson-plans/$date"
-              params={{ date: day.date }}
-              onClick={flushDrafts}
-              aria-label="Close presenter view"
-              className="flex size-11 shrink-0 items-center justify-center rounded-lg outline-none hover:bg-muted focus-visible:ring-4 focus-visible:ring-ring"
-            >
-              <X className="size-6" />
-            </Link>
+          <div
+            className={cn(
+              'flex items-center gap-2 py-1.5 pr-3',
+              exit ? 'pl-1.5' : 'pl-4',
+            )}
+          >
+            {exit}
             <div className="flex min-w-0 flex-1 flex-col">
-              <h1 className="truncate leading-tight font-bold">
-                {isToday ? 'Today' : formatShortDate(day.date)}
-              </h1>
+              <h1 className="truncate leading-tight font-bold">{heading}</h1>
               <p className="text-sm text-muted-foreground tabular-nums">
                 {total === 0
                   ? 'Nothing to check off'
@@ -118,13 +124,7 @@ export function PresenterView({
         {day.sections.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
             <p className="text-xl font-bold">Nothing planned for this day.</p>
-            <Link
-              to="/lesson-plans/$date"
-              params={{ date: day.date }}
-              className="text-lg font-bold text-primary underline-offset-4 hover:underline"
-            >
-              Plan it
-            </Link>
+            {emptyAction}
           </div>
         ) : (
           // One column on phones; on tablets and laptops the sections flow
@@ -136,17 +136,13 @@ export function PresenterView({
                 key={section.id}
                 section={section}
                 isNow={section === current}
-                onCheck={check}
+                onCheck={onCheck}
               />
             ))}
           </main>
         )}
       </div>
-      <PresenterClass
-        open={classOpen}
-        onOpenChange={setClassOpen}
-        isToday={isToday}
-      />
+      {classView?.({ open: classOpen, onOpenChange: setClassOpen })}
     </>
   )
 }

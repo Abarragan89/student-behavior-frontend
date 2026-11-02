@@ -1,13 +1,17 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { CircleAlert, RefreshCw, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { cn } from '@/lib/utils'
+import { formatShortDate } from '#/lib/calendar'
 import { isDateString, useToday } from '#/lib/day'
 import { lessonPlanDayQueryOptions } from '#/lib/lesson-plans'
+import type { PlanDay, PlanItem } from '#/lib/lesson-plans'
+import { flushDrafts, runOp } from '#/lib/lesson-plan-queue'
 import { markTypesQueryOptions } from '#/lib/marks'
 import { useOnline } from '#/lib/online'
+import { PresenterClass } from '#/components/lesson-plans/presenter-class'
 import { PresenterView } from '#/components/lesson-plans/presenter-view'
 
 // /lesson-plans/2026-11-05/present: the day's checklist on the whole screen,
@@ -36,7 +40,9 @@ function PresentPage() {
   })
 
   if (day.data) {
-    return <PresenterView key={date} day={day.data} isToday={date === today} />
+    return (
+      <TeacherPresenter key={date} day={day.data} isToday={date === today} />
+    )
   }
 
   return (
@@ -78,5 +84,59 @@ function PresentPage() {
         Close
       </Link>
     </main>
+  )
+}
+
+/**
+ * The teacher's presenter: checkmarks go through the lesson plan queue (they
+ * work offline in the installed app), ✕ goes back to planning the day, and
+ * the round button brings up the open class.
+ */
+function TeacherPresenter({
+  day,
+  isToday,
+}: {
+  day: PlanDay
+  isToday: boolean
+}) {
+  const queryClient = useQueryClient()
+
+  function check(item: PlanItem) {
+    runOp(queryClient, {
+      kind: 'done',
+      date: day.date,
+      id: item.id,
+      done: !item.done,
+    })
+  }
+
+  return (
+    <PresenterView
+      day={day}
+      isToday={isToday}
+      heading={isToday ? 'Today' : formatShortDate(day.date)}
+      onCheck={check}
+      exit={
+        <Link
+          to="/lesson-plans/$date"
+          params={{ date: day.date }}
+          onClick={flushDrafts}
+          aria-label="Close presenter view"
+          className="flex size-11 shrink-0 items-center justify-center rounded-lg outline-none hover:bg-muted focus-visible:ring-4 focus-visible:ring-ring"
+        >
+          <X className="size-6" />
+        </Link>
+      }
+      emptyAction={
+        <Link
+          to="/lesson-plans/$date"
+          params={{ date: day.date }}
+          className="text-lg font-bold text-primary underline-offset-4 hover:underline"
+        >
+          Plan it
+        </Link>
+      }
+      classView={(state) => <PresenterClass {...state} isToday={isToday} />}
+    />
   )
 }

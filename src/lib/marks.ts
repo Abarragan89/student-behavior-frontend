@@ -1,5 +1,5 @@
 import { queryOptions } from '@tanstack/react-query'
-import type { QueryClient } from '@tanstack/react-query'
+import type { MutationKey, QueryClient, QueryKey } from '@tanstack/react-query'
 import { ApiError, apiDelete, apiGet, apiPatch, apiPost } from './api'
 
 // Behavior marks. A mark type is one of the teacher's buttons ("Helping
@@ -27,6 +27,9 @@ export type Mark = {
   // from servers older than the offline queue.
   occurred_at?: string
   created_at: string // UTC, when the server saved it
+  // Given by a substitute, through a link the teacher shared. Missing from
+  // servers older than substitute links.
+  from_sub?: boolean
 }
 
 /** When a mark was given: use this for times and days. */
@@ -126,7 +129,13 @@ export function markCountsQueryOptions(classroomId: string, date: string) {
         `/classrooms/${encodeURIComponent(classroomId)}/marks/counts?${params}`,
       )
       // Marks still waiting to be sent aren't in the server's answer yet.
-      return withQueuedMarks(client, classroomId, date, counts)
+      return withQueuedMarks(
+        client,
+        MARK_MUTATION_KEY,
+        classroomId,
+        date,
+        counts,
+      )
     },
     // Every tap and undo here edits this cache directly, so it stays right
     // without refetching. Refetched only when old (another device, a new day)
@@ -282,17 +291,19 @@ export function applyDelta(
 /**
  * The server's counts plus the marks for that class and day that haven't
  * been sent yet (offline, or still on their way), so a refetch never makes
- * a tap disappear from the cards.
+ * a tap disappear from the cards. mutationKey is the queue's: the teacher's,
+ * or a substitute's (sub.ts).
  */
-function withQueuedMarks(
+export function withQueuedMarks(
   queryClient: QueryClient,
+  mutationKey: MutationKey,
   classroomId: string,
   date: string,
   counts: MarkCounts,
 ) {
   const pending = queryClient
     .getMutationCache()
-    .findAll({ mutationKey: MARK_MUTATION_KEY, status: 'pending' })
+    .findAll({ mutationKey, status: 'pending' })
   let result = counts
   for (const mutation of pending) {
     const mark = mutation.state.variables as QueuedMark | undefined
@@ -310,6 +321,8 @@ function withQueuedMarks(
 /**
  * Changes some students' counts in the cached counts, so cards update the
  * moment marks are tapped (or undone): one write, however many students.
+ * queryKey is where those counts are cached: the teacher's own by default,
+ * or a substitute's (sub.ts).
  */
 export function bumpCounts(
   queryClient: QueryClient,
@@ -320,15 +333,15 @@ export function bumpCounts(
     isPositive,
   }: Pick<QueuedMark, 'classroomId' | 'date' | 'studentIds' | 'isPositive'>,
   delta: 1 | -1,
+  queryKey: QueryKey = markCountsQueryOptions(classroomId, date).queryKey,
 ) {
   if (studentIds.length === 0) return
-  const { queryKey } = markCountsQueryOptions(classroomId, date)
   const state = queryClient.getQueryState(queryKey)
   // A refetch already on its way was asked before this change, so its answer
   // could undo it. Stop it; the cache keeps what it had.
   void queryClient.cancelQueries({ queryKey, exact: true })
 
-  queryClient.setQueryData(
+  queryClient.setQueryData<MarkCounts>(
     queryKey,
     (counts) =>
       applyDelta(

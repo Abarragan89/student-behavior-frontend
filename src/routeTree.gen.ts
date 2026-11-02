@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as SubRouteImport } from './routes/sub'
 import { Route as AuthedAccountRouteImport } from './routes/_authed/account'
 import { Route as AuthedClassesRouteImport } from './routes/_authed/classes'
 import { Route as AuthedMarksRouteImport } from './routes/_authed/marks'
@@ -32,6 +33,11 @@ const AuthedRoute = AuthedRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SubRoute = SubRouteImport.update({
+  id: '/sub',
+  path: '/sub',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedAccountRoute = AuthedAccountRouteImport.update({
@@ -74,6 +80,7 @@ const AuthedLessonPlansDatePresentRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/sub': typeof SubRoute
   '/account': typeof AuthedAccountRoute
   '/classes': typeof AuthedClassesRoute
   '/marks': typeof AuthedMarksRoute
@@ -85,6 +92,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/sub': typeof SubRoute
   '/account': typeof AuthedAccountRoute
   '/classes': typeof AuthedClassesRoute
   '/marks': typeof AuthedMarksRoute
@@ -98,6 +106,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authed': typeof AuthedRouteWithChildren
   '/login': typeof LoginRoute
+  '/sub': typeof SubRoute
   '/_authed/account': typeof AuthedAccountRoute
   '/_authed/classes': typeof AuthedClassesRoute
   '/_authed/marks': typeof AuthedMarksRoute
@@ -111,6 +120,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/sub'
     | '/account'
     | '/classes'
     | '/marks'
@@ -122,6 +132,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/sub'
     | '/account'
     | '/classes'
     | '/marks'
@@ -134,6 +145,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authed'
     | '/login'
+    | '/sub'
     | '/_authed/account'
     | '/_authed/classes'
     | '/_authed/marks'
@@ -147,6 +159,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthedRoute: typeof AuthedRouteWithChildren
   LoginRoute: typeof LoginRoute
+  SubRoute: typeof SubRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -170,6 +183,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sub': {
+      id: '/sub'
+      path: '/sub'
+      fullPath: '/sub'
+      preLoaderRoute: typeof SubRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authed/account': {
@@ -251,6 +271,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthedRoute: AuthedRouteWithChildren,
   LoginRoute: LoginRoute,
+  SubRoute: SubRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

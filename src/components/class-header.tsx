@@ -11,10 +11,10 @@ import { useClassToday } from '#/hooks/useClassToday'
  * Like the top of a student's page: today's marks for the whole class as a
  * ring, the class name with a small Switch link, and (not on phones) a line
  * under it. On the Classes page, and in the lesson-plan presenter's class
- * view.
+ * view (the teacher's, and a substitute's).
  */
 export function ClassHeader({
-  me,
+  classroom,
   name,
   loading,
   onSwitch,
@@ -22,11 +22,13 @@ export function ClassHeader({
   headingRef,
   headingId,
 }: {
-  me: Me
+  /** The class whose students are on screen. */
+  classroom: Pick<Me['classroom'], 'id' | 'students'>
   name: string
-  /** A switch is under way: me.classroom is still the old class. */
+  /** A switch is under way: classroom is still the old class. */
   loading: boolean
-  onSwitch: () => void
+  /** Opens the class list. Without it there's no Switch (only one class). */
+  onSwitch?: () => void
   /** h2 where the page already has its own h1 (the presenter). */
   headingLevel?: 'h1' | 'h2'
   /** The class name, for moving focus to it. */
@@ -34,7 +36,6 @@ export function ClassHeader({
   /** For naming a region after the class. */
   headingId?: string
 }) {
-  const { classroom } = me
   const today = useClassToday(classroom.id, !loading)
 
   return (
@@ -60,14 +61,16 @@ export function ClassHeader({
           >
             {name}
           </Heading>
-          <Button
-            variant="link"
-            onClick={onSwitch}
-            aria-label="Switch class"
-            className="h-auto px-0 text-sm font-bold"
-          >
-            Switch
-          </Button>
+          {onSwitch && (
+            <Button
+              variant="link"
+              onClick={onSwitch}
+              aria-label="Switch class"
+              className="h-auto px-0 text-sm font-bold"
+            >
+              Switch
+            </Button>
+          )}
         </div>
         {/* Not on phones: space for the cards matters more there. */}
         {!loading && (

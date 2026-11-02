@@ -2,8 +2,8 @@ import { onlineManager, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import type { Student } from '#/lib/auth'
 import { formatStudentCount } from '#/lib/classroom'
-import { enqueueMark } from '#/lib/mark-queue'
-import { bumpCounts, localDate } from '#/lib/marks'
+import { useMarkSource } from '#/lib/mark-source'
+import { bumpCounts } from '#/lib/marks'
 import type { MarkType, QueuedMark } from '#/lib/marks'
 import { uuidv7 } from '#/lib/uuid'
 
@@ -34,6 +34,8 @@ export function targetStudents(target: MarkTarget) {
  */
 export function useGiveMark(classroomId: string) {
   const queryClient = useQueryClient()
+  // The teacher's own queue, or a substitute's (see mark-source.tsx).
+  const source = useMarkSource()
 
   return function give(target: MarkTarget, markType: MarkType) {
     const words = describe(target)
@@ -50,20 +52,21 @@ export function useGiveMark(classroomId: string) {
       isPositive: markType.is_positive,
       // The tap's day and time, so a mark sent later still counts when it
       // was given, and an undo just after midnight fixes the right day.
-      date: localDate(now),
+      date: source.dayOf(now),
       occurredAt: now.toISOString(),
     }
+    const countsKey = source.countsKey(classroomId, mark.date)
     let undone = false
 
-    bumpCounts(queryClient, mark, 1)
-    enqueueMark(queryClient, mark)
+    bumpCounts(queryClient, mark, 1, countsKey)
+    source.enqueue(queryClient, mark)
 
     function undo() {
       if (undone) return
       undone = true
-      bumpCounts(queryClient, mark, -1)
+      bumpCounts(queryClient, mark, -1, countsKey)
       // Queued after the mark, so it's always sent after it.
-      enqueueMark(queryClient, { ...mark, kind: 'undo' })
+      source.enqueue(queryClient, { ...mark, kind: 'undo' })
       toast(`Removed “${markType.name}” from ${words.from}`)
     }
 

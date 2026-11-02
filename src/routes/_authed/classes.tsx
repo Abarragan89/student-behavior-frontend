@@ -98,7 +98,7 @@ function ClassesContent({ me }: { me: Me }) {
       className="mx-auto flex w-full max-w-5xl min-w-0 flex-1 flex-col gap-2 px-4 py-6 sm:py-8"
     >
       <ClassHeader
-        me={me}
+        classroom={me.classroom}
         name={shownName}
         loading={isLoading}
         onSwitch={() => setSwitchOpen(true)}

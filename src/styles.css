@@ -1,6 +1,6 @@
 @import 'tailwindcss';
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
 
 * {
   box-sizing: border-box;
@@ -249,6 +249,18 @@ body {
   }
   /* Toasts float over the page; keep them off paper. */
   [data-sonner-toaster] {
+    display: none !important;
+  }
+  /* So are dialogs and drawers, e.g. the print question still closing when
+     the print starts. Named one by one: a wildcard like *-content would also
+     catch card-content in the printed report. */
+  [data-slot='dialog-overlay'],
+  [data-slot='dialog-content'],
+  [data-slot='drawer-overlay'],
+  [data-slot='drawer-viewport'],
+  [data-slot='drawer-popup'],
+  [data-slot='alert-dialog-overlay'],
+  [data-slot='alert-dialog-content'] {
     display: none !important;
   }
 }

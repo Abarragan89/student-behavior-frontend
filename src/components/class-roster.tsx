@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import type { Me, Student } from '#/lib/auth'
 import { formatStudentCount } from '#/lib/classroom'
-import { useToday } from '#/lib/day'
-import { markCountsQueryOptions } from '#/lib/marks'
+import { useMarkSource } from '#/lib/mark-source'
 import { MarkDialog } from '#/components/mark-dialog'
 import { RosterToolbar } from '#/components/roster-toolbar'
 import { StudentCard } from '#/components/student-card'
@@ -24,7 +22,7 @@ export function ClassRoster({
   classroom,
   pageLinks = true,
 }: {
-  classroom: Me['classroom']
+  classroom: Pick<Me['classroom'], 'id' | 'name' | 'students'>
   /** The marks dialog's links to other pages (see MarkDialog). */
   pageLinks?: boolean
 }) {
@@ -32,9 +30,9 @@ export function ClassRoster({
   const sectionRef = useRef<HTMLElement>(null)
   const labels = cardLabels(students)
 
-  // Today's counts, in the teacher's own time zone.
-  const today = useToday()
-  const counts = useQuery(markCountsQueryOptions(classroomId, today))
+  // Today's counts, in the teacher's own time zone (or, for a substitute,
+  // the shared day's; see mark-source.tsx).
+  const counts = useMarkSource().useCounts(classroomId)
   const countsByStudent = useMemo(
     () => new Map(counts.data?.students.map((s) => [s.student_id, s])),
     [counts.data],

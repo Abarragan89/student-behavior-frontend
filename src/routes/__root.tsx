@@ -1,4 +1,8 @@
-import { Outlet, createRootRouteWithContext } from '@tanstack/react-router'
+import {
+  Outlet,
+  createRootRouteWithContext,
+  useRouterState,
+} from '@tanstack/react-router'
 import type { QueryClient } from '@tanstack/react-query'
 
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
@@ -17,13 +21,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 )
 
 function RootComponent() {
+  // A substitute's link (/sub) is a one-day visit: no "new version" offers,
+  // and the app isn't downloaded for offline use.
+  const isSub = useRouterState({
+    select: (s) => s.location.pathname === '/sub',
+  })
   return (
     <ThemeProvider>
       <Outlet />
       {/* For toast() anywhere in the app. Top center stays clear of the
           devtools button and is easy to spot on phones. */}
       <Toaster position="top-center" />
-      <PwaUpdater />
+      {!isSub && <PwaUpdater />}
       {/* <TanStackDevtools
         config={{
           position: 'bottom-right',

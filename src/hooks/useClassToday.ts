@@ -1,6 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
-import { useToday } from '#/lib/day'
-import { markCountsQueryOptions } from '#/lib/marks'
+import { useMarkSource } from '#/lib/mark-source'
 import type { Today } from '#/components/student-card'
 
 /**
@@ -9,11 +7,7 @@ import type { Today } from '#/components/student-card'
  * until it loads, and while `enabled` is false (a class switch under way).
  */
 export function useClassToday(classroomId: string, enabled = true): Today {
-  const date = useToday()
-  const counts = useQuery({
-    ...markCountsQueryOptions(classroomId, date),
-    enabled,
-  })
+  const counts = useMarkSource().useCounts(classroomId, enabled)
   if (!counts.data || !enabled) return null
   return counts.data.students.reduce(
     (sum, s) => ({

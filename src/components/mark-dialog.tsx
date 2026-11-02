@@ -1,5 +1,4 @@
 import { useId } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import {
   ChartNoAxesGantt,
@@ -14,7 +13,7 @@ import type { LucideIcon } from 'lucide-react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { cn } from '@/lib/utils'
-import { markTypesQueryOptions } from '#/lib/marks'
+import { useMarkSource } from '#/lib/mark-source'
 import type { MarkType } from '#/lib/marks'
 import { ResponsiveDialog } from '#/components/responsive-dialogue'
 
@@ -47,9 +46,12 @@ export function MarkDialog({
   onOpenChange: (open: boolean) => void
   onPick: (markType: MarkType) => void
 }) {
-  const markTypes = useQuery(markTypesQueryOptions)
+  const source = useMarkSource()
+  const markTypes = source.useMarkTypes()
   // With none, the empty state has its own "Add marks" button instead.
   const hasMarks = (markTypes.data?.length ?? 0) > 0
+  // A substitute is using the teacher's marks, not their own.
+  const forSub = source.kind === 'sub'
 
   function give(markType: MarkType) {
     onOpenChange(false)
@@ -70,13 +72,13 @@ export function MarkDialog({
           className="flex items-center justify-center gap-2 py-6 text-sm font-medium text-muted-foreground"
         >
           <Spinner aria-hidden className="size-4" />
-          Loading your marks…
+          {forSub ? 'Loading marks…' : 'Loading your marks…'}
         </p>
       ) : markTypes.isError ? (
         <div className="flex flex-col items-center gap-3 py-4 text-center">
           <p className="flex items-center gap-2 text-sm font-medium">
             <CircleAlert className="size-5 shrink-0 text-destructive" />
-            Couldn’t load your marks.
+            {forSub ? 'Couldn’t load the marks.' : 'Couldn’t load your marks.'}
           </p>
           <Button
             variant="outline"
@@ -91,8 +93,12 @@ export function MarkDialog({
       ) : markTypes.data.length === 0 ? (
         <div className="flex flex-col items-center gap-3 py-4 text-center">
           <p className="text-sm text-muted-foreground">
-            You don’t have any marks yet.
-            {!pageLinks && ' Add some on the Marks page after class.'}
+            {forSub
+              ? 'No marks are set up yet.'
+              : 'You don’t have any marks yet.'}
+            {!pageLinks &&
+              !forSub &&
+              ' Add some on the Marks page after class.'}
           </p>
           {pageLinks && (
             <Button

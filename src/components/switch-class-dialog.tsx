@@ -9,24 +9,29 @@ import { useOnline } from '#/lib/online'
  * All of the teacher's classes, from the "Switch" link on the Classes page.
  * The open one is marked. Picking another closes the dialog and opens it.
  */
-export function SwitchClassDialog({
+export function SwitchClassDialog<T extends Pick<ClassroomTab, 'id' | 'name'>>({
   classrooms,
   openId,
   open,
   onOpenChange,
   onPick,
+  needsConnection = true,
 }: {
   /** In the server's order (oldest first). */
-  classrooms: Array<ClassroomTab>
+  classrooms: Array<T>
   /** The class on screen. */
   openId: string
   open: boolean
   onOpenChange: (open: boolean) => void
-  onPick: (classroom: ClassroomTab) => void
+  onPick: (classroom: T) => void
+  /**
+   * The teacher's switching saves the open class on the server, and only
+   * the open class's students are saved on the device. A substitute's
+   * switching stays on the page, with every class already loaded.
+   */
+  needsConnection?: boolean
 }) {
-  // Switching saves the open class on the server, and only the open class's
-  // students are saved on the device.
-  const online = useOnline()
+  const online = useOnline() || !needsConnection
 
   return (
     <ResponsiveDialog
@@ -36,7 +41,9 @@ export function SwitchClassDialog({
       description="Choose a class to open."
       showDescription
     >
-      <OfflineNote action="switch classes" className="mb-3" />
+      {needsConnection && (
+        <OfflineNote action="switch classes" className="mb-3" />
+      )}
       <ul className="flex flex-col gap-2">
         {classrooms.map((classroom) => {
           const isOpen = classroom.id === openId

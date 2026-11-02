@@ -29,6 +29,7 @@ import {
   saveMarkQueue,
 } from './lib/persist'
 import { hideSplashAfterFirstRender } from './lib/splash'
+import { registerSubMutations } from './lib/sub'
 
 // React Query assumes it's online until the browser says otherwise. Start
 // from the real state, so an offline launch doesn't wait on requests.
@@ -72,6 +73,8 @@ async function boot() {
   // saved queue, which needs it.
   registerMarkMutations(queryClient)
   registerLessonPlanMutations(queryClient)
+  // A substitute's, through a shared link. Never saved on the device.
+  registerSubMutations(queryClient)
 
   // Installed app only (see persist.ts): load the data and the mark queue
   // saved on the device before the first page runs its login check, so the

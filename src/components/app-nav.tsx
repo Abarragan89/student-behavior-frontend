@@ -76,10 +76,10 @@ export function BottomNav({
       <div className="pointer-events-none absolute inset-x-0 -top-3.5 flex justify-center">
         <ConnectionStatus />
       </div>
-      <BottomLink link={CLASSES} />
+      <UserMenu teacher={teacher} placement="bottom-bar" />
       <CreateMenu placement="bottom-bar" />
       <BottomLink link={LESSON_PLANS} />
-      <UserMenu teacher={teacher} placement="bottom-bar" />
+      <BottomLink link={CLASSES} />
     </nav>
   )
 }

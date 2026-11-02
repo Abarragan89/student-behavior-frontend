@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -11,6 +12,7 @@ import {
   Presentation,
   Printer,
   RefreshCw,
+  Share,
 } from 'lucide-react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import {
@@ -41,7 +43,9 @@ import { OfflineNote } from '#/components/offline-note'
 import { CopyDayDialog } from '#/components/lesson-plans/copy-day-dialog'
 import { PlanEditor } from '#/components/lesson-plans/plan-editor'
 import { PrintDay } from '#/components/lesson-plans/print-day'
+import { PrintDialog } from '#/components/lesson-plans/print-dialog'
 import { ProgressBar } from '#/components/lesson-plans/progress-bar'
+import { ShareDayDialog } from '#/components/lesson-plans/share-day-dialog'
 
 // /lesson-plans/2026-11-05: where a day is planned. Teaching from it happens
 // in Presenter view (/lesson-plans/2026-11-05/present), on the whole screen.
@@ -69,6 +73,25 @@ function DayPlan({ date }: { date: string }) {
   const online = useOnline()
   const day = useQuery(lessonPlanDayQueryOptions(date))
   const [copyOpen, setCopyOpen] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
+  const [printOpen, setPrintOpen] = useState(false)
+  // The sub link to print as a QR code, for this one printout only.
+  const [printLink, setPrintLink] = useState<string | null>(null)
+  useEffect(() => {
+    const done = () => setPrintLink(null)
+    window.addEventListener('afterprint', done)
+    return () => window.removeEventListener('afterprint', done)
+  }, [])
+
+  function print(subLink: string | null) {
+    // On the page before the print dialog opens; the question box is hidden
+    // on paper while it closes (styles.css).
+    flushSync(() => {
+      setPrintOpen(false)
+      setPrintLink(subLink)
+    })
+    window.print()
+  }
 
   const sections = day.data?.sections ?? []
   const { done, total } = progress(sections)
@@ -154,13 +177,32 @@ function DayPlan({ date }: { date: string }) {
               <Presentation className="size-5" />
               Presenter view
             </Link>
+            {/* A sub's link only works on its day, so not for days gone by. */}
+            {date >= today && (
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label="Share with a substitute"
+                title="Share with a substitute"
+                onClick={() => {
+                  flushDrafts()
+                  setShareOpen(true)
+                }}
+                className="size-12 shrink-0 rounded-lg border-2 border-border bg-card"
+              >
+                <Share className="size-5" />
+              </Button>
+            )}
             <Button
               variant="outline"
               size="icon"
               aria-label="Print this plan"
               onClick={() => {
                 flushDrafts()
-                window.print()
+                // Today or later: offer a QR code for a sub. A sub link
+                // can't work for a day gone by, so those just print.
+                if (date >= today) setPrintOpen(true)
+                else window.print()
               }}
               className="size-12 shrink-0 rounded-lg border-2 border-border bg-card"
             >
@@ -238,8 +280,19 @@ function DayPlan({ date }: { date: string }) {
         )}
       </main>
 
-      {day.data && <PrintDay day={day.data} />}
+      {day.data && <PrintDay day={day.data} subLink={printLink ?? undefined} />}
+      <PrintDialog
+        date={date}
+        open={printOpen}
+        onOpenChange={setPrintOpen}
+        onPrint={print}
+      />
       <CopyDayDialog open={copyOpen} onOpenChange={setCopyOpen} date={date} />
+      <ShareDayDialog
+        date={date}
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+      />
     </>
   )
 }

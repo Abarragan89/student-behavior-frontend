@@ -14,7 +14,7 @@ export const classroomConnectUrl = `${API_URL}/auth/google/classroom/connect`
 
 // Without a limit, a request on bad Wi-Fi can hang for minutes. Calls that
 // wait on Google (course list, import) pass a longer one.
-const DEFAULT_TIMEOUT_MS = 15_000
+export const DEFAULT_TIMEOUT_MS = 15_000
 export const GOOGLE_TIMEOUT_MS = 75_000
 
 export class ApiError extends Error {
@@ -45,7 +45,8 @@ function parseRetryAfter(value: string | null): number | undefined {
   return Number.isNaN(date) ? undefined : Math.max(0, date - Date.now())
 }
 
-function timeoutSignal(timeoutMs: number, signal?: AbortSignal | null) {
+/** Aborts after timeoutMs, or when signal does. */
+export function timeoutSignal(timeoutMs: number, signal?: AbortSignal | null) {
   const timeout = AbortSignal.timeout(timeoutMs)
   return signal && 'any' in AbortSignal
     ? AbortSignal.any([signal, timeout])

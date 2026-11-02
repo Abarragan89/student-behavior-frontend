@@ -488,6 +488,13 @@ function MarkList({
           <span className="min-w-0 flex-1 truncate text-sm font-bold">
             {mark.name}
           </span>
+          {/* Given through a link the teacher shared with a substitute. */}
+          {mark.from_sub && (
+            <span className="shrink-0 rounded-full border-2 border-border bg-muted px-2 text-xs font-bold">
+              Sub
+              <span className="sr-only"> (given by a substitute)</span>
+            </span>
+          )}
           <span className="shrink-0 text-right text-xs text-muted-foreground">
             {mark.is_positive ? 'Positive' : 'Negative'}
             {classroomName && (
