@@ -58,7 +58,7 @@ function LoginPage() {
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center gap-8 bg-background px-4 py-12 text-foreground">
       <Link to="/" aria-label="TeachForFree home">
-        <Wordmark />
+        <Wordmark className="h-24" />
       </Link>
 
       <Card className="w-full max-w-sm rounded-lg border-2 border-border shadow-md ring-0 [--card-spacing:--spacing(6)]">

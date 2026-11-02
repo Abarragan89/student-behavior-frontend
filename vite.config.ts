@@ -64,13 +64,10 @@ const config = defineConfig({
         ],
       },
       workbox: {
-        // Only the header logos of all the PNGs: the offline screen and
-        // #splash show them. The manifest icons are added automatically.
+        // Only the logo of all the PNGs: the header, the offline screen and
+        // #splash show it. The manifest icons are added automatically.
         // Launch images are left out: each phone only needs one of the 22.
-        globPatterns: [
-          '**/*.{js,css,html,svg,ico}',
-          'branding/teachforfree-apple-*.png',
-        ],
+        globPatterns: ['**/*.{js,css,html,svg,ico}', 'branding/chalkboard.png'],
         // The API lives on another origin and has no rule here, so it is
         // never cached. Only Google Fonts are.
         runtimeCaching: [

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -47,6 +47,8 @@ import {
 } from '#/lib/students'
 import type { StudentDetail } from '#/lib/students'
 import { DayTimeline } from '#/components/day-timeline'
+import { DeleteMarkDialog } from '#/components/delete-mark-dialog'
+import type { DeleteMarkTarget } from '#/components/delete-mark-dialog'
 import { DeleteStudentDialog } from '#/components/delete-student-dialog'
 import type { DeleteStudentTarget } from '#/components/delete-student-dialog'
 import { StudentNameForm } from '#/components/forms/student-name-form'
@@ -180,6 +182,15 @@ function StudentDay({
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleteKey, setDeleteKey] = useState(0)
 
+  // The trash can on a mark in "All marks". Kept after the mark is deleted,
+  // so the dialog doesn't blank out while it closes.
+  const [markTarget, setMarkTarget] = useState<DeleteMarkTarget | null>(null)
+  const [markOpen, setMarkOpen] = useState(false)
+  // The trash can that opened the dialog goes with its mark, so focus lands
+  // on the day's heading instead.
+  const markDeleted = useRef(false)
+  const dayHeadingRef = useRef<HTMLHeadingElement>(null)
+
   // The teacher's own time zone: the day is fetched in it, and every time on
   // the page is shown on its clock.
   const zone = timeZone()
@@ -261,7 +272,11 @@ function StudentDay({
 
         <Card className={cardClass}>
           <div className="flex flex-col gap-1">
-            <h2 className="text-lg font-bold">
+            <h2
+              ref={dayHeadingRef}
+              tabIndex={-1}
+              className="text-lg font-bold outline-none"
+            >
               {date === today
                 ? `Today, ${formatLongDate(date)}`
                 : formatLongDate(date)}
@@ -324,6 +339,20 @@ function StudentDay({
               marks={list}
               timeZone={zone}
               classroomName={classroomName}
+              // Not while another day's marks stand in for the one loading.
+              onDelete={
+                marks.isPlaceholderData
+                  ? undefined
+                  : (mark) => {
+                      setMarkTarget({
+                        mark,
+                        date,
+                        time: formatTime(markTime(mark), zone),
+                        studentName: student.first_name || student.last_name,
+                      })
+                      setMarkOpen(true)
+                    }
+              }
             />
           </Card>
         )}
@@ -361,6 +390,22 @@ function StudentDay({
           open={deleteOpen}
           onOpenChange={setDeleteOpen}
           onDeleted={onDeleted}
+        />
+      )}
+
+      {markTarget && (
+        <DeleteMarkDialog
+          target={markTarget}
+          open={markOpen}
+          onOpenChange={setMarkOpen}
+          onDeleted={() => {
+            markDeleted.current = true
+          }}
+          finalFocus={() => {
+            if (!markDeleted.current) return true
+            markDeleted.current = false
+            return dayHeadingRef.current
+          }}
         />
       )}
 
@@ -512,15 +557,21 @@ function Stat({
   )
 }
 
-/** Every mark in words, earliest first: the chart's table view. */
+/**
+ * Every mark in words, earliest first: the chart's table view. Each has a
+ * trash can to delete it (it asks first).
+ */
 function MarkList({
   marks,
   timeZone: zone,
   classroomName,
+  onDelete,
 }: {
   marks: Array<Mark>
   timeZone: string
   classroomName?: (id: string) => string | undefined
+  /** The trash can was pressed. Left out, the trash cans are off. */
+  onDelete?: (mark: Mark) => void
 }) {
   const sorted = [...marks].sort((a, b) =>
     markTime(a).localeCompare(markTime(b)),
@@ -555,6 +606,18 @@ function MarkList({
               <span className="block">{classroomName(mark.classroom_id)}</span>
             )}
           </span>
+          {/* Small and quiet, but a 36px target. The negative margins keep
+              the row as tall as before. */}
+          <Button
+            variant="ghost"
+            size="icon-lg"
+            aria-label={`Delete “${mark.name}” at ${formatTime(markTime(mark), zone)}`}
+            disabled={!onDelete}
+            onClick={() => onDelete?.(mark)}
+            className="-my-1.5 -mr-2 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive dark:hover:bg-destructive/20"
+          >
+            <Trash2 className="size-4" />
+          </Button>
         </li>
       ))}
     </ol>

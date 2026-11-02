@@ -197,3 +197,46 @@ export function forgetRemovedStudent(
       : s,
   )
 }
+
+/** After deleteMark: off the student's page at once, on whichever day. */
+export function forgetDeletedMark(queryClient: QueryClient, mark: Mark) {
+  const queryKey = ['student-marks', mark.student_id]
+  // A fetch already on its way was asked before the delete and could bring
+  // the mark back.
+  void queryClient.cancelQueries({ queryKey })
+  queryClient.setQueriesData<Array<Mark>>({ queryKey }, (marks) =>
+    marks?.filter((m) => m.id !== mark.id),
+  )
+  refetchMarkTotals(queryClient, mark)
+}
+
+/** After restoreMark: back on the student's page for its day. */
+export function cacheRestoredMark(
+  queryClient: QueryClient,
+  mark: Mark,
+  date: string,
+) {
+  const { queryKey } = studentMarksQueryOptions(mark.student_id, date)
+  void queryClient.cancelQueries({ queryKey, exact: true })
+  queryClient.setQueryData(queryKey, (marks) =>
+    !marks || marks.some((m) => m.id === mark.id) ? marks : [...marks, mark],
+  )
+  refetchMarkTotals(queryClient, mark)
+}
+
+/**
+ * Everything else that counted the mark: the class grid's + and −, the
+ * printed report's recent days, and the student's day itself (to match the
+ * server exactly).
+ */
+function refetchMarkTotals(queryClient: QueryClient, mark: Mark) {
+  void queryClient.invalidateQueries({
+    queryKey: ['mark-counts', mark.classroom_id],
+  })
+  void queryClient.invalidateQueries({
+    queryKey: ['student-daily', mark.student_id],
+  })
+  void queryClient.invalidateQueries({
+    queryKey: ['student-marks', mark.student_id],
+  })
+}

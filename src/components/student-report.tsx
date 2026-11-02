@@ -21,6 +21,7 @@ import {
   ShareBar,
   TrendStrip,
 } from '#/components/report-charts'
+import { Wordmark } from '#/components/Wordmark'
 
 /**
  * One day of a student's marks as a printed report for the family: what
@@ -107,15 +108,7 @@ export function StudentReport({
           </p>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1.5">
-          {/* The light logo always: the dark one would vanish on white
-              paper. */}
-          <img
-            src="/branding/teachforfree-apple-light.png"
-            alt="TeachForFree"
-            width={804}
-            height={192}
-            className="h-7 w-auto"
-          />
+          <Wordmark />
           <p className="text-[11pt] font-bold whitespace-nowrap">
             {formatFullDate(date)}
           </p>

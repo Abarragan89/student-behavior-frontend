@@ -1,25 +1,18 @@
+import { cn } from '#/lib/utils'
+
 /**
- * The TeachForFree logo. Shows the dark version when the `dark` class is on
- * <html> (src/components/theme-provider.tsx). That class is set before the
- * first paint, so the right logo shows without a flash.
+ * The TeachForFree chalkboard logo. It has its own colors, so the same image
+ * works in light and dark mode. Defaults to header size; pass a height class
+ * (e.g. `h-24`) to make it bigger.
  */
-export function Wordmark() {
+export function Wordmark({ className }: { className?: string }) {
   return (
-    <span className="inline-flex shrink-0">
-      <img
-        src="/branding/teachforfree-apple-light.png"
-        alt="TeachForFree"
-        width={804}
-        height={192}
-        className="h-9 w-auto dark:hidden"
-      />
-      <img
-        src="/branding/teachforfree-apple-dark.png"
-        alt="TeachForFree"
-        width={804}
-        height={192}
-        className="hidden h-9 w-auto dark:block"
-      />
-    </span>
+    <img
+      src="/branding/chalkboard.png"
+      alt="TeachForFree"
+      width={1024}
+      height={749}
+      className={cn('h-12 w-auto shrink-0', className)}
+    />
   )
 }

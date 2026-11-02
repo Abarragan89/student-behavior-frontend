@@ -167,7 +167,10 @@ export function giveMark(
   )
 }
 
-/** Undo for a mis-tap. Already gone (404) counts as undone. */
+/**
+ * Undo for a mis-tap. Already gone (404) counts as undone. The server keeps
+ * the mark for a few minutes, so restoreMark can still put it back.
+ */
 export async function undoMark(markId: string) {
   try {
     await apiDelete(`/marks/${encodeURIComponent(markId)}`)
@@ -175,6 +178,19 @@ export async function undoMark(markId: string) {
     if (error instanceof ApiError && error.status === 404) return
     throw error
   }
+}
+
+/** Delete on a student's page: the same call as undoMark. */
+export const deleteMark = undoMark
+
+/**
+ * The Undo after deleteMark: puts the mark back exactly as it was (same id,
+ * time and class), and resolves to it. Works for a few minutes after the
+ * delete; after that, or if the student or class has been deleted since, it
+ * fails with 404.
+ */
+export function restoreMark(markId: string) {
+  return apiPost<Mark>(`/marks/${encodeURIComponent(markId)}/restore`)
 }
 
 // Many students at once: one mark each, made together as a batch, so Undo

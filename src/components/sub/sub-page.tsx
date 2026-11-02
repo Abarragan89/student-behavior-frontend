@@ -233,7 +233,7 @@ function SubNote({
 }) {
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center gap-6 px-6 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] text-center">
-      <Wordmark />
+      <Wordmark className="h-24" />
       <div className="flex max-w-sm flex-col items-center gap-3">
         <span className="flex size-14 items-center justify-center rounded-lg border-2 border-border bg-chart-3 text-foreground">
           <Icon className="size-7" />

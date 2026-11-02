@@ -124,7 +124,7 @@ function AuthedError({ error }: ErrorComponentProps) {
 
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center gap-6 bg-background px-4 py-12 text-center text-foreground">
-      <Wordmark />
+      <Wordmark className="h-24" />
       <span
         aria-hidden
         className="grid size-14 place-items-center rounded-lg border-2 border-border bg-card"
