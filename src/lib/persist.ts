@@ -35,7 +35,15 @@ const QUERIES_KEY = 'tff:queries'
 export const MARK_QUEUE_KEY = 'tff:mark-queue'
 
 /** First part of the query keys worth saving. */
-const SAVED_QUERIES = new Set(['me', 'mark-types', 'mark-counts', 'student'])
+// 'groups': group names and members (ids), so the Groups tab and its team
+// points work offline. Names may name students, like the roster in 'me'.
+const SAVED_QUERIES = new Set([
+  'me',
+  'mark-types',
+  'mark-counts',
+  'student',
+  'groups',
+])
 
 /**
  * Lesson plans are saved only for yesterday through a week from today:

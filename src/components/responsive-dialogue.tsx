@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { Drawer as DrawerPrimitive } from '@base-ui/react/drawer'
 
 import {
   Dialog,
@@ -50,6 +51,8 @@ export function ResponsiveDialog({
   description,
   showDescription = false,
   className,
+  initialFocus,
+  keyboardAware = false,
 }: {
   children: React.ReactNode
   isOpen: boolean
@@ -60,6 +63,16 @@ export function ResponsiveDialog({
   showDescription?: boolean
   /** Added to the dialog's own classes, e.g. a wider max width. Not used by the drawer. */
   className?: string
+  /**
+   * What the dialog focuses when it opens, e.g. its one text field. Dialog
+   * only: the drawer always focuses itself (see below).
+   */
+  initialFocus?: React.RefObject<HTMLElement | null>
+  /**
+   * For a drawer that's mostly a text field: it moves up above the phone's
+   * keyboard instead of being covered by it.
+   */
+  keyboardAware?: boolean
 }) {
   const isDesktop = useMediaQuery(DESKTOP_QUERY)
   const drawerRef = React.useRef<HTMLDivElement>(null)
@@ -72,6 +85,7 @@ export function ResponsiveDialog({
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent
           {...stopPropagation}
+          initialFocus={initialFocus}
           // Never taller than the screen. The title and close button stay put
           // while the body scrolls.
           className={cn(
@@ -98,30 +112,42 @@ export function ResponsiveDialog({
     )
   }
 
+  const drawer = (
+    <DrawerContent
+      {...stopPropagation}
+      ref={drawerRef}
+      // Focus the drawer itself, not its first field: on phones a focused
+      // field pops the keyboard up over the drawer. Screen readers still
+      // announce the drawer.
+      initialFocus={drawerRef}
+    >
+      <DrawerHeader>
+        <DrawerTitle>{title}</DrawerTitle>
+        {description && (
+          <DrawerDescription className={descriptionClass}>
+            {description}
+          </DrawerDescription>
+        )}
+      </DrawerHeader>
+      {/* Swiping inside it scrolls; the drawer only follows the swipe
+            down once it's scrolled to the top. */}
+      <ScrollArea className={scrollBodyClass}>
+        <div className="p-4">{children}</div>
+      </ScrollArea>
+    </DrawerContent>
+  )
+
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen} showSwipeHandle>
-      <DrawerContent
-        {...stopPropagation}
-        ref={drawerRef}
-        // Focus the drawer itself, not its first field: on phones a focused
-        // field pops the keyboard up over the drawer. Screen readers still
-        // announce the drawer.
-        initialFocus={drawerRef}
-      >
-        <DrawerHeader>
-          <DrawerTitle>{title}</DrawerTitle>
-          {description && (
-            <DrawerDescription className={descriptionClass}>
-              {description}
-            </DrawerDescription>
-          )}
-        </DrawerHeader>
-        {/* Swiping inside it scrolls; the drawer only follows the swipe
-            down once it's scrolled to the top. */}
-        <ScrollArea className={scrollBodyClass}>
-          <div className="p-4">{children}</div>
-        </ScrollArea>
-      </DrawerContent>
+      {keyboardAware ? (
+        // Measures the keyboard into --drawer-keyboard-inset, which the
+        // drawer (ui/drawer.tsx) sits on top of.
+        <DrawerPrimitive.VirtualKeyboardProvider>
+          {drawer}
+        </DrawerPrimitive.VirtualKeyboardProvider>
+      ) : (
+        drawer
+      )}
     </Drawer>
   )
 }

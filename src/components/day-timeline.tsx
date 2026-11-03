@@ -179,7 +179,7 @@ export function DayTimeline({
                 <button
                   key={dot.mark.id}
                   type="button"
-                  aria-label={`${time}, ${dot.mark.name}, ${kind}${dot.mark.from_sub ? ', by a substitute' : ''}`}
+                  aria-label={`${time}, ${dot.mark.name}, ${kind}${dot.mark.from_sub ? ', by a substitute' : ''}${dot.mark.note ? ', with a note' : ''}`}
                   onPointerEnter={() => setActiveId(dot.mark.id)}
                   onPointerLeave={() =>
                     setActiveId((id) => (id === dot.mark.id ? null : id))

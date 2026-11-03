@@ -42,11 +42,9 @@ export const classes: Scene = async ({ clock, secrets, phoneBrowser }) => {
     for (const name of ['Maya Johnson', 'Lucas Nguyen', 'Nora Haddad']) {
       await tap(p, page.getByTitle(name), { before: 380, after: 150 })
     }
-    await tap(
-      p,
-      page.getByRole('button', { name: 'Give mark to 3 students' }),
-      { before: 500 },
-    )
+    await tap(p, page.getByRole('button', { name: 'Mark 3 students' }), {
+      before: 500,
+    })
     await tap(
       p,
       page.getByRole('button', { name: 'Participating', exact: true }),

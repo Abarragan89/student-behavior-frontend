@@ -234,6 +234,9 @@ export function forgetRemovedStudent(
   void queryClient.invalidateQueries({
     queryKey: ['mark-counts', classroomId],
   })
+  // The server took them out of their group in this class. Groups show
+  // members through the roster, so they're gone from it already.
+  void queryClient.invalidateQueries({ queryKey: ['groups', classroomId] })
 
   if (deleted) {
     for (const key of ['student', 'student-marks', 'student-daily']) {
@@ -258,6 +261,21 @@ export function forgetDeletedMark(queryClient: QueryClient, mark: Mark) {
     marks?.filter((m) => m.id !== mark.id),
   )
   refetchMarkTotals(queryClient, mark)
+}
+
+/**
+ * After setMarkNote: the new note on the student's page at once, and on the
+ * printed reports when they're next opened.
+ */
+export function cacheMarkNote(queryClient: QueryClient, mark: Mark) {
+  const queryKey = ['student-marks', mark.student_id]
+  // A fetch already on its way (the queue refetches once its marks are sent)
+  // was asked before the note was saved, and would wipe it off the screen.
+  void queryClient.cancelQueries({ queryKey })
+  queryClient.setQueriesData<Array<Mark>>({ queryKey }, (marks) =>
+    marks?.map((m) => (m.id === mark.id ? { ...m, note: mark.note } : m)),
+  )
+  void queryClient.invalidateQueries({ queryKey: ['class-reports'] })
 }
 
 /** After restoreMark: back on the student's page for its day. */

@@ -189,6 +189,7 @@ export function forgetDeletedClassroom(
 ) {
   removeArchived(queryClient, classroom.id)
   queryClient.removeQueries({ queryKey: ['mark-counts', classroom.id] })
+  queryClient.removeQueries({ queryKey: ['groups', classroom.id] })
   // Students who were only in it are deleted too, and the backend doesn't say
   // which, so every student page reloads.
   void queryClient.invalidateQueries({ queryKey: ['student'] })

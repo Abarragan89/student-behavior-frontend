@@ -18,8 +18,8 @@ This policy covers the TeachForFree website, the installed app (the version you 
 - Student information you add belongs to you and your school. We use it only to run TeachForFree for you.
 - We never sell data, show ads, build profiles of students, or use your data to train AI models.
 - There are no analytics tools, ad trackers, or third-party tracking scripts.
-- Student names and lesson plan text are encrypted in our database.
-- Marks have no free-text notes. A mark records only which student, which class, which kind of mark, and when.
+- Student names, lesson plan text, and notes on marks are encrypted in our database.
+- A mark records which student, which class, which kind of mark, and when. You can add a short note to a negative mark to say what happened.
 - Families can choose or change their parent conference time with a code on a printed notice. Other families never see which student has which time, and we don't collect anything about parents.
 - Google Classroom is optional. We only read your classes and rosters, and only when you ask. We never store student email addresses.
 - You can delete marks, students, and classes yourself, and you can ask us to delete your whole account at any time.
@@ -48,8 +48,7 @@ We don't ask for student email addresses, birthdays, grades, photos, or ID numbe
 
 - **Your mark types:** the labels you choose, like "Helping others" or "Off task," and whether each one is positive or negative.
 - **Each mark:** which student, which class, which mark type, the time on your device when you tapped, and the time our server received it. When you mark several students with one tap, those marks share a group ID so Undo can take them all back together. Marks a substitute gives are labeled as theirs.
-
-Marks have no place for written comments.
+- **Notes on marks:** an optional short note (up to 280 characters) you or your substitute add to a negative mark to say what happened. Notes are encrypted before they're saved. A note shows on that student's page and prints on their behavior report, which may go home to their family, so leave out other students' names.
 
 ### Lesson plans
 
@@ -165,7 +164,7 @@ A teacher can share one day with a substitute using a link. The substitute doesn
 
 - see the teacher's name and that day's lesson plan, and check lines off
 - see the names of the students in the classes the teacher picked, and that day's mark counts for them
-- give marks, and undo marks they gave
+- give marks, undo marks they gave, and add a short note to a negative mark they gave
 
 The link doesn't show other days, past marks, or student charts. Marks given through a link are labeled as the substitute's. The teacher can see when the link was last opened, and can turn it off at any time. It stops working right away.
 
@@ -259,7 +258,7 @@ We never sell or rent personal information, and we never share it with advertise
 ## Security
 
 - Connections to TeachForFree use HTTPS.
-- Student names, lesson plan text, Google Classroom access keys, and the copies of substitute links and conference codes are encrypted in our database with AES-256-GCM. The encryption keys are kept separate from the database, so a copy of the database on its own doesn't reveal them. Our server holds the keys so it can show your information to you.
+- Student names, lesson plan text, notes on marks, Google Classroom access keys, and the copies of substitute links and conference codes are encrypted in our database with AES-256-GCM. The encryption keys are kept separate from the database, so a copy of the database on its own doesn't reveal them. Our server holds the keys so it can show your information to you.
 - Google student IDs are stored only as a keyed hash. Sign-in tokens are stored only as hashes, and substitute links and conference codes are looked up by a hash of their key.
 - Each teacher's information is kept separate. The database itself refuses to mix one teacher's students, classes, or marks with another's.
 - Our server tells browsers and proxies not to cache its answers, so student names don't end up in a shared computer's browser cache.

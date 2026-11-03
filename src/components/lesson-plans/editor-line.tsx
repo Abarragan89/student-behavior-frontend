@@ -18,12 +18,22 @@ import {
   useFocusTarget,
 } from '#/components/lesson-plans/editor-text'
 
+/** How far in each level sits. The "Add a line" box moves by the same. */
+export const INDENT_MARGIN = {
+  0: '',
+  1: 'ml-6',
+  2: 'ml-12',
+} satisfies Record<Indent, string>
+
 // How each level looks: the checkbox's place and shape, and what a screen
 // reader calls the line.
 const LEVELS = {
   0: { marker: 'size-4 rounded', label: 'Line' },
-  1: { marker: 'ml-6 size-3.5 rounded-full', label: 'Sub-step' },
-  2: { marker: 'ml-12 size-3 rounded-full', label: 'Sub-step of a sub-step' },
+  1: { marker: `${INDENT_MARGIN[1]} size-3.5 rounded-full`, label: 'Sub-step' },
+  2: {
+    marker: `${INDENT_MARGIN[2]} size-3 rounded-full`,
+    label: 'Sub-step of a sub-step',
+  },
 } satisfies Record<Indent, { marker: string; label: string }>
 
 /**
@@ -163,10 +173,6 @@ export function EditorLine({
     }
   }
 
-  // The buttons act without taking focus from the line, so the phone's
-  // keyboard stays up and they don't vanish before the tap lands.
-  const keepFocus = (e: PointerEvent) => e.preventDefault()
-
   return (
     <li
       ref={sortable.setNodeRef}
@@ -222,28 +228,7 @@ export function EditorLine({
       />
       {focused && (
         <div className="flex shrink-0 items-center">
-          {item.indent > 0 && (
-            <button
-              type="button"
-              onPointerDown={keepFocus}
-              onClick={moveOut}
-              aria-label="Move line out"
-              className="flex size-10 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
-            >
-              <IndentDecrease className="size-5" />
-            </button>
-          )}
-          {item.indent < MAX_INDENT && (
-            <button
-              type="button"
-              onPointerDown={keepFocus}
-              onClick={moveIn}
-              aria-label="Move line in"
-              className="flex size-10 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
-            >
-              <IndentIncrease className="size-5" />
-            </button>
-          )}
+          <IndentButtons indent={item.indent} onIn={moveIn} onOut={moveOut} />
           <button
             type="button"
             onPointerDown={keepFocus}
@@ -262,5 +247,50 @@ export function EditorLine({
         </div>
       )}
     </li>
+  )
+}
+
+// The buttons act without taking focus from the text box, so the phone's
+// keyboard stays up and they don't vanish before the tap lands.
+const keepFocus = (e: PointerEvent) => e.preventDefault()
+
+/**
+ * Move in and out a level, for phones (which have no Tab). Each shows only
+ * when there's room to move that way.
+ */
+export function IndentButtons({
+  indent,
+  onIn,
+  onOut,
+}: {
+  indent: Indent
+  onIn: () => void
+  onOut: () => void
+}) {
+  return (
+    <>
+      {indent > 0 && (
+        <button
+          type="button"
+          onPointerDown={keepFocus}
+          onClick={onOut}
+          aria-label="Move line out"
+          className="flex size-10 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          <IndentDecrease className="size-5" />
+        </button>
+      )}
+      {indent < MAX_INDENT && (
+        <button
+          type="button"
+          onPointerDown={keepFocus}
+          onClick={onIn}
+          aria-label="Move line in"
+          className="flex size-10 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          <IndentIncrease className="size-5" />
+        </button>
+      )}
+    </>
   )
 }

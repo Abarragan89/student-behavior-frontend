@@ -190,6 +190,12 @@ export function StudentReport({
                       {classroomName(mark.classroom_id)}
                     </span>
                   )}
+                  {/* What the teacher wrote about it, if anything. */}
+                  {mark.note && (
+                    <span className="block text-[8.5pt] font-normal italic">
+                      {mark.note}
+                    </span>
+                  )}
                 </span>
               </li>
             ))}

@@ -77,15 +77,16 @@ export const hero: Scene = async ({ clock, secrets, phoneBrowser }) => {
     await wait(1500)
 
     step('Mark the class')
-    await tap(p, page.getByRole('button', { name: 'Select all', exact: true }))
+    await tap(p, page.getByRole('button', { name: 'Select', exact: true }))
+    await tap(p, page.getByRole('checkbox', { name: 'Select all' }), {
+      before: 400,
+    })
     for (const name of ['Jayden Carter', 'Owen Fischer', 'Noah Kim']) {
       await tap(p, page.getByTitle(name), { before: 380, after: 150 })
     }
-    await tap(
-      p,
-      page.getByRole('button', { name: /^Give mark to \d+ students$/ }),
-      { before: 500 },
-    )
+    await tap(p, page.getByRole('button', { name: /^Mark \d+ students$/ }), {
+      before: 500,
+    })
     await tap(p, page.getByRole('button', { name: 'On task', exact: true }), {
       before: 700,
     })

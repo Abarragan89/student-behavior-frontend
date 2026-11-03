@@ -1,6 +1,6 @@
 import { queryOptions } from '@tanstack/react-query'
 import type { MutationKey, QueryClient, QueryKey } from '@tanstack/react-query'
-import { ApiError, apiDelete, apiGet, apiPatch, apiPost } from './api'
+import { ApiError, apiDelete, apiGet, apiPatch, apiPost, apiPut } from './api'
 import { SHARED_STALE_MS } from './freshness'
 
 // Behavior marks. A mark type is one of the teacher's buttons ("Helping
@@ -31,7 +31,13 @@ export type Mark = {
   // Given by a substitute, through a link the teacher shared. Missing from
   // servers older than substitute links.
   from_sub?: boolean
+  // What the teacher (or sub) wrote about it, "" for nothing. Offered for
+  // negative marks only. Missing from servers older than notes.
+  note?: string
 }
+
+/** The longest note on a mark, in characters. The server checks it too. */
+export const MAX_MARK_NOTE_LENGTH = 280
 
 /** When a mark was given: use this for times and days. */
 export function markTime(mark: Mark) {
@@ -189,6 +195,23 @@ export async function undoMark(markId: string, space?: string | null) {
 export const deleteMark = undoMark
 
 /**
+ * Replaces a mark's note; "" removes it. Resolves to the mark as saved, with
+ * the note tidied (one line, trimmed). Never queued on the device: notes hold
+ * text, so saving one needs a connection (see mark-queue.ts).
+ */
+export function setMarkNote(
+  markId: string,
+  note: string,
+  space?: string | null,
+) {
+  return apiPut<Mark>(
+    `/marks/${encodeURIComponent(markId)}/note`,
+    { note },
+    { space },
+  )
+}
+
+/**
  * The Undo after deleteMark: puts the mark back exactly as it was (same id,
  * time and class), and resolves to it. Works for a few minutes after the
  * delete; after that, or if the student or class has been deleted since, it
@@ -236,12 +259,16 @@ export function giveMarkToClass(
   )
 }
 
-/** One mark for each of the picked students. */
+/**
+ * One mark for each of the picked students. With groupId, a mark for a whole
+ * group (studentIds are its members on screen): the group also gets a point
+ * on its team score (see groups.ts).
+ */
 export function giveMarkToStudents(
   classroomId: string,
   studentIds: Array<string>,
   markTypeId: string,
-  { batchId, occurredAt, space }: BatchOptions,
+  { batchId, occurredAt, space, groupId }: BatchOptions & { groupId?: string },
 ) {
   return apiPost<MarkBatch>(
     `/classrooms/${encodeURIComponent(classroomId)}/mark-batches`,
@@ -249,6 +276,8 @@ export function giveMarkToStudents(
       batch_id: batchId,
       mark_type_id: markTypeId,
       student_ids: studentIds,
+      // Only sent for a group: older servers refuse fields they don't know.
+      ...(groupId ? { group_id: groupId } : {}),
       occurred_at: occurredAt,
     },
     { space },
@@ -276,10 +305,15 @@ export const MARK_MUTATION_KEY = ['marks'] as const
  */
 export type QueuedMark = {
   kind: 'give' | 'undo'
-  target: 'student' | 'selected' | 'class'
-  /** The mark's id (one student) or the batch's id (several, or the class). */
+  target: 'student' | 'selected' | 'class' | 'group'
+  /**
+   * The mark's id (one student) or the batch's id (several, the class, or a
+   * group).
+   */
   id: string
   classroomId: string
+  /** For a group: which one, so its team score changes too. */
+  groupId?: string
   /** Whose counts it changes. For the class: the roster on screen at the tap. */
   studentIds: Array<string>
   markTypeId: string

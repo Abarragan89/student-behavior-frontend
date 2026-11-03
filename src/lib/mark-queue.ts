@@ -11,11 +11,14 @@ import {
   giveMarkToStudents,
   markCountsQueryOptions,
   markTypesQueryOptions,
+  setMarkNote,
   undoMark,
   undoMarkBatch,
 } from './marks'
-import type { MarkBatch, QueuedMark } from './marks'
+import type { Mark, MarkBatch, QueuedMark } from './marks'
+import { groupName } from './groups'
 import { currentSpace, spaceFromMeta } from './space-state'
+import { cacheMarkNote } from './students'
 
 // Giving and undoing marks, as a queue that survives bad Wi-Fi.
 //
@@ -29,6 +32,22 @@ import { currentSpace, spaceFromMeta } from './space-state'
 // server answers a repeat with the mark it already has.
 
 const MARK_SCOPE = { id: 'marks' }
+
+/**
+ * Saving a mark's note. In the marks' scope, so a note typed for a mark that
+ * is still on its way is sent after it. Deliberately not under 'marks': every
+ * pending 'marks' mutation is saved on the device (persist.ts), and a note is
+ * text about a student, which never is. So a note needs a connection, and
+ * one waiting when the app closes is lost.
+ */
+export const MARK_NOTE_MUTATION_KEY = ['mark-notes'] as const
+
+/** What the note dialog sends: whose mark, the note, and the space it's in. */
+export type MarkNoteChange = {
+  markId: string
+  note: string
+  space: string | null
+}
 
 /**
  * How to send queued marks, by mutation key. Must run before the saved queue
@@ -55,6 +74,16 @@ export function registerMarkMutations(queryClient: QueryClient) {
     ...common,
     mutationFn: (mark: QueuedMark, { meta }) =>
       waitIfSignedOut(queryClient, () => sendUndo(mark, spaceFromMeta(meta))),
+  })
+  // No waitIfSignedOut: the note dialog waits for this answer, and would
+  // spin forever. Signed out, it fails and the dialog says so.
+  queryClient.setMutationDefaults(MARK_NOTE_MUTATION_KEY, {
+    scope: MARK_SCOPE,
+    retry: shouldRetry,
+    retryDelay,
+    mutationFn: ({ markId, note, space }: MarkNoteChange) =>
+      setMarkNote(markId, note, space),
+    onSuccess: (mark: Mark) => cacheMarkNote(queryClient, mark),
   })
 }
 
@@ -147,6 +176,8 @@ export function watchMarkQueue(queryClient: QueryClient, persist?: () => void) {
     ) {
       void queryClient.invalidateQueries({ queryKey: ['mark-counts'] })
       void queryClient.invalidateQueries({ queryKey: ['student-marks'] })
+      // Team scores, for group marks.
+      void queryClient.invalidateQueries({ queryKey: ['groups'] })
     }
   })
 }
@@ -187,7 +218,25 @@ async function sendGive(
         occurredAt,
         space,
       })
+    case 'group':
+      return giveMarkToStudents(classroomId, mark.studentIds, markTypeId, {
+        batchId: id,
+        occurredAt,
+        space,
+        groupId: mark.groupId,
+      })
+    default:
+      return unknownTarget(mark.target)
   }
+}
+
+/**
+ * Fails the send of a target this switch doesn't know, rather than letting
+ * it "succeed" unsent. Its parameter is `never`, so a target added to
+ * QueuedMark without a case above doesn't compile.
+ */
+export function unknownTarget(target: never): never {
+  throw new Error(`Unknown mark target: ${String(target)}`)
 }
 
 function sendUndo(mark: QueuedMark, space: string | null) {
@@ -238,21 +287,27 @@ export function retryDelay(failureCount: number, error: unknown) {
 // ---------- After the server answers ----------
 
 /**
- * A whole-class mark reaches whoever is enrolled when it arrives. If that's
- * not who was on screen, the roster changed elsewhere: fetch it again.
+ * A whole-class mark reaches whoever is enrolled when it arrives, and a
+ * group's mark skips members who have left. If that's not who was on screen,
+ * the roster changed elsewhere: fetch it (and the groups) again.
  */
 function checkClassRoster(
   queryClient: QueryClient,
   result: unknown,
   mark: QueuedMark,
 ) {
-  if (mark.target !== 'class') return
+  if (mark.target !== 'class' && mark.target !== 'group') return
   const reached = new Set((result as MarkBatch).marks.map((m) => m.student_id))
   const shown = new Set(mark.studentIds)
   const same =
     reached.size === shown.size && [...reached].every((id) => shown.has(id))
   if (!same) {
     void queryClient.invalidateQueries({ queryKey: meQueryOptions.queryKey })
+    if (mark.target === 'group') {
+      void queryClient.invalidateQueries({
+        queryKey: ['groups', mark.classroomId],
+      })
+    }
   }
 }
 
@@ -270,6 +325,11 @@ function onMarkFailed(
   void queryClient.invalidateQueries({
     queryKey: markCountsQueryOptions(mark.classroomId, mark.date).queryKey,
   })
+  if (mark.target === 'group') {
+    void queryClient.invalidateQueries({
+      queryKey: ['groups', mark.classroomId],
+    })
+  }
   if (notFound) {
     // A student, the class or the mark type changed somewhere else.
     void queryClient.invalidateQueries({ queryKey: meQueryOptions.queryKey })
@@ -309,6 +369,9 @@ function markTypeName(queryClient: QueryClient, markTypeId: string) {
 function describeStudents(queryClient: QueryClient, mark: QueuedMark) {
   if (mark.target === 'class') return 'the class'
   if (mark.target === 'selected') return `${mark.studentIds.length} students`
+  if (mark.target === 'group') {
+    return groupName(queryClient, ['groups', mark.classroomId], mark.groupId)
+  }
   const student = queryClient
     .getQueryData(meQueryOptions.queryKey)
     ?.classroom?.students.find((s) => s.id === mark.studentIds[0])
