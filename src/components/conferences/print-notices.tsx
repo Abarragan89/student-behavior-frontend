@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import {
   capitalize,
   formatFullDay,
@@ -17,6 +16,8 @@ import { QrSvg } from '#/components/qr-svg'
  * Dark ink on white, borders instead of fills, so it prints the same on any
  * printer and with "background graphics" off.
  *
+ * The editor names the saved PDF (usePrintTitle).
+ *
  * Sizes are in millimeters and points, for paper. A page is 250mm tall,
  * which fits both Letter (255mm) and A4 (273mm) inside the 12mm margins in
  * styles.css.
@@ -28,27 +29,6 @@ export function PrintNotices({
   conference: Conference
   notices: Array<ConferenceNotice> | null
 }) {
-  // The saved PDF is named after the page title.
-  const title = `Conference notices – ${conference.title}`
-  useEffect(() => {
-    let saved: string | null = null
-    const before = () => {
-      saved ??= document.title
-      document.title = title
-    }
-    const after = () => {
-      if (saved !== null) document.title = saved
-      saved = null
-    }
-    window.addEventListener('beforeprint', before)
-    window.addEventListener('afterprint', after)
-    return () => {
-      window.removeEventListener('beforeprint', before)
-      window.removeEventListener('afterprint', after)
-      after()
-    }
-  }, [title])
-
   if (!notices) return null
   return (
     <div className="hidden bg-white text-black print:block">

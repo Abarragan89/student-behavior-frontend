@@ -13,7 +13,8 @@ import { ArrowLeft, CircleAlert, NotebookText, Users } from 'lucide-react'
 import { Spinner } from '@/components/ui/spinner'
 import { cn } from '@/lib/utils'
 import { meQueryOptions } from '#/lib/auth'
-import type { Me } from '#/lib/auth'
+import type { Me, OpenClassroom } from '#/lib/auth'
+import { canEdit } from '#/lib/workspace'
 import { ClassHeader } from '#/components/class-header'
 import { ClassRoster } from '#/components/class-roster'
 import { ConnectionStatus } from '#/components/connection-status'
@@ -45,10 +46,12 @@ export const PresenterClass = memo(function PresenterClass({
 }) {
   // Already loaded by the login check (see _authed.tsx).
   const { data: me } = useSuspenseQuery(meQueryOptions)
-  if (!me) return null
+  // No class: a co-teacher who can't see this teacher's classes.
+  if (!me?.classroom) return null
   return (
     <TeacherClass
       me={me}
+      classroom={me.classroom}
       open={open}
       onOpenChange={onOpenChange}
       isToday={isToday}
@@ -58,16 +61,17 @@ export const PresenterClass = memo(function PresenterClass({
 
 function TeacherClass({
   me,
+  classroom,
   open,
   onOpenChange,
   isToday,
 }: {
   me: Me
+  classroom: OpenClassroom
   open: boolean
   onOpenChange: (open: boolean) => void
   isToday: boolean
 }) {
-  const { classroom } = me
   // Switching saves the open class on the server, like on the Classes page.
   const { shownId, isLoading, error, select } = useClassroomSwitch(classroom.id)
   const [switchOpen, setSwitchOpen] = useState(false)
@@ -111,6 +115,8 @@ function TeacherClass({
           key={classroom.id}
           classroom={classroom}
           pageLinks={false}
+          // A co-teacher with View on Classes sees the class, gives nothing.
+          readOnly={!canEdit(me, 'classes')}
         />
       ) : (
         // Adding students opens the Classes page, so it waits for later.

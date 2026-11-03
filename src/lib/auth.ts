@@ -7,9 +7,11 @@ import {
 import type { QueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { ApiError, apiFetch } from './api'
+import type { Space } from './coteachers'
 import { SHARED_STALE_MS } from './freshness'
 import { clearPersistedCache } from './persist'
 import { isStandalone } from './pwa-install'
+import { setSpace } from './space-state'
 
 export type Role = 'teacher' | 'admin'
 
@@ -27,9 +29,19 @@ export type ClassroomTab = {
   is_default: boolean // the open tab
 }
 
+// The open classroom, with its roster.
+export type OpenClassroom = {
+  id: string
+  name: string
+  // The Google Classroom class it was imported from; null if made here.
+  google_course_id: string | null
+  students: Array<Student>
+}
+
 // What GET /users/me (and PUT /users/me/default-classroom) send back: the
-// signed-in teacher, all their classrooms, and the default one's roster.
-// Every teacher has a default classroom. No user or student IDs: the backend
+// signed-in teacher, the space's classrooms, and the open one's roster. In
+// your own space that's your classes; as a co-teacher in another teacher's
+// space (workspace.ts), theirs. No user or student IDs of yours: the backend
 // works out whose data it is from the login cookies.
 export type Me = {
   teacher: {
@@ -43,14 +55,14 @@ export type Me = {
     picture_url?: string | null
   }
   classrooms: Array<ClassroomTab>
-  // The default classroom, the one on screen.
-  classroom: {
-    id: string
-    name: string
-    // The Google Classroom class it was imported from; null if made here.
-    google_course_id: string | null
-    students: Array<Student>
-  }
+  // The open classroom, the one on screen. Null only for a co-teacher who
+  // can't see the owner's classes.
+  classroom: OpenClassroom | null
+  // The teacher whose space this is; null (or missing, in a copy saved
+  // before co-teachers existed) in your own.
+  acting_for?: Space | null
+  // Teachers who made you their co-teacher.
+  coteaching?: Array<Space>
 }
 
 // Who is logged in, plus their dashboard data. The login cookies are
@@ -78,7 +90,9 @@ export function useLogout() {
   const navigate = useNavigate()
 
   return async () => {
-    await apiFetch('/auth/logout', { method: 'POST' })
+    await apiFetch('/auth/logout', { method: 'POST' }, { space: null })
+    // The next person on this device starts in their own space.
+    setSpace(null)
     // Update 'me' in place so everything showing the user re-renders now,
     // then drop anything else cached for the previous user.
     queryClient.setQueryData(meQueryOptions.queryKey, null)
@@ -120,26 +134,35 @@ export function rememberSignedIn(queryClient: QueryClient) {
 
 /**
  * Drops everything cached for a teacher once they're signed out (session
- * ended) or a different teacher signs in, so it isn't shown to, or saved on
- * the device for, the next person.
+ * ended), a different teacher signs in, or they move to another space, so it
+ * isn't shown to, or saved on the device for, the next person or space.
  */
 export function forgetOnTeacherChange(queryClient: QueryClient) {
-  let email = queryClient.getQueryData<Me | null>(meQueryOptions.queryKey)
-    ?.teacher.email
+  let who = identity(
+    queryClient.getQueryData<Me | null>(meQueryOptions.queryKey),
+  )
 
   return queryClient.getQueryCache().subscribe((event) => {
     if (event.type !== 'updated' || event.query.queryKey[0] !== 'me') return
     const me = event.query.state.data as Me | null | undefined
     if (me === undefined) return
 
-    const next = me?.teacher.email
-    if (next === email) return
-    const hadTeacher = email !== undefined
-    email = next
+    // A different space counts too: nothing cached says whose space it's
+    // from (see workspace.ts).
+    const next = identity(me)
+    if (next === who) return
+    const hadTeacher = who !== undefined
+    who = next
     if (hadTeacher) {
       queryClient.removeQueries({ predicate: (q) => q.queryKey[0] !== 'me' })
     }
   })
+}
+
+/** Who is signed in, and in whose space; undefined when signed out. */
+function identity(me: Me | null | undefined) {
+  if (!me) return undefined
+  return `${me.teacher.email}|${me.acting_for?.owner_id ?? ''}`
 }
 
 /**

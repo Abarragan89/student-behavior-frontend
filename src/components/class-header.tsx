@@ -2,7 +2,8 @@ import type { RefObject } from 'react'
 import { Users } from 'lucide-react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import type { Me } from '#/lib/auth'
+import { cn } from '@/lib/utils'
+import type { OpenClassroom } from '#/lib/auth'
 import { formatStudentCount } from '#/lib/classroom'
 import { MarkRing } from '#/components/student-card'
 import { useClassToday } from '#/hooks/useClassToday'
@@ -21,9 +22,10 @@ export function ClassHeader({
   headingLevel: Heading = 'h1',
   headingRef,
   headingId,
+  className,
 }: {
   /** The class whose students are on screen. */
-  classroom: Pick<Me['classroom'], 'id' | 'students'>
+  classroom: Pick<OpenClassroom, 'id' | 'students'>
   name: string
   /** A switch is under way: classroom is still the old class. */
   loading: boolean
@@ -35,13 +37,20 @@ export function ClassHeader({
   headingRef?: RefObject<HTMLHeadingElement | null>
   /** For naming a region after the class. */
   headingId?: string
+  /** e.g. room on the right for the phone avatar (the Classes page). */
+  className?: string
 }) {
   const today = useClassToday(classroom.id, !loading)
 
   return (
-    // Phones: one short row (small ring, name cut off with "…", Switch), so
+    // Phones: short (small ring, name cut off with "…", Switch under it), so
     // the student cards get the screen.
-    <header className="flex items-center gap-3 sm:items-start sm:gap-4">
+    <header
+      className={cn(
+        'flex items-center gap-3 sm:items-start sm:gap-4',
+        className,
+      )}
+    >
       <MarkRing today={today} className="size-10 sm:size-20">
         <Avatar aria-hidden className="size-full after:hidden">
           <AvatarFallback className="bg-muted text-foreground">
@@ -50,14 +59,14 @@ export function ClassHeader({
         </Avatar>
       </MarkRing>
       <div className="flex min-w-0 flex-1 flex-col gap-1 sm:pt-2">
-        <div className="flex items-baseline gap-x-3 gap-y-1 sm:flex-wrap">
+        <div className="flex flex-col items-start sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-3 sm:gap-y-1">
           <Heading
             ref={headingRef}
             id={headingId}
             // Focusable from code only, for after archiving a class.
             tabIndex={-1}
             title={name}
-            className="min-w-0 truncate text-xl font-bold outline-none sm:overflow-visible sm:text-2xl sm:whitespace-normal sm:wrap-break-word"
+            className="max-w-full min-w-0 truncate text-xl font-bold outline-none sm:overflow-visible sm:text-2xl sm:whitespace-normal sm:wrap-break-word"
           >
             {name}
           </Heading>

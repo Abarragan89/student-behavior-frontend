@@ -14,12 +14,19 @@ import FaqList from '../components/FaqList.astro'
 import RelatedPages from '../components/RelatedPages.astro'
 import ClosingBand from '../components/landing/ClosingBand.astro'
 import {
+  CheckList,
   FeatureCards,
   MoreLink,
   StepList,
 } from '../components/landing/LandingSections'
 import type { Feature, Step } from '../components/landing/LandingSections'
-import { LessonNotesMockup } from '../components/landing/LessonNotesMockup'
+import PhoneShot from '../components/media/PhoneShot.astro'
+import PhoneVideo from '../components/media/PhoneVideo.astro'
+import PosterPreload from '../components/media/PosterPreload.astro'
+import PaperSheet from '../components/media/PaperSheet.astro'
+import Showcase from '../components/media/Showcase.astro'
+import Stack from '../components/media/Stack.astro'
+import { CLIPS, PRINTS, SHOTS } from '../captures'
 import { faqItems } from '../content/faq'
 
 const steps: Array<Step> = [
@@ -76,6 +83,7 @@ const features: Array<Feature> = [
   description="Plan each school day as a simple checklist on your phone, then teach from it in Presenter view. Copy last week’s plan, add times, print, or share with a sub."
   path="/lesson-planner"
 >
+  <PosterPreload slot="head" clip={CLIPS.planEditor} />
   <PageHero
     eyebrow="Lesson plans"
     eyebrowClass="bg-accent text-accent-foreground"
@@ -83,7 +91,7 @@ const features: Array<Feature> = [
     lead="Write tomorrow’s lesson the way you’d jot it on a sticky note: a few sections, a few lines each. Then open it on your phone and check things off as you teach."
     secondary={{ href: '#how-it-works', label: 'See how it works' }}
   >
-    <div slot="visual"><LessonNotesMockup /></div>
+    <PhoneVideo slot="visual" clip={CLIPS.planEditor} size="hero" priority />
   </PageHero>
 
   <Section id="how-it-works" title="How it works" muted>
@@ -91,6 +99,37 @@ const features: Array<Feature> = [
       <StepList steps={steps} />
     </div>
   </Section>
+
+  <Showcase
+    reverse
+    eyebrow="Presenter view"
+    title="Teach from your plan, and give marks without leaving it."
+    lead="Presenter view shows your whole day in big rows you tap as you finish each part, with a clock and a “Now” label on the section whose time it is. The round button in the corner opens your class for marks."
+  >
+    <CheckList
+      className="mt-6"
+      items={[
+        'Opens on the section happening now',
+        'Keeps the screen awake on most devices',
+        'Back to your plan in one tap',
+      ]}
+    />
+    <PhoneVideo slot="visual" clip={CLIPS.planAndMarks} />
+  </Showcase>
+
+  <Showcase
+    muted
+    eyebrow="Calendar and printing"
+    eyebrowClass="bg-secondary text-foreground"
+    title="See the month. Print any day."
+    lead="The calendar shows which days have a plan. Print a day with boxes to tick by hand, and add a QR code so a substitute can open it on their phone."
+  >
+    <MoreLink href="/substitute-plans" label="More about sub plans" />
+    <Stack slot="visual">
+      <PaperSheet slot="paper" {...PRINTS.planPrintQr} tilt={2} crop="34rem" />
+      <PhoneShot slot="phone" {...SHOTS.calendar} size="sm" class="-rotate-2" />
+    </Stack>
+  </Showcase>
 
   <Section
     title="Plans that keep up with your day"

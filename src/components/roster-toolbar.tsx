@@ -1,14 +1,16 @@
 import { useEffect, useRef } from 'react'
+import { Volume2, VolumeX } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { formatStudentCount } from '#/lib/classroom'
+import { setMarkSoundsMuted, useMarkSoundsMuted } from '#/lib/sounds'
 
 const linkClass = 'h-9 px-2 text-base font-bold'
 
 /**
- * Beside the roster's heading, at the right. Normally "Select" and "Select
- * all". While picking students, the button that gives them a mark, plus
- * Cancel.
+ * Beside the roster's heading, at the right. Normally the speaker button,
+ * "Select" and "Select all". While picking students, the button that gives
+ * them a mark, plus Cancel.
  */
 export function RosterToolbar({
   selecting,
@@ -67,6 +69,7 @@ export function RosterToolbar({
         </>
       ) : (
         <>
+          <SoundButton />
           <Button
             ref={firstRef}
             variant="link"
@@ -85,5 +88,30 @@ export function RosterToolbar({
         {selecting ? `${selectedCount} selected` : ''}
       </span>
     </div>
+  )
+}
+
+/**
+ * Turns the sound marks make on or off (see src/lib/sounds.ts), on this
+ * device. Pressed means on.
+ */
+function SoundButton() {
+  const muted = useMarkSoundsMuted()
+
+  return (
+    <button
+      type="button"
+      aria-label="Mark sounds"
+      aria-pressed={!muted}
+      title={muted ? 'Sounds off' : 'Sounds on'}
+      onClick={() => setMarkSoundsMuted(!muted)}
+      className="flex size-9 shrink-0 items-center justify-center rounded-lg text-primary outline-none hover:bg-muted focus-visible:ring-4 focus-visible:ring-ring"
+    >
+      {muted ? (
+        <VolumeX className="size-5" aria-hidden />
+      ) : (
+        <Volume2 className="size-5" aria-hidden />
+      )}
+    </button>
   )
 }

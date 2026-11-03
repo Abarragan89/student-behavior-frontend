@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { Me, Student } from '#/lib/auth'
+import { useNavigate } from '@tanstack/react-router'
+import type { OpenClassroom, Student } from '#/lib/auth'
 import { formatStudentCount } from '#/lib/classroom'
 import { useMarkSource } from '#/lib/mark-source'
+import { preloadMarkSounds } from '#/lib/sounds'
 import { MarkDialog } from '#/components/mark-dialog'
 import { RosterToolbar } from '#/components/roster-toolbar'
 import { StudentCard } from '#/components/student-card'
@@ -18,15 +20,21 @@ import type { MarkTarget } from '#/hooks/useGiveMark'
  * "Select" lets the teacher tap several cards and give them all one mark.
  * "Select all" starts with every card picked, so the teacher can untick the
  * few who shouldn't get it.
+ *
+ * Read-only (a co-teacher who can view but not edit Classes): no marks to
+ * give, so there's no toolbar, and a card opens the student's page.
  */
 export function ClassRoster({
   classroom,
   pageLinks = true,
+  readOnly = false,
 }: {
-  classroom: Pick<Me['classroom'], 'id' | 'name' | 'students'>
+  classroom: Pick<OpenClassroom, 'id' | 'name' | 'students'>
   /** The marks dialog's links to other pages (see MarkDialog). */
   pageLinks?: boolean
+  readOnly?: boolean
 }) {
+  const navigate = useNavigate()
   const { id: classroomId, name, students } = classroom
   const sectionRef = useRef<HTMLElement>(null)
   const labels = cardLabels(students)
@@ -39,6 +47,11 @@ export function ClassRoster({
     [counts.data],
   )
   const give = useGiveMark(classroomId)
+
+  // So the first mark's sound doesn't wait for the download.
+  useEffect(() => {
+    preloadMarkSounds()
+  }, [])
 
   // Picking students for one mark. Read through the roster, so students
   // who've left it (after a refresh) drop out on their own.
@@ -105,27 +118,29 @@ export function ClassRoster({
       aria-label="Students"
       className="flex flex-col gap-2"
     >
-      <RosterToolbar
-        selecting={selecting}
-        selectedCount={selected.length}
-        onSelect={() => setSelecting(true)}
-        onSelectAll={() => {
-          setSelecting(true)
-          setSelectedIds(new Set(students.map((s) => s.id)))
-        }}
-        onGive={() =>
-          openMarks(
-            // Just one: the same as tapping their card. Everyone (nobody
-            // unticked): the whole class.
-            selected.length === 1
-              ? { kind: 'student', student: selected[0] }
-              : selected.length === students.length
-                ? { kind: 'class', students }
-                : { kind: 'selected', students: selected },
-          )
-        }
-        onCancel={stopSelecting}
-      />
+      {!readOnly && (
+        <RosterToolbar
+          selecting={selecting}
+          selectedCount={selected.length}
+          onSelect={() => setSelecting(true)}
+          onSelectAll={() => {
+            setSelecting(true)
+            setSelectedIds(new Set(students.map((s) => s.id)))
+          }}
+          onGive={() =>
+            openMarks(
+              // Just one: the same as tapping their card. Everyone (nobody
+              // unticked): the whole class.
+              selected.length === 1
+                ? { kind: 'student', student: selected[0] }
+                : selected.length === students.length
+                  ? { kind: 'class', students }
+                  : { kind: 'selected', students: selected },
+            )
+          }
+          onCancel={stopSelecting}
+        />
+      )}
 
       <ul className="grid grid-cols-4 gap-2 sm:grid-cols-5 sm:gap-3 md:grid-cols-6 lg:grid-cols-8">
         {students.map((student, i) => (
@@ -145,11 +160,19 @@ export function ClassRoster({
               }
               selecting={selecting}
               selected={selecting && selectedIds.has(student.id)}
-              onPress={() =>
-                selecting
-                  ? toggle(student.id)
-                  : openMarks({ kind: 'student', student })
-              }
+              onPress={() => {
+                if (readOnly) {
+                  if (pageLinks) {
+                    void navigate({
+                      to: '/students/$studentId',
+                      params: { studentId: student.id },
+                    })
+                  }
+                  return
+                }
+                if (selecting) toggle(student.id)
+                else openMarks({ kind: 'student', student })
+              }}
             />
           </li>
         ))}

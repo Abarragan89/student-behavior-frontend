@@ -11,7 +11,8 @@ export function TeacherAvatar({
   className,
   fallbackClassName,
 }: {
-  teacher: Me['teacher']
+  /** Anyone with a name: you, or a co-teacher on the Account page. */
+  teacher: Pick<Me['teacher'], 'name' | 'picture_url'>
   /** e.g. a size, like `size-16`. */
   className?: string
   /** e.g. bigger initials for a bigger avatar. */

@@ -21,6 +21,7 @@ import {
   waitIfSignedOut,
 } from './mark-queue'
 import { localDate } from './marks'
+import { spaceFromMeta } from './space-state'
 
 // Saving lesson plan changes, in order, through bad Wi-Fi.
 //
@@ -45,7 +46,9 @@ export function registerLessonPlanMutations(queryClient: QueryClient) {
       scope: SCOPE,
       retry: shouldRetry,
       retryDelay,
-      mutationFn: (op: Op) => waitIfSignedOut(queryClient, () => sendOp(op)),
+      // Sent to the space it was made in, even after switching spaces.
+      mutationFn: (op: Op, { meta }) =>
+        waitIfSignedOut(queryClient, () => sendOp(op, spaceFromMeta(meta))),
       onSuccess: (_result: unknown, op: Op) => refetchIfRacing(queryClient, op),
       onError: (error: unknown, op: Op) => onOpFailed(queryClient, error, op),
     })
@@ -134,7 +137,9 @@ function onOpFailed(queryClient: QueryClient, error: unknown, op: Op) {
           : 'A section can hold up to 150 lines.'
         : status === 404
           ? 'It was deleted on another device.'
-          : 'Your plan now shows what was saved.',
+          : status === 403
+            ? 'You can no longer change this plan.'
+            : 'Your plan now shows what was saved.',
   })
 }
 
@@ -212,20 +217,24 @@ export function whenSaved(queryClient: QueryClient, timeoutMs = 15_000) {
  * phone before the classroom Wi-Fi drops.
  */
 export function prefetchLessonPlans(queryClient: QueryClient) {
-  const prefetch = () => {
+  const prefetch = (me: Me) => {
+    // A co-teacher who can't see this space's plans.
+    if (me.acting_for && !me.acting_for.permissions.lesson_plans) return
     const today = localDate()
     for (const date of [today, stepSchoolDay(today, 1)]) {
       void queryClient.prefetchQuery(lessonPlanDayQueryOptions(date))
     }
   }
-  if (queryClient.getQueryData(meQueryOptions.queryKey)) {
-    prefetch()
+  const known = queryClient.getQueryData(meQueryOptions.queryKey)
+  if (known) {
+    prefetch(known)
     return
   }
   const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
     if (event.type !== 'updated' || event.query.queryKey[0] !== 'me') return
-    if (!(event.query.state.data as Me | null | undefined)) return
+    const me = event.query.state.data as Me | null | undefined
+    if (!me) return
     unsubscribe()
-    prefetch()
+    prefetch(me)
   })
 }

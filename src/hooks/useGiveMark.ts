@@ -5,6 +5,7 @@ import { formatStudentCount } from '#/lib/classroom'
 import { useMarkSource } from '#/lib/mark-source'
 import { bumpCounts } from '#/lib/marks'
 import type { MarkType, QueuedMark } from '#/lib/marks'
+import { playMarkSound } from '#/lib/sounds'
 import { uuidv7 } from '#/lib/uuid'
 
 /** How long the toast, and so the Undo button, stays up. */
@@ -60,6 +61,9 @@ export function useGiveMark(classroomId: string) {
 
     bumpCounts(queryClient, mark, 1, countsKey)
     source.enqueue(queryClient, mark)
+    // Here, not when it's sent: once per tap, even for the whole class, and
+    // never again for a mark sent later or resent. Undo makes none.
+    playMarkSound(markType.is_positive)
 
     function undo() {
       if (undone) return

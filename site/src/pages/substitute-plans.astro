@@ -21,7 +21,12 @@ import {
   StepList,
 } from '../components/landing/LandingSections'
 import type { Feature, Step } from '../components/landing/LandingSections'
-import { SubPlanMockup } from '../components/landing/SubPlanMockup'
+import PhoneShot from '../components/media/PhoneShot.astro'
+import PhoneVideo from '../components/media/PhoneVideo.astro'
+import PosterPreload from '../components/media/PosterPreload.astro'
+import PaperSheet from '../components/media/PaperSheet.astro'
+import Stack from '../components/media/Stack.astro'
+import { CLIPS, PRINTS, SHOTS } from '../captures'
 import { faqItems } from '../content/faq'
 
 const steps: Array<Step> = [
@@ -81,9 +86,10 @@ const safety: Array<Feature> = [
 
 <BaseLayout
   title="Share Sub Plans with a Link — Free for Teachers | TeachForFree"
-  description="Share one day’s lesson plan with a substitute using a link or a printed QR code. They check off the plan and give behavior marks. No account needed. Free."
+  description="Share one day’s lesson plan with a substitute by link or printed QR code. They check off the plan and give behavior marks. No account needed. Free forever."
   path="/substitute-plans"
 >
+  <PosterPreload slot="head" clip={CLIPS.subView} />
   <PageHero
     eyebrow="Substitute plans"
     eyebrowClass="bg-secondary text-foreground"
@@ -91,12 +97,16 @@ const safety: Array<Feature> = [
     lead="Send one link, or print your plan with a QR code. Your sub gets that day’s plan and your class on their phone, with no account and no password."
     secondary={{ href: '#how-it-works', label: 'See how it works' }}
   >
-    <div slot="visual"><SubPlanMockup /></div>
+    <PhoneVideo slot="visual" clip={CLIPS.subView} size="hero" priority />
   </PageHero>
 
   <Section id="how-it-works" title="How it works" muted>
-    <div class="max-w-2xl">
+    <div class="grid items-center gap-12 overflow-x-clip lg:grid-cols-2 lg:gap-16">
       <StepList steps={steps} />
+      <Stack phoneSide="right">
+        <PaperSheet slot="paper" {...PRINTS.planPrintQr} tilt={-2} crop="34rem" />
+        <PhoneShot slot="phone" {...SHOTS.shareDialog} size="sm" class="rotate-2" />
+      </Stack>
     </div>
   </Section>
 

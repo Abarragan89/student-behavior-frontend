@@ -1,0 +1,59 @@
+---
+// A phone in front of a printed page: what you do on the phone, and what
+// comes out of the printer. Slots: "paper" and "phone".
+interface Props {
+  /** Which side the phone sits on, over the page's lower corner. */
+  phoneSide?: 'left' | 'right'
+  class?: string
+}
+const { phoneSide = 'left', class: className } = Astro.props
+---
+
+<div class:list={['stack', phoneSide === 'right' && 'stack-right', className]}>
+  <div class="stack-paper"><slot name="paper" /></div>
+  <div class="stack-phone"><slot name="phone" /></div>
+</div>
+
+<style>
+  /* Twelve columns: the page takes most of the width, and the phone sits
+     over its lower corner, so the top of the page stays in view. */
+  .stack {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    align-items: end;
+    padding-bottom: 3.5rem;
+  }
+  /* A little smaller than a phone on its own, so it hides less of the page. */
+  .stack-phone :global(.phone) {
+    --phone-max: 225px;
+  }
+  .stack-paper {
+    grid-area: 1 / 3 / 2 / 13;
+    align-self: start;
+  }
+  .stack-phone {
+    grid-area: 1 / 1 / 2 / 7;
+    z-index: 1;
+    margin-bottom: -3.5rem;
+  }
+  .stack-right .stack-paper {
+    grid-area: 1 / 1 / 2 / 11;
+  }
+  .stack-right .stack-phone {
+    grid-area: 1 / 7 / 2 / 13;
+  }
+  @media (min-width: 640px) {
+    .stack-paper {
+      grid-column-start: 4;
+    }
+    .stack-phone {
+      grid-column-end: 6;
+    }
+    .stack-right .stack-paper {
+      grid-column-end: 10;
+    }
+    .stack-right .stack-phone {
+      grid-column-start: 8;
+    }
+  }
+</style>

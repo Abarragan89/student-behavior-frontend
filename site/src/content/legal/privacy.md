@@ -61,7 +61,7 @@ When you share a day with a substitute, we store the date, your time zone (so we
 
 ### Parent conferences
 
-When you set up parent conferences, we store the conference's name, the name you sign notices with, the location you type, your time zone, the classes you picked, the conference times, which student has which time, when you printed each student's notice, and each change a family makes (which student, from which time, to which time, and when). We don't collect anything about parents: no names, email addresses, or phone numbers. See [Conference sign-ups](#conference-sign-ups) below.
+When you set up parent conferences, we store the conference's name, the name you sign notices with, the location you type, your time zone, the classes you picked, the conference times, which student has which time, when you printed each student's notice, which meetings you marked as complete, and each change a family makes (which student, from which time, to which time, and when). We don't collect anything about parents: no names, email addresses, or phone numbers. See [Conference sign-ups](#conference-sign-ups) below.
 
 ### Google Classroom (optional)
 
@@ -280,7 +280,7 @@ We keep your account and everything you've added until you delete it or ask us t
 - **A class:** archive it first, then delete it. Deleting a class removes all of its marks, plus any of its students who aren't in another of your classes.
 - **Lesson plan sections and lines** are deleted when you delete them.
 - **A substitute link** can be turned off at any time, and it stops working right away. We keep the record of the link (its date and classes) so marks given through it stay labeled as the substitute's.
-- **A parent conference** can be deleted with all its times, codes, and families' changes, and its codes stop working right away. A single time can be removed, and a student's code replaced, at any time.
+- **A parent conference** can be deleted with all its times, codes, and families' changes, and its codes stop working right away. A single time, or a whole day of times, can be removed, and a student's code replaced, at any time.
 - **Google Classroom** can be disconnected at any time (see [Disconnecting](#disconnecting)).
 
 ### Automatic cleanup

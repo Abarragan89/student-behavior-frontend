@@ -1,0 +1,157 @@
+---
+import {
+  BadgeCheck,
+  EyeOff,
+  Languages,
+  LockKeyhole,
+  RefreshCw,
+  Trash2,
+} from 'lucide-react'
+import BaseLayout from '../layouts/BaseLayout.astro'
+import PageHero from '../components/PageHero.astro'
+import Section from '../components/Section.astro'
+import FaqList from '../components/FaqList.astro'
+import RelatedPages from '../components/RelatedPages.astro'
+import ClosingBand from '../components/landing/ClosingBand.astro'
+import PaperSheet from '../components/media/PaperSheet.astro'
+import PhoneVideo from '../components/media/PhoneVideo.astro'
+import PosterPreload from '../components/media/PosterPreload.astro'
+import Showcase from '../components/media/Showcase.astro'
+import {
+  CheckList,
+  FeatureCards,
+  MoreLink,
+  StepList,
+} from '../components/landing/LandingSections'
+import type { Feature, Step } from '../components/landing/LandingSections'
+import { CLIPS, PRINTS } from '../captures'
+import { faqItems } from '../content/faq'
+
+const steps: Array<Step> = [
+  {
+    title: 'Set your times',
+    text: 'Pick a day, a start and end time, and how long each meeting is. TeachForFree makes the times. Add more days the same way.',
+  },
+  {
+    title: 'Put students in times',
+    text: 'Tap a time and pick a student. Students without a time wait in their own list, one tap away.',
+  },
+  {
+    title: 'Print the notices',
+    text: 'One page per student, English on the top half and Spanish on the bottom, each with a QR code. Send them home in folders.',
+  },
+  {
+    title: 'Families pick a new time if they need one',
+    text: 'They scan the code with their phone’s camera, see the open times and switch. The change shows up on your list.',
+  },
+]
+
+const features: Array<Feature> = [
+  {
+    title: 'English and Spanish',
+    text: 'Every notice is in both languages, and the family’s page switches between English and Español with one tap.',
+    icon: Languages,
+  },
+  {
+    title: 'Live for families',
+    text: 'When a family takes a time, it grays out on every other family’s page right away. No double bookings.',
+    icon: RefreshCw,
+  },
+  {
+    title: 'No last-minute surprises',
+    text: 'Families can’t move into or out of a time in the 24 hours before it. You can also turn online changes off.',
+    icon: LockKeyhole,
+  },
+  {
+    title: 'Private by design',
+    text: 'A family sees only their own child’s first name, their time, and which times are open. Never who has the others.',
+    icon: EyeOff,
+  },
+  {
+    title: 'No accounts, no apps',
+    text: 'The QR code is all a family needs. Lost a notice? Make a new code for that student, and the old one stops working.',
+    icon: BadgeCheck,
+  },
+  {
+    title: 'Cleans up after itself',
+    text: 'A conference and everything in it is deleted 30 days after its last time.',
+    icon: Trash2,
+  },
+]
+---
+
+<BaseLayout
+  title="Free Parent-Teacher Conference Sign-Up Sheet | TeachForFree"
+  description="Schedule parent-teacher conferences free: set times, print English and Spanish notices with a QR code, and let families pick an open time on their phone."
+  path="/parent-conferences"
+>
+  <PosterPreload slot="head" clip={CLIPS.conferenceFamily} />
+  <PageHero
+    eyebrow="Parent conferences"
+    eyebrowClass="bg-accent text-accent-foreground"
+    title="Parent-teacher conferences, scheduled in minutes."
+    lead="Set your times, put each student in one, and print a notice for every family in English and Spanish. Families scan the QR code to see their time, or move to another open one. No sign-up sheets, and no emails back and forth."
+    secondary={{ href: '#how-it-works', label: 'See how it works' }}
+  >
+    <PhoneVideo
+      slot="visual"
+      clip={CLIPS.conferenceFamily}
+      size="hero"
+      priority
+    />
+  </PageHero>
+
+  <Section id="how-it-works" title="How it works" muted>
+    <div
+      class="grid items-center gap-12 overflow-x-clip lg:grid-cols-2 lg:gap-16"
+    >
+      <StepList steps={steps} />
+      <PaperSheet
+        {...PRINTS.conferenceNotice}
+        tilt={2}
+        class="mx-auto max-w-md"
+      />
+    </div>
+  </Section>
+
+  <Showcase
+    reverse
+    eyebrow="Your list"
+    title="Every family’s time, at a glance."
+    lead="Times are grouped by day. When a family picks a new time, it’s marked “Picked by family” and listed under Changes by families, with the old time and the new one."
+  >
+    <CheckList
+      className="mt-6"
+      items={[
+        'See who still needs a time, and give them one in a tap',
+        'Reprint a notice whenever a time changes',
+        'Works on your phone, tablet or laptop',
+      ]}
+    />
+    <PhoneVideo slot="visual" clip={CLIPS.conferenceTeacher} />
+  </Showcase>
+
+  <Section
+    title="Made for real families"
+    intro="Busy schedules, two languages, and a notice that might sit in a backpack for a week."
+    muted
+  >
+    <FeatureCards items={features} />
+  </Section>
+
+  <Section title="Questions about parent conferences">
+    <FaqList
+      items={faqItems([
+        'conference-families',
+        'conference-spanish',
+        'conference-account',
+        'conference-last-minute',
+        'conference-privacy',
+      ])}
+    />
+    <MoreLink href="/faq" label="All questions" />
+  </Section>
+
+  <RelatedPages current="/parent-conferences" />
+  <ClosingBand />
+</BaseLayout>

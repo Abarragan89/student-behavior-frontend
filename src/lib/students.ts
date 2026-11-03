@@ -40,11 +40,12 @@ export function studentFromMe(
   me: Me | null | undefined,
   studentId: string,
 ): StudentDetail | undefined {
-  const student = me?.classroom.students.find((s) => s.id === studentId)
-  if (!me || !student) return undefined
+  const classroom = me?.classroom
+  const student = classroom?.students.find((s) => s.id === studentId)
+  if (!classroom || !student) return undefined
   return {
     ...student,
-    classrooms: [{ id: me.classroom.id, name: me.classroom.name }],
+    classrooms: [{ id: classroom.id, name: classroom.name }],
   }
 }
 
@@ -124,12 +125,13 @@ export function cacheStudentName(
 ) {
   queryClient.setQueryData(studentQueryOptions(student.id).queryKey, student)
   queryClient.setQueryData(meQueryOptions.queryKey, (me) => {
-    if (!me?.classroom.students.some((s) => s.id === student.id)) return me
+    const classroom = me?.classroom
+    if (!me || !classroom?.students.some((s) => s.id === student.id)) return me
     return {
       ...me,
       classroom: {
-        ...me.classroom,
-        students: me.classroom.students.map((s) =>
+        ...classroom,
+        students: classroom.students.map((s) =>
           s.id === student.id
             ? {
                 ...s,
@@ -171,12 +173,13 @@ export function forgetRemovedStudent(
   deleted: boolean,
 ) {
   queryClient.setQueryData(meQueryOptions.queryKey, (me) => {
-    if (me?.classroom.id !== classroomId) return me
+    const classroom = me?.classroom
+    if (!me || classroom?.id !== classroomId) return me
     return {
       ...me,
       classroom: {
-        ...me.classroom,
-        students: me.classroom.students.filter((s) => s.id !== studentId),
+        ...classroom,
+        students: classroom.students.filter((s) => s.id !== studentId),
       },
     }
   })

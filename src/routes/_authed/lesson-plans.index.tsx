@@ -7,10 +7,13 @@ import {
   lessonPlanDayQueryOptions,
 } from '#/lib/lesson-plans'
 import { localDate } from '#/lib/marks'
+import { mayLoad } from '#/lib/workspace'
 import { MonthCalendar } from '#/components/lesson-plans/month-calendar'
 import { TodayCard } from '#/components/lesson-plans/today-card'
 
 export const Route = createFileRoute('/_authed/lesson-plans/')({
+  // A co-teacher needs at least View on Lesson plans (_authed.tsx checks).
+  staticData: { feature: { key: 'lesson_plans', level: 'view' } },
   // ?month=YYYY-MM picks the month; left out, it's this month.
   validateSearch: (search: Record<string, unknown>): { month?: string } => ({
     month: isMonthString(search.month) ? search.month : undefined,
@@ -18,6 +21,7 @@ export const Route = createFileRoute('/_authed/lesson-plans/')({
   loaderDeps: ({ search }) => ({ month: search.month }),
   // Started early, not waited for: the page shows what it has meanwhile.
   loader: ({ context: { queryClient }, deps }) => {
+    if (!mayLoad(queryClient, 'lesson_plans')) return
     const today = localDate()
     void queryClient
       .query(lessonPlanCalendarQueryOptions(deps.month ?? monthOf(today)))

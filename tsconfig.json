@@ -1,7 +1,8 @@
 {
   "include": ["**/*.ts", "**/*.tsx", "eslint.config.js", "prettier.config.js", "vite.config.js"],
-  // The marketing site has its own (site/tsconfig.json, `npm run check:site`).
-  "exclude": ["node_modules", "dist", "site"],
+  // The marketing site and the capture scripts have their own tsconfig.json
+  // (`npm run check:site`; `npx tsc -p scripts/capture`).
+  "exclude": ["node_modules", "dist", "site", "scripts/capture"],
   
   "compilerOptions": {
     "target": "ES2022",

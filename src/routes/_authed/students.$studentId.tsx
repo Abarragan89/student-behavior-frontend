@@ -26,6 +26,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { cn } from '@/lib/utils'
 import { ApiError } from '#/lib/api'
 import { useMe } from '#/lib/auth'
+import { canEdit, mayLoad } from '#/lib/workspace'
 import {
   addDays,
   formatHourSpan,
@@ -56,6 +57,8 @@ import { StudentReport } from '#/components/student-report'
 import { MarkRing, initials } from '#/components/student-card'
 
 export const Route = createFileRoute('/_authed/students/$studentId')({
+  // A co-teacher needs at least View on Classes (_authed.tsx checks).
+  staticData: { feature: { key: 'classes', level: 'view' } },
   // ?date=YYYY-MM-DD picks the day; left out, it's today.
   validateSearch: (search: Record<string, unknown>): { date?: string } => ({
     date: isDateString(search.date) ? search.date : undefined,
@@ -64,6 +67,7 @@ export const Route = createFileRoute('/_authed/students/$studentId')({
   // Started early, not waited for: the page shows what it has meanwhile.
   loader: ({ context, params, deps }) => {
     const { queryClient } = context
+    if (!mayLoad(queryClient, 'classes')) return
     void queryClient
       .query(studentQueryOptions(params.studentId))
       .catch(() => null)
@@ -140,8 +144,11 @@ function StudentPage() {
       date={date}
       today={today}
       onShowDay={showDay}
-      teacherName={me?.teacher.name ?? ''}
-      openClassId={me?.classroom.id}
+      // On the printed report: whose class it is, which for a co-teacher is
+      // the teacher who shared it.
+      teacherName={me?.acting_for?.name ?? me?.teacher.name ?? ''}
+      openClassId={me?.classroom?.id}
+      readOnly={!canEdit(me, 'classes')}
       onDeleted={() => navigate({ to: '/classes' })}
       classroomNames={
         new Map([
@@ -160,6 +167,7 @@ function StudentDay({
   onShowDay,
   teacherName,
   openClassId,
+  readOnly,
   onDeleted,
   classroomNames,
 }: {
@@ -168,6 +176,8 @@ function StudentDay({
   today: string
   onShowDay: (date: string) => void
   teacherName: string
+  /** A co-teacher with View only: no renaming or deleting. */
+  readOnly: boolean
   /** The class open on the Classes page. */
   openClassId?: string
   /** The student was deleted: leave their page. */
@@ -248,7 +258,11 @@ function StudentDay({
           </MarkRing>
           <div className="flex min-w-0 flex-1 flex-col gap-1 sm:pt-2">
             {/* A new form for each student, so an open edit doesn't carry over. */}
-            <StudentNameForm key={student.id} student={student} />
+            <StudentNameForm
+              key={student.id}
+              student={student}
+              readOnly={readOnly}
+            />
             {student.classrooms.length > 0 && (
               <p className="text-sm text-muted-foreground">
                 {student.classrooms.map((c) => c.name).join(' · ')}
@@ -340,8 +354,9 @@ function StudentDay({
               timeZone={zone}
               classroomName={classroomName}
               // Not while another day's marks stand in for the one loading.
+              readOnly={readOnly}
               onDelete={
-                marks.isPlaceholderData
+                marks.isPlaceholderData || readOnly
                   ? undefined
                   : (mark) => {
                       setMarkTarget({
@@ -359,7 +374,7 @@ function StudentDay({
 
         {/* Not for a student in no current class: there's nothing to delete
             them from here. */}
-        {student.classrooms.length > 0 && (
+        {student.classrooms.length > 0 && !readOnly && (
           <div className="border-t-2 border-border pt-6">
             <Button
               variant="outline"
@@ -566,12 +581,15 @@ function MarkList({
   timeZone: zone,
   classroomName,
   onDelete,
+  readOnly = false,
 }: {
   marks: Array<Mark>
   timeZone: string
   classroomName?: (id: string) => string | undefined
   /** The trash can was pressed. Left out, the trash cans are off. */
   onDelete?: (mark: Mark) => void
+  /** No trash cans at all (a co-teacher with View only). */
+  readOnly?: boolean
 }) {
   const sorted = [...marks].sort((a, b) =>
     markTime(a).localeCompare(markTime(b)),
@@ -608,16 +626,18 @@ function MarkList({
           </span>
           {/* Small and quiet, but a 36px target. The negative margins keep
               the row as tall as before. */}
-          <Button
-            variant="ghost"
-            size="icon-lg"
-            aria-label={`Delete “${mark.name}” at ${formatTime(markTime(mark), zone)}`}
-            disabled={!onDelete}
-            onClick={() => onDelete?.(mark)}
-            className="-my-1.5 -mr-2 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive dark:hover:bg-destructive/20"
-          >
-            <Trash2 className="size-4" />
-          </Button>
+          {!readOnly && (
+            <Button
+              variant="ghost"
+              size="icon-lg"
+              aria-label={`Delete “${mark.name}” at ${formatTime(markTime(mark), zone)}`}
+              disabled={!onDelete}
+              onClick={() => onDelete?.(mark)}
+              className="-my-1.5 -mr-2 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive dark:hover:bg-destructive/20"
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          )}
         </li>
       ))}
     </ol>

@@ -11,3 +11,8 @@
 [data-band] + [data-band] {
   border-top-width: 0;
 }
+
+/* The hard black shadow phones and paper sheets sit on. */
+:root {
+  --shadow-hard: 6px 6px 0 0 var(--border);
+}

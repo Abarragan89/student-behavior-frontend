@@ -1,0 +1,45 @@
+# A throwaway TeachForFree backend for recording the marketing videos
+# (npm run capture). Everything lives in memory and is deleted when it stops.
+# It never touches the dev database; ports differ from the dev stack's.
+name: tff-capture
+
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: demo
+      POSTGRES_USER: demo
+      POSTGRES_PASSWORD: demo
+    command:
+      [
+        postgres,
+        -c,
+        fsync=off,
+        -c,
+        synchronous_commit=off,
+        -c,
+        full_page_writes=off,
+      ]
+    tmpfs:
+      - /var/lib/postgresql
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U demo -d demo]
+      interval: 1s
+      timeout: 3s
+      retries: 60
+
+  redis:
+    image: redis:8-alpine
+    command: [redis-server, --save, '', --appendonly, 'no']
+
+  api:
+    # The Go backend repo, next to this one by default.
+    build: ${BACKEND_DIR:-../../../student-behavior-go-backend}
+    env_file: .out/demo.env
+    ports:
+      - 127.0.0.1:18080:8080
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started

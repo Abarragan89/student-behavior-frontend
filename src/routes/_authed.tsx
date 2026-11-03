@@ -18,7 +18,10 @@ import { CreateDialogsProvider } from '#/components/create-dialogs'
 import { CreateMenu } from '#/components/create-menu'
 import { UserMenu } from '#/components/user-menu'
 import { InstallBanner } from '#/components/install/install-banner'
+import { SpaceBadge } from '#/components/space-badge'
 import { meQueryOptions, useMe } from '#/lib/auth'
+import type { FeatureKey } from '#/lib/coteachers'
+import { homeOf, permissionIn, spaceOf } from '#/lib/workspace'
 import { OfflineError, isOnline, useOnline } from '#/lib/online'
 import { isStandalone } from '#/lib/pwa-install'
 
@@ -33,6 +36,12 @@ declare module '@tanstack/react-router' {
      * banner (e.g. a lesson plan's presenter view, used while teaching).
      */
     fullScreen?: boolean
+    /**
+     * What a co-teacher needs to open the page in another teacher's space
+     * (see workspace.ts). Without it they're sent to a page they can open.
+     * The server checks every request too; this keeps the screens honest.
+     */
+    feature?: { key: FeatureKey; level: 'view' | 'edit' }
   }
 }
 
@@ -60,49 +69,88 @@ function AuthedLayout() {
   const fullScreen = useMatches({
     select: (matches) => matches.some((m) => m.staticData.fullScreen),
   })
+  // The deepest page's requirement, if it has one.
+  const feature = useMatches({
+    select: (matches) =>
+      [...matches].reverse().find((m) => m.staticData.feature)?.staticData
+        .feature,
+  })
 
   // Logged out while on the page (session ended, or logged out in another tab).
   if (me === null) return <Navigate to="/login" />
   if (!me) return null
 
+  // In another teacher's space, a page this co-teacher may not open.
+  if (feature) {
+    const level = permissionIn(me, feature.key)
+    if (level === 'none' || (feature.level === 'edit' && level !== 'edit')) {
+      return <Navigate to={homeOf(me)} replace />
+    }
+  }
+  // Every page and dialog starts fresh in another space: nothing on screen
+  // may carry over from the last one.
+  const space = spaceOf(me) ?? 'own'
+
   if (fullScreen) {
     return (
-      <CreateDialogsProvider me={me}>
-        <Outlet />
+      <CreateDialogsProvider key={space} me={me}>
+        <Outlet key={space} />
       </CreateDialogsProvider>
     )
   }
 
   return (
-    // The + menu's dialogs (Add Students, Create class), for every page here.
-    <CreateDialogsProvider me={me}>
+    // The + menu's dialogs (Add Students, Create class, Add co-teacher), for
+    // every page here.
+    <CreateDialogsProvider key={space} me={me}>
       {/* Column layout so pages can fill the space under the header
           (flex-1). On phones the bottom padding leaves room for the fixed
           bottom bar, and the top padding keeps pages clear of the notch
           (0 with today's status bar style, which keeps the page below it).
           On paper only the page itself shows (e.g. a student's report). */}
       <div className="flex min-h-dvh flex-col bg-background pt-[env(safe-area-inset-top)] pb-[calc(4rem+env(safe-area-inset-bottom))] text-foreground md:pt-0 md:pb-0 print:min-h-0 print:bg-white print:p-0">
-        {/* Tablets and laptops only. Phones get the bottom bar instead (links,
-            +, the avatar, and the offline pill), so the first screen is all
-            students. */}
+        {/* Tablets and laptops only. Phones get the bottom bar instead (+,
+            links, and the offline pill) and the avatar floating at the top
+            right, so the first screen is all students. */}
         <header className="hidden items-center gap-4 border-b-2 border-border bg-card px-4 py-3 md:flex print:hidden!">
-          <Link to="/classes">
+          <Link to={homeOf(me)}>
             <Wordmark />
           </Link>
-          <HeaderNav />
+          {/* In another teacher's space: whose, and the way back. */}
+          <SpaceBadge me={me} placement="header" className="max-w-64" />
           <div className="ml-auto flex items-center gap-3">
             <ConnectionStatus />
+            <HeaderNav />
             <CreateMenu />
-            <UserMenu teacher={me.teacher} />
+            <UserMenu me={me} />
           </div>
         </header>
+
+        {/* Phones: the same, as a line across the top. */}
+        <SpaceBadge
+          me={me}
+          placement="strip"
+          className="md:hidden print:hidden!"
+        />
 
         {/* Phones in the browser only; hidden in the installed app. */}
         <InstallBanner className="md:hidden print:hidden!" />
 
-        <Outlet />
+        {/* Phones: the avatar alone at the top right, floating over the
+            page and scrolling away with it. The anchor sits under the
+            install banner, so it never covers the banner, and its 10px
+            (h-2.5) moves the page down a little so the avatar has room.
+            Pages keep that corner clear on phones: they start with a back
+            link or a short title, or pad the first row (max-md:pr-12). */}
+        <div className="relative h-2.5 md:hidden print:hidden!">
+          <div className="absolute top-5 right-4 z-10">
+            <UserMenu me={me} />
+          </div>
+        </div>
 
-        <BottomNav teacher={me.teacher} className="md:hidden print:hidden!" />
+        <Outlet key={space} />
+
+        <BottomNav className="md:hidden print:hidden!" />
       </div>
     </CreateDialogsProvider>
   )

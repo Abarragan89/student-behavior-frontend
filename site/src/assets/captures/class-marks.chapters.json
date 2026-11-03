@@ -1,0 +1,17 @@
+{
+  "duration": 19.2,
+  "chapters": [
+    {
+      "label": "Tap a student",
+      "start": 0
+    },
+    {
+      "label": "Mark a group",
+      "start": 4.8
+    },
+    {
+      "label": "See their day",
+      "start": 12.3
+    }
+  ]
+}

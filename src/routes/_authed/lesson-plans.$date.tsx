@@ -39,6 +39,8 @@ import {
 import type { PlanDay } from '#/lib/lesson-plans'
 import { flushDrafts } from '#/lib/lesson-plan-queue'
 import { useOnline } from '#/lib/online'
+import { canShareWithSub, mayLoad, usePermission } from '#/lib/workspace'
+import { meQueryOptions } from '#/lib/auth'
 import { OfflineNote } from '#/components/offline-note'
 import { CopyDayDialog } from '#/components/lesson-plans/copy-day-dialog'
 import { PlanEditor } from '#/components/lesson-plans/plan-editor'
@@ -50,9 +52,12 @@ import { ShareDayDialog } from '#/components/lesson-plans/share-day-dialog'
 // /lesson-plans/2026-11-05: where a day is planned. Teaching from it happens
 // in Presenter view (/lesson-plans/2026-11-05/present), on the whole screen.
 export const Route = createFileRoute('/_authed/lesson-plans/$date')({
+  // A co-teacher needs at least View on Lesson plans (_authed.tsx checks).
+  staticData: { feature: { key: 'lesson_plans', level: 'view' } },
   // Started early, not waited for: the page shows what it has meanwhile.
   loader: ({ context: { queryClient }, params }) => {
     if (!isDateString(params.date)) return
+    if (!mayLoad(queryClient, 'lesson_plans')) return
     void queryClient
       .query(lessonPlanDayQueryOptions(params.date))
       .catch(() => null)
@@ -72,6 +77,11 @@ function DayPlan({ date }: { date: string }) {
   const today = useToday()
   const online = useOnline()
   const day = useQuery(lessonPlanDayQueryOptions(date))
+  // A co-teacher with View only reads the plan; sharing with a sub also
+  // needs Edit on Classes (the sub gives marks).
+  const editable = usePermission('lesson_plans') === 'edit'
+  const { data: me } = useQuery(meQueryOptions)
+  const canShare = canShareWithSub(me)
   const [copyOpen, setCopyOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
   const [printOpen, setPrintOpen] = useState(false)
@@ -178,7 +188,7 @@ function DayPlan({ date }: { date: string }) {
               Presenter view
             </Link>
             {/* A sub's link only works on its day, so not for days gone by. */}
-            {date >= today && (
+            {date >= today && canShare && (
               <Button
                 variant="outline"
                 size="icon"
@@ -201,7 +211,7 @@ function DayPlan({ date }: { date: string }) {
                 flushDrafts()
                 // Today or later: offer a QR code for a sub. A sub link
                 // can't work for a day gone by, so those just print.
-                if (date >= today) setPrintOpen(true)
+                if (date >= today && canShare) setPrintOpen(true)
                 else window.print()
               }}
               className="size-12 shrink-0 rounded-lg border-2 border-border bg-card"
@@ -220,14 +230,16 @@ function DayPlan({ date }: { date: string }) {
         )}
 
         {day.data ? (
-          online ? (
+          online && editable ? (
             <PlanEditor
               day={day.data}
               onCopyFromDay={() => setCopyOpen(true)}
             />
           ) : sections.length > 0 ? (
             <>
-              <OfflineNote action="edit this plan. You can still check things off in Presenter view" />
+              {editable && (
+                <OfflineNote action="edit this plan. You can still check things off in Presenter view" />
+              )}
               <PlanOutline day={day.data} />
             </>
           ) : (
@@ -243,12 +255,14 @@ function DayPlan({ date }: { date: string }) {
                   Nothing planned for {formatWeekday(date)}
                 </EmptyTitle>
               </EmptyHeader>
-              <EmptyContent>
-                <OfflineNote
-                  action="plan this day"
-                  className="justify-center"
-                />
-              </EmptyContent>
+              {editable && (
+                <EmptyContent>
+                  <OfflineNote
+                    action="plan this day"
+                    className="justify-center"
+                  />
+                </EmptyContent>
+              )}
             </Empty>
           )
         ) : day.isError ? (
@@ -281,23 +295,32 @@ function DayPlan({ date }: { date: string }) {
       </main>
 
       {day.data && <PrintDay day={day.data} subLink={printLink ?? undefined} />}
-      <PrintDialog
-        date={date}
-        open={printOpen}
-        onOpenChange={setPrintOpen}
-        onPrint={print}
-      />
-      <CopyDayDialog open={copyOpen} onOpenChange={setCopyOpen} date={date} />
-      <ShareDayDialog
-        date={date}
-        open={shareOpen}
-        onOpenChange={setShareOpen}
-      />
+      {canShare && (
+        <PrintDialog
+          date={date}
+          open={printOpen}
+          onOpenChange={setPrintOpen}
+          onPrint={print}
+        />
+      )}
+      {editable && (
+        <CopyDayDialog open={copyOpen} onOpenChange={setCopyOpen} date={date} />
+      )}
+      {canShare && (
+        <ShareDayDialog
+          date={date}
+          open={shareOpen}
+          onOpenChange={setShareOpen}
+        />
+      )}
     </>
   )
 }
 
-/** The plan to read, not edit: shown offline, when editing can't be saved. */
+/**
+ * The plan to read, not edit: shown offline, when editing can't be saved,
+ * and to a co-teacher who can view but not edit plans.
+ */
 function PlanOutline({ day }: { day: PlanDay }) {
   return (
     <div className="flex flex-col gap-3">

@@ -7,13 +7,22 @@ import {
   CalendarClock,
   CalendarPlus,
   CalendarX,
+  ChevronDown,
   ChevronLeft,
   CircleAlert,
+  ClipboardList,
   Printer,
+  QrCode,
   RefreshCw,
   Settings,
 } from 'lucide-react'
 import { Button, buttonVariants } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   Empty,
   EmptyContent,
@@ -25,7 +34,13 @@ import {
 import { Spinner } from '@/components/ui/spinner'
 import { cn } from '@/lib/utils'
 import { ApiError } from '#/lib/api'
-import { CUTOFF_HOURS, conferenceQueryOptions } from '#/lib/conferences'
+import {
+  CUTOFF_HOURS,
+  conferenceQueryOptions,
+  dayIn,
+  formatSlotDay,
+  meetingState,
+} from '#/lib/conferences'
 import type {
   Conference,
   ConferenceNotice,
@@ -33,6 +48,9 @@ import type {
   ConferenceStudent,
 } from '#/lib/conferences'
 import { useOnline } from '#/lib/online'
+import { mayLoad, usePermission } from '#/lib/workspace'
+import { useNow } from '#/hooks/useNow'
+import { usePrintTitle } from '#/hooks/usePrintTitle'
 import { OfflineNote } from '#/components/offline-note'
 import { FamilyChanges } from '#/components/conferences/family-changes'
 import {
@@ -41,6 +59,7 @@ import {
 } from '#/components/conferences/pickers'
 import { PrintNotices } from '#/components/conferences/print-notices'
 import { PrintNoticesDialog } from '#/components/conferences/print-notices-dialog'
+import { PrintSchedule } from '#/components/conferences/print-schedule'
 import { SettingsDialog } from '#/components/conferences/settings-dialog'
 import { SlotList, UnscheduledPanel } from '#/components/conferences/slot-list'
 import {
@@ -52,7 +71,10 @@ import {
 // times, puts students in them and prints notices. Families' changes come
 // in through their QR codes; Refresh shows them.
 export const Route = createFileRoute('/_authed/conferences/$conferenceId')({
+  // A co-teacher needs at least View on Conferences (_authed.tsx checks).
+  staticData: { feature: { key: 'conferences', level: 'view' } },
   loader: ({ context: { queryClient }, params }) => {
+    if (!mayLoad(queryClient, 'conferences')) return
     void queryClient
       .query(conferenceQueryOptions(params.conferenceId))
       .catch(() => null)
@@ -143,6 +165,10 @@ function ConferenceEditor({
   refreshing: boolean
 }) {
   const online = useOnline()
+  // A co-teacher with View only: the schedule, no changes.
+  const editable = usePermission('conferences') === 'edit'
+  // Ticks so a meeting that just ended shows as a no-show.
+  const now = useNow(30_000)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
   const [printOpen, setPrintOpen] = useState(false)
@@ -152,11 +178,17 @@ function ConferenceEditor({
   // Families' changes that came in with the last Refresh.
   const [fresh, setFresh] = useState<ReadonlySet<string>>(new Set())
 
-  // The notices being printed. They hold every family's code, so they're
-  // kept only for the print and dropped as soon as it's done.
+  // What's on paper. Notices when they're being printed: they hold every
+  // family's code, so they're kept only for the print and dropped as soon as
+  // it's done. Otherwise the schedule, for every day unless one was picked,
+  // so a plain Ctrl+P prints the schedule too.
   const [notices, setNotices] = useState<Array<ConferenceNotice> | null>(null)
+  const [scheduleDay, setScheduleDay] = useState<string | null>(null)
   useEffect(() => {
-    const done = () => setNotices(null)
+    const done = () => {
+      setNotices(null)
+      setScheduleDay(null)
+    }
     window.addEventListener('afterprint', done)
     return () => window.removeEventListener('afterprint', done)
   }, [])
@@ -169,6 +201,25 @@ function ConferenceEditor({
     })
     window.print()
   }
+  function printSchedule(day: string | null) {
+    flushSync(() => setScheduleDay(day))
+    window.print()
+  }
+  const dayLabel = (() => {
+    const first = scheduleDay
+      ? conference.slots.find(
+          (s) => dayIn(s.starts_at, conference.timezone) === scheduleDay,
+        )
+      : undefined
+    return first
+      ? ` – ${formatSlotDay(first.starts_at, conference.timezone)}`
+      : ''
+  })()
+  usePrintTitle(
+    notices
+      ? `Conference notices – ${conference.title}`
+      : `Conference schedule – ${conference.title}${dayLabel}`,
+  )
 
   async function refresh() {
     const before = new Set(conference.changes.map((c) => c.id))
@@ -190,6 +241,9 @@ function ConferenceEditor({
   const scheduled = new Set(conference.slots.map((s) => s.student_id))
   const withTime = students.filter((s) => scheduled.has(s.id)).length
   const hasSlots = conference.slots.length > 0
+  const states = conference.slots.map((s) => meetingState(s, now))
+  const complete = states.filter((s) => s === 'completed').length
+  const noShows = states.filter((s) => s === 'no_show').length
 
   return (
     <>
@@ -206,17 +260,19 @@ function ConferenceEditor({
               {conference.location && ` · ${conference.location}`}
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="icon"
-            aria-label="Conference settings"
-            title="Settings"
-            onClick={() => setSettingsOpen(true)}
-            disabled={!online}
-            className="size-12 shrink-0 rounded-lg border-2 border-border bg-card"
-          >
-            <Settings className="size-5" />
-          </Button>
+          {editable && (
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="Conference settings"
+              title="Settings"
+              onClick={() => setSettingsOpen(true)}
+              disabled={!online}
+              className="size-12 shrink-0 rounded-lg border-2 border-border bg-card"
+            >
+              <Settings className="size-5" />
+            </Button>
+          )}
         </header>
 
         <section className="flex flex-col gap-1 rounded-xl border-2 border-border bg-card p-4 shadow-md">
@@ -224,6 +280,12 @@ function ConferenceEditor({
             {withTime} of {students.length}{' '}
             {students.length === 1 ? 'student has' : 'students have'} a time
           </p>
+          {complete + noShows > 0 && (
+            <p className="font-medium">
+              {complete} complete · {noShows}{' '}
+              {noShows === 1 ? 'no-show' : 'no-shows'}
+            </p>
+          )}
           <p className="text-sm text-muted-foreground">
             {conference.parent_changes
               ? `Families can change their time online until ${CUTOFF_HOURS} hours before it.`
@@ -232,23 +294,60 @@ function ConferenceEditor({
         </section>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            onClick={() => setAddOpen(true)}
-            disabled={!online}
-            className="h-12 flex-1 rounded-lg border-2 border-border text-base font-bold shadow-sm sm:flex-none sm:px-5"
-          >
-            <CalendarPlus className="size-5" />
-            Add times
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setPrintOpen(true)}
-            disabled={!online || !hasSlots}
-            className="h-12 flex-1 rounded-lg border-2 border-border bg-card text-base font-bold sm:flex-none sm:px-5"
-          >
-            <Printer className="size-5" />
-            Print notices
-          </Button>
+          {editable && (
+            <Button
+              onClick={() => setAddOpen(true)}
+              disabled={!online}
+              className="h-12 flex-1 rounded-lg border-2 border-border text-base font-bold shadow-sm sm:flex-none sm:px-5"
+            >
+              <CalendarPlus className="size-5" />
+              Add times
+            </Button>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              disabled={!hasSlots}
+              className={cn(
+                buttonVariants({ variant: 'outline' }),
+                'h-12 flex-1 rounded-lg border-2 border-border bg-card text-base font-bold sm:flex-none sm:px-5',
+              )}
+            >
+              <Printer className="size-5" />
+              Print
+              <ChevronDown aria-hidden className="size-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="start"
+              className="w-64 rounded-lg border-2 border-border p-1 shadow-md ring-0"
+            >
+              <DropdownMenuItem
+                className="h-auto min-h-12 flex-col items-start gap-0 rounded-md py-2"
+                // Notices make families' codes: a change to the conference.
+                disabled={!online || !editable}
+                onClick={() => setPrintOpen(true)}
+              >
+                <span className="flex items-center gap-2 font-bold">
+                  <QrCode />
+                  Notices for families…
+                </span>
+                <span className="pl-6 text-xs text-muted-foreground">
+                  One page each, with their QR code
+                </span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="h-auto min-h-12 flex-col items-start gap-0 rounded-md py-2"
+                onClick={() => printSchedule(null)}
+              >
+                <span className="flex items-center gap-2 font-bold">
+                  <ClipboardList />
+                  Schedule
+                </span>
+                <span className="pl-6 text-xs text-muted-foreground">
+                  Every day’s times and who has them, for you
+                </span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button
             variant="outline"
             onClick={() => void refresh()}
@@ -267,15 +366,17 @@ function ConferenceEditor({
             })}
           </span>
         </div>
-        <OfflineNote action="change this conference" />
+        {editable && <OfflineNote action="change this conference" />}
 
         <UnscheduledPanel conference={conference} onPick={setTimeFor} />
 
         {hasSlots ? (
           <SlotList
             conference={conference}
+            now={now}
             onPickStudent={setPickFor}
             onEditTime={setEditing}
+            onPrintDay={printSchedule}
           />
         ) : (
           <Empty className="rounded-xl border-2 border-dashed border-border px-4 py-10">
@@ -294,7 +395,7 @@ function ConferenceEditor({
                 any time afterward.
               </EmptyDescription>
             </EmptyHeader>
-            <EmptyContent>
+            <EmptyContent className={cn(!editable && 'hidden')}>
               <Button
                 onClick={() => setAddOpen(true)}
                 disabled={!online}
@@ -310,7 +411,11 @@ function ConferenceEditor({
         <FamilyChanges conference={conference} fresh={fresh} />
       </main>
 
-      <PrintNotices conference={conference} notices={notices} />
+      {notices ? (
+        <PrintNotices conference={conference} notices={notices} />
+      ) : (
+        <PrintSchedule conference={conference} day={scheduleDay} now={now} />
+      )}
       <SettingsDialog
         open={settingsOpen}
         onOpenChange={setSettingsOpen}

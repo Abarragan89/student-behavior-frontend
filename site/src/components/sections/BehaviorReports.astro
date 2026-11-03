@@ -1,0 +1,52 @@
+---
+// Behavior data: the student page and the printed report.
+import { ArrowRight, FileText } from 'lucide-react'
+import Showcase from '../media/Showcase.astro'
+import Stack from '../media/Stack.astro'
+import PaperSheet from '../media/PaperSheet.astro'
+import PhoneShot from '../media/PhoneShot.astro'
+import { CheckList, MoreLink } from '../landing/LandingSections'
+import { PRINTS, SHOTS, reportPdf } from '../../captures'
+
+interface Props {
+  id?: string
+  muted?: boolean
+  /** Link on to /behavior-tracking (not on that page itself). */
+  more?: boolean
+}
+const { id, muted = false, more = true } = Astro.props
+---
+
+<Showcase
+  id={id}
+  muted={muted}
+  eyebrow="Behavior reports"
+  title="A detailed behavior chart, made automatically."
+  lead="Every mark is saved with the time it happened. Open a student to see their day hour by hour, then print a report for families: the last 10 school days, what the marks were for, and talking points for home."
+>
+  <CheckList
+    className="mt-6"
+    items={[
+      'The busiest hour, worked out for you',
+      'Shapes and patterns, so it reads even in black and white',
+      'Lines for signatures, or save it as a PDF',
+    ]}
+  />
+  <div class="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2">
+    <a
+      href={reportPdf}
+      target="_blank"
+      class="inline-flex items-center gap-1.5 font-bold text-primary underline-offset-4 hover:underline dark:text-foreground"
+    >
+      <FileText className="size-4" aria-hidden />
+      See a sample report (PDF)
+      <ArrowRight className="size-4" aria-hidden />
+    </a>
+    {more && <MoreLink href="/behavior-tracking" label="More about behavior tracking" className="mt-0" />}
+  </div>
+
+  <Stack slot="visual" class="pb-4">
+    <PaperSheet slot="paper" {...PRINTS.report} tilt={2} />
+    <PhoneShot slot="phone" {...SHOTS.studentDay} size="sm" class="-rotate-2" />
+  </Stack>
+</Showcase>

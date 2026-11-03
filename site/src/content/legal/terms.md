@@ -22,7 +22,7 @@ By signing in or otherwise using TeachForFree, including opening a substitute li
 - TeachForFree is free to use. We don't charge for it, and we don't show ads.
 - We may change, add, or remove features at any time.
 - We may stop offering TeachForFree. If we do, we'll try to give you at least 30 days' notice in the app or by email, so you have time to save anything you need.
-- If we ever offer paid features, they'll be optional, and we'll never charge you without your clear agreement.
+- Everything TeachForFree does today will stay free. If we ever add paid extras, they'll be optional, and we'll never charge you without your clear agreement.
 
 ## Your account
 
@@ -34,7 +34,7 @@ By signing in or otherwise using TeachForFree, including opening a substitute li
 
 ## Your content and student data
 
-"Your content" means everything you add to TeachForFree: classes, student names, marks, mark types, lesson plans, and substitute links.
+"Your content" means everything you add to TeachForFree: classes, student names, marks, mark types, lesson plans, substitute links, and parent conferences.
 
 - **You own your content.** You and your school keep all rights to it. We don't claim any ownership.
 - **Our permission is limited.** You give us permission to store, process, display, and send your content only as needed to run TeachForFree for you. For example, we show it on your devices, encrypt it, and show a day to the substitute you share it with. We don't use your content for anything else. This permission ends when your content is deleted.

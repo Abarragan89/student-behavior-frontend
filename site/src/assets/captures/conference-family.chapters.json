@@ -1,0 +1,17 @@
+{
+  "duration": 24.3,
+  "chapters": [
+    {
+      "label": "Scan the QR code",
+      "start": 0
+    },
+    {
+      "label": "English or Spanish",
+      "start": 1.5
+    },
+    {
+      "label": "Pick another open time",
+      "start": 6.1
+    }
+  ]
+}

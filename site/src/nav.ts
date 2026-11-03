@@ -28,12 +28,19 @@ export const FEATURE_PAGES: Array<PageLink> = [
     description:
       'Share one day with a substitute: the plan and your class, with a link or a printed QR code.',
   },
+  {
+    href: '/parent-conferences',
+    label: 'Parent conferences',
+    description:
+      'Set your times, print a notice for each family in English and Spanish, and let families pick a new time from the QR code.',
+  },
 ]
 
 export const FAQ_PAGE: PageLink = {
   href: '/faq',
   label: 'FAQ',
-  description: 'Answers about cost, Google Classroom, offline use and privacy.',
+  description:
+    'Answers about cost, Google Classroom, conferences, offline use and privacy.',
 }
 
 export const LEGAL_PAGES: Array<Omit<PageLink, 'description'>> = [

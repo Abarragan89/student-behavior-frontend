@@ -22,7 +22,7 @@ import {
 import type { Conference, ConferenceSlot } from '#/lib/conferences'
 import { timeZoneLabel } from '#/lib/day'
 import { timeZone } from '#/lib/marks'
-import { useOnline } from '#/lib/online'
+import { useCanSave } from '#/lib/workspace'
 import { OfflineNote } from '#/components/offline-note'
 import { ResponsiveDialog } from '#/components/responsive-dialogue'
 import { useSaveConference } from './use-save'
@@ -71,7 +71,8 @@ function AddTimesForm({
   onDone: () => void
 }) {
   const queryClient = useQueryClient()
-  const online = useOnline()
+  // Online, and allowed: a co-teacher may only view conferences.
+  const canSave = useCanSave('conferences')
   const tz = conference.timezone
   const today = dayIn(new Date().toISOString(), tz)
   const lastSlot = conference.slots.at(-1)
@@ -232,7 +233,7 @@ function AddTimesForm({
         <OfflineNote action="add times" />
         <Button
           type="submit"
-          disabled={!preview || busy || !online}
+          disabled={!preview || busy || !canSave}
           aria-busy={busy}
           className="h-12 rounded-lg border-2 border-border text-base font-bold shadow-sm"
         >
@@ -285,7 +286,8 @@ function EditTimeForm({
   onDone: () => void
 }) {
   const queryClient = useQueryClient()
-  const online = useOnline()
+  // Online, and allowed: a co-teacher may only view conferences.
+  const canSave = useCanSave('conferences')
   const save = useSaveConference(conference.id)
   const tz = conference.timezone
   const [date, setDate] = useState(dayIn(slot.starts_at, tz))
@@ -380,7 +382,7 @@ function EditTimeForm({
         <OfflineNote action="change times" />
         <Button
           type="submit"
-          disabled={backwards || busy || !online}
+          disabled={backwards || busy || !canSave}
           aria-busy={busy}
           className="h-12 rounded-lg border-2 border-border text-base font-bold shadow-sm"
         >

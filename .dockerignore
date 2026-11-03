@@ -12,3 +12,4 @@ Dockerfile
 .dockerignore
 README.md
 .astro
+scripts/capture/.out
