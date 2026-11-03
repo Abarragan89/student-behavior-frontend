@@ -25,18 +25,24 @@ import {
   validateClassroomResult,
 } from '#/lib/classroom'
 import { meQueryOptions } from '#/lib/auth'
-import type { Me } from '#/lib/auth'
+import type { Me, OpenClassroom } from '#/lib/auth'
 import { markTypesQueryOptions } from '#/lib/marks'
+import { canEdit, currentSpace, mayLoad } from '#/lib/workspace'
 
 export const Route = createFileRoute('/_authed/classes')({
   // ?classroom=connected or ?classroom_error=…, from the backend after
   // "Connect Google Classroom".
   validateSearch: validateClassroomResult,
+  // A co-teacher needs at least View on Classes (_authed.tsx checks).
+  staticData: { feature: { key: 'classes', level: 'view' } },
   // Started early but not waited for, so the page shows at once (and
   // offline): the mark types, so the buttons are ready when a student is
   // tapped, and whether Google Classroom is connected, for Add Students.
   loader: ({ context }) => {
+    if (!mayLoad(context.queryClient, 'classes')) return
     void context.queryClient.query(markTypesQueryOptions).catch(() => null)
+    // Google Classroom is the owner's own account: not in someone's space.
+    if (currentSpace()) return
     void context.queryClient
       .query({ ...classroomStatusQueryOptions, retry: false })
       .catch(() => null)
@@ -51,13 +57,22 @@ function ClassesPage() {
   // Refetching 'me', or switching classes, updates this page.
   const { data: me } = useSuspenseQuery(meQueryOptions)
 
-  // Logged out: the layout is already sending the teacher to /login.
-  if (!me) return null
-  return <ClassesContent me={me} />
+  // Logged out: the layout is already sending the teacher to /login. No
+  // class: a co-teacher without Classes, whom the layout sends elsewhere.
+  if (!me?.classroom) return null
+  return <ClassesContent me={me} classroom={me.classroom} />
 }
 
-function ClassesContent({ me }: { me: Me }) {
-  const { teacher, classroom } = me
+function ClassesContent({
+  me,
+  classroom,
+}: {
+  me: Me
+  classroom: OpenClassroom
+}) {
+  const { teacher } = me
+  // A co-teacher with View only: see the class, change nothing.
+  const editable = canEdit(me, 'classes')
   // Adding students (typed, or from Google Classroom) is in the + menu.
   const { openAddStudents, openCreateClass } = useCreateDialogs()
 
@@ -98,11 +113,13 @@ function ClassesContent({ me }: { me: Me }) {
       className="mx-auto flex w-full max-w-5xl min-w-0 flex-1 flex-col gap-2 px-4 py-6 sm:py-8"
     >
       <ClassHeader
-        classroom={me.classroom}
+        classroom={classroom}
         name={shownName}
         loading={isLoading}
         onSwitch={() => setSwitchOpen(true)}
         headingRef={headingRef}
+        // Long names stop before the phone avatar (see _authed.tsx).
+        className="max-md:pr-12"
       />
 
       {/* Red icon, black text: small red text on white is hard to read. */}
@@ -124,17 +141,22 @@ function ClassesContent({ me }: { me: Me }) {
       ) : classroom.students.length > 0 ? (
         // Keyed by class, so switching classes starts fresh (no picks carried
         // over).
-        <ClassRoster key={classroom.id} classroom={classroom} />
+        <ClassRoster
+          key={classroom.id}
+          classroom={classroom}
+          readOnly={!editable}
+        />
       ) : (
         <NoStudents
           firstName={teacher.name.split(' ')[0]}
-          onAdd={() => openAddStudents()}
+          onAdd={editable ? () => openAddStudents() : undefined}
         />
       )}
 
       {/* At the very bottom, below the students (mt-auto), and set apart
-          by a line: it's for the end of the year, not everyday use. */}
-      {!isLoading && (
+          by a line: it's for the end of the year, not everyday use. Only
+          for your own classes: a co-teacher never archives the owner's. */}
+      {!isLoading && editable && !me.acting_for && (
         <div className="mt-auto pt-10">
           <div className="border-t-2 border-border pt-6">
             <Button
@@ -190,8 +212,29 @@ function NoStudents({
   onAdd,
 }: {
   firstName: string
-  onAdd: () => void
+  /** Left out for a co-teacher who can't add students. */
+  onAdd?: () => void
 }) {
+  if (!onAdd) {
+    return (
+      <Empty className="max-w-md self-center px-0">
+        <EmptyHeader>
+          <EmptyMedia
+            variant="icon"
+            className="size-14 rounded-lg border-2 border-border bg-secondary text-foreground"
+          >
+            <Users className="size-7" />
+          </EmptyMedia>
+          <EmptyTitle className="text-2xl font-bold">
+            No students yet
+          </EmptyTitle>
+          <EmptyDescription className="text-base">
+            Students show here once they’re added to this class.
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
+    )
+  }
   return (
     <Empty className="max-w-md self-center px-0">
       <EmptyHeader>

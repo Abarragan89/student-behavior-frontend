@@ -13,7 +13,7 @@ import {
   prepareNotices,
 } from '#/lib/conferences'
 import type { Conference, ConferenceNotice } from '#/lib/conferences'
-import { useOnline } from '#/lib/online'
+import { useCanSave } from '#/lib/workspace'
 import { OfflineNote } from '#/components/offline-note'
 import { ResponsiveDialog } from '#/components/responsive-dialogue'
 import { noticeStatus } from './slot-list'
@@ -55,7 +55,8 @@ function PrintSteps({
   onPrint: (notices: Array<ConferenceNotice>) => void
 }) {
   const queryClient = useQueryClient()
-  const online = useOnline()
+  // Online, and allowed: a co-teacher may only view conferences.
+  const canSave = useCanSave('conferences')
   const tz = conference.timezone
   const byId = new Map(conference.students.map((s) => [s.id, s]))
   // Everyone with a time, in name order (the order they print in).
@@ -225,7 +226,7 @@ function PrintSteps({
         <OfflineNote action="print notices" />
         <Button
           onClick={() => prepare.mutate()}
-          disabled={picked.length === 0 || busy || !online}
+          disabled={picked.length === 0 || busy || !canSave}
           aria-busy={busy}
           className="h-12 rounded-lg border-2 border-border text-base font-bold shadow-sm"
         >

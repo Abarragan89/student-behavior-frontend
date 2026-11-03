@@ -1,0 +1,17 @@
+{
+  "duration": 23.2,
+  "chapters": [
+    {
+      "label": "Name a section",
+      "start": 0
+    },
+    {
+      "label": "Add a time",
+      "start": 3.6
+    },
+    {
+      "label": "Jot down the lesson",
+      "start": 9
+    }
+  ]
+}

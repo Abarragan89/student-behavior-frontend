@@ -6,15 +6,7 @@ import {
   useSuspenseQuery,
 } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import {
-  Check,
-  CircleAlert,
-  Copy,
-  Link2,
-  RefreshCw,
-  Share,
-  X,
-} from 'lucide-react'
+import { Check, CircleAlert, Link2, RefreshCw, X } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +21,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
 import { cn } from '@/lib/utils'
+import { SendLinkButtons } from '#/components/send-link-buttons'
 import { ApiError } from '#/lib/api'
 import { meQueryOptions } from '#/lib/auth'
 import type { ClassroomTab } from '#/lib/auth'
@@ -258,7 +251,12 @@ function ActiveLink({
           onFocus={(e) => e.currentTarget.select()}
           className="h-11 rounded-lg border-2 border-border bg-card font-mono text-sm md:text-sm"
         />
-        <SendButtons url={url} date={date} />
+        <SendLinkButtons
+          url={url}
+          shareTitle="Sub plan"
+          shareText={`My sub plan for ${formatLongDate(date)}. The link works that day only.`}
+          copiedDescription="Paste it in a text or email to the substitute."
+        />
         <p className="text-sm text-muted-foreground">
           {link.last_used_at
             ? lastUsedText(link.last_used_at)
@@ -333,60 +331,6 @@ function ActiveLink({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
-  )
-}
-
-/** The phone's share sheet where there is one, and always Copy. */
-function SendButtons({ url, date }: { url: string; date: string }) {
-  const canShare = typeof navigator.share === 'function'
-
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(url)
-      toast.success('Link copied', {
-        description: 'Paste it in a text or email to the substitute.',
-      })
-    } catch {
-      toast('Copy this link', { description: url })
-    }
-  }
-
-  async function share() {
-    try {
-      await navigator.share({
-        title: 'Sub plan',
-        text: `My sub plan for ${formatLongDate(date)}. The link works that day only.`,
-        url,
-      })
-    } catch (error) {
-      // Closed without sharing.
-      if (error instanceof DOMException && error.name === 'AbortError') return
-      void copy()
-    }
-  }
-
-  const buttonClass =
-    'h-12 flex-1 rounded-lg border-2 border-border text-base font-bold'
-  return (
-    <div className="flex gap-2">
-      {canShare && (
-        <Button
-          onClick={() => void share()}
-          className={cn(buttonClass, 'shadow-sm')}
-        >
-          <Share className="size-5" />
-          Share…
-        </Button>
-      )}
-      <Button
-        variant={canShare ? 'outline' : 'default'}
-        onClick={() => void copy()}
-        className={cn(buttonClass, canShare ? 'bg-card' : 'shadow-sm')}
-      >
-        <Copy className="size-5" />
-        Copy link
-      </Button>
     </div>
   )
 }

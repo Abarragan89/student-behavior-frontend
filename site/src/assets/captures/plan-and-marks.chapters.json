@@ -1,0 +1,25 @@
+{
+  "duration": 27.2,
+  "chapters": [
+    {
+      "label": "Your whole day",
+      "start": 0
+    },
+    {
+      "label": "Present",
+      "start": 6.5
+    },
+    {
+      "label": "Check off as you teach",
+      "start": 9
+    },
+    {
+      "label": "Mark a student",
+      "start": 13
+    },
+    {
+      "label": "Mark the class",
+      "start": 18.7
+    }
+  ]
+}

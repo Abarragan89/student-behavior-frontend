@@ -12,8 +12,9 @@ import {
 import { cn } from '@/lib/utils'
 import { GoogleIcon } from '#/components/GoogleIcon'
 import { Wordmark } from '#/components/Wordmark'
-import { loginUrl } from '#/lib/api'
+import { inviteLoginUrl, loginUrl } from '#/lib/api'
 import { signedInTeacher } from '#/lib/auth'
+import { acceptAfterSignIn, pendingInvite } from '#/lib/invite'
 import { useOnline } from '#/lib/online'
 import { usePwaInstall } from '#/lib/pwa-install'
 import {
@@ -35,11 +36,12 @@ export const Route = createFileRoute('/login')({
   validateSearch: (search: Record<string, unknown>): { error?: string } => ({
     error: typeof search.error === 'string' ? search.error : undefined,
   }),
-  // Already signed in: go to Classes. The page still shows right away if the
-  // backend is down or offline.
+  // Already signed in: go to Classes (or back to a co-teacher invite this
+  // tab is holding). The page still shows right away if the backend is down
+  // or offline.
   beforeLoad: async ({ context }) => {
     const user = await signedInTeacher(context.queryClient)
-    if (user) throw redirect({ to: '/classes' })
+    if (user) throw redirect({ to: pendingInvite() ? '/invite' : '/classes' })
   },
   component: LoginPage,
 })
@@ -54,6 +56,9 @@ function LoginPage() {
   // In the installed app, home is this page, so there's nowhere to go back to.
   const { standalone } = usePwaInstall()
   const online = useOnline()
+  // Signing in failed on the way to accept a co-teacher invite: trying again
+  // still comes back to it.
+  const invite = pendingInvite()
 
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center gap-8 bg-background px-4 py-12 text-foreground">
@@ -86,8 +91,17 @@ function LoginPage() {
             </Alert>
           )}
 
+          {invite && (
+            <p className="text-center text-sm font-medium">
+              Signing in brings you back to your co-teacher invite.
+            </p>
+          )}
           {online ? (
-            <a href={loginUrl} className={googleButtonClass}>
+            <a
+              href={invite ? inviteLoginUrl : loginUrl}
+              onClick={invite ? acceptAfterSignIn : undefined}
+              className={googleButtonClass}
+            >
               <GoogleIcon />
               Continue with Google
             </a>

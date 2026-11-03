@@ -159,11 +159,16 @@ export function giveMark(
   classroomId: string,
   studentId: string,
   markTypeId: string,
-  { id, occurredAt }: { id: string; occurredAt: string },
+  {
+    id,
+    occurredAt,
+    space,
+  }: { id: string; occurredAt: string; space?: string | null },
 ) {
   return apiPost<Mark>(
     `/classrooms/${encodeURIComponent(classroomId)}/students/${encodeURIComponent(studentId)}/marks`,
     { id, mark_type_id: markTypeId, occurred_at: occurredAt },
+    { space },
   )
 }
 
@@ -171,9 +176,9 @@ export function giveMark(
  * Undo for a mis-tap. Already gone (404) counts as undone. The server keeps
  * the mark for a few minutes, so restoreMark can still put it back.
  */
-export async function undoMark(markId: string) {
+export async function undoMark(markId: string, space?: string | null) {
   try {
-    await apiDelete(`/marks/${encodeURIComponent(markId)}`)
+    await apiDelete(`/marks/${encodeURIComponent(markId)}`, { space })
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) return
     throw error
@@ -204,7 +209,11 @@ export type MarkBatch = {
 }
 
 /** Like giveMark, the device picks the batch id and sends the time. */
-type BatchOptions = { batchId: string; occurredAt: string }
+type BatchOptions = {
+  batchId: string
+  occurredAt: string
+  space?: string | null
+}
 
 /**
  * One mark for every student in the class. No student ids are sent: the
@@ -213,7 +222,7 @@ type BatchOptions = { batchId: string; occurredAt: string }
 export function giveMarkToClass(
   classroomId: string,
   markTypeId: string,
-  { batchId, occurredAt }: BatchOptions,
+  { batchId, occurredAt, space }: BatchOptions,
 ) {
   return apiPost<MarkBatch>(
     `/classrooms/${encodeURIComponent(classroomId)}/mark-batches`,
@@ -223,6 +232,7 @@ export function giveMarkToClass(
       all_students: true,
       occurred_at: occurredAt,
     },
+    { space },
   )
 }
 
@@ -231,7 +241,7 @@ export function giveMarkToStudents(
   classroomId: string,
   studentIds: Array<string>,
   markTypeId: string,
-  { batchId, occurredAt }: BatchOptions,
+  { batchId, occurredAt, space }: BatchOptions,
 ) {
   return apiPost<MarkBatch>(
     `/classrooms/${encodeURIComponent(classroomId)}/mark-batches`,
@@ -241,13 +251,14 @@ export function giveMarkToStudents(
       student_ids: studentIds,
       occurred_at: occurredAt,
     },
+    { space },
   )
 }
 
 /** Undo for a whole batch. Already gone (404) counts as undone. */
-export async function undoMarkBatch(batchId: string) {
+export async function undoMarkBatch(batchId: string, space?: string | null) {
   try {
-    await apiDelete(`/mark-batches/${encodeURIComponent(batchId)}`)
+    await apiDelete(`/mark-batches/${encodeURIComponent(batchId)}`, { space })
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) return
     throw error

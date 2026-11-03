@@ -1,0 +1,233 @@
+---
+// A recording of the app (scripts/capture) playing in a phone, with its
+// steps underneath: a bar per step that fills as the video plays, and the
+// current step's name. Tapping a step jumps to it.
+//
+// - Plays muted, only while on screen, and never on its own when the
+//   visitor prefers reduced motion or has Save-Data on.
+// - Below-the-fold videos only start downloading when they come near.
+// - The steps are real text: they describe the silent video.
+import type { Clip } from '../../captures'
+import PhoneFrame from './PhoneFrame.astro'
+import { posterImage } from './poster'
+
+interface Props {
+  clip: Clip
+  size?: 'hero' | 'md' | 'sm'
+  /** Above the fold: start loading right away. */
+  priority?: boolean
+  class?: string
+}
+const { clip, size = 'md', priority = false, class: className } = Astro.props
+const { src, label, chapters } = clip
+const poster = await posterImage(clip)
+const steps = chapters.chapters.map((c, i) => ({
+  ...c,
+  end: chapters.chapters[i + 1]?.start ?? chapters.duration,
+}))
+---
+
+<figure
+  class:list={['phone-video', className]}
+  data-phone-video
+  data-priority={priority ? '' : undefined}
+>
+  <PhoneFrame size={size}>
+    <video
+      muted
+      loop
+      playsinline
+      disablepictureinpicture
+      width="640"
+      height="1292"
+      preload={priority ? 'metadata' : 'none'}
+      poster={poster.src}
+      src={priority ? src : undefined}
+      data-src={src}
+      aria-hidden="true"
+      tabindex="-1"></video>
+  </PhoneFrame>
+  <figcaption class="mx-auto mt-5 flex w-full max-w-[320px] items-start gap-3">
+    <span class="sr-only">{label}</span>
+    <div class="min-w-0 flex-1">
+      <ol class="flex gap-1.5" aria-label="Steps in this video">
+        {
+          steps.map((s, i) => (
+            <li class="flex-1">
+              <button
+                type="button"
+                class="step group block w-full py-2 outline-none"
+                data-start={s.start}
+                data-end={s.end}
+                aria-label={`Step ${i + 1}: ${s.label}`}
+              >
+                <span class="block h-1.5 overflow-hidden rounded-full bg-foreground/15 ring-offset-2 ring-offset-background group-focus-visible:ring-2 group-focus-visible:ring-ring">
+                  <span class="step-fill block h-full w-0 rounded-full bg-primary dark:bg-foreground" />
+                </span>
+              </button>
+            </li>
+          ))
+        }
+      </ol>
+      <p
+        class="step-label mt-1 truncate text-sm font-bold"
+        aria-hidden="true"
+      >
+        <span class="step-number mr-1.5 font-mono text-muted-foreground">1</span>
+        <span class="step-text">{steps[0]?.label}</span>
+      </p>
+    </div>
+    <button
+      type="button"
+      class="toggle mt-0.5 grid size-9 shrink-0 place-items-center rounded-full border-2 border-border bg-card text-foreground outline-none hover:bg-muted focus-visible:ring-4 focus-visible:ring-ring"
+      aria-label="Pause demo"
+    >
+      <svg class="icon-pause size-4" viewBox="0 0 16 16" aria-hidden="true"
+        ><rect x="3" y="2" width="3.5" height="12" rx="1"></rect><rect
+          x="9.5"
+          y="2"
+          width="3.5"
+          height="12"
+          rx="1"></rect></svg
+      >
+      <svg class="icon-play size-4" viewBox="0 0 16 16" aria-hidden="true"
+        ><path d="M4 2.6v10.8a1 1 0 0 0 1.5.9l8.6-5.4a1 1 0 0 0 0-1.8L5.5 1.7A1 1 0 0 0 4 2.6Z"
+        ></path></svg
+      >
+    </button>
+  </figcaption>
+</figure>
+
+<style>
+  .toggle svg {
+    fill: currentColor;
+  }
+  .phone-video:not([data-playing]) .icon-pause,
+  .phone-video[data-playing] .icon-play {
+    display: none;
+  }
+</style>
+
+<script>
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)')
+  const saveData = Boolean(
+    (navigator as Navigator & { connection?: { saveData?: boolean } })
+      .connection?.saveData,
+  )
+
+  for (const figure of document.querySelectorAll<HTMLElement>(
+    '[data-phone-video]',
+  )) {
+    const video = figure.querySelector('video')!
+    const steps = [...figure.querySelectorAll<HTMLButtonElement>('.step')]
+    const fills = steps.map((s) => s.querySelector<HTMLElement>('.step-fill')!)
+    const number = figure.querySelector('.step-number')!
+    const text = figure.querySelector('.step-text')!
+    const toggle = figure.querySelector<HTMLButtonElement>('.toggle')!
+    const labels = steps.map((s) =>
+      (s.getAttribute('aria-label') ?? '').replace(/^Step \d+: /, ''),
+    )
+
+    // Paused by the visitor (or by their settings) until they press play.
+    let held = reduceMotion.matches || saveData
+    let onScreen = false
+    let frame = 0
+
+    const load = () => {
+      if (!video.getAttribute('src') && video.dataset.src) {
+        video.src = video.dataset.src
+      }
+    }
+
+    const draw = () => {
+      const t = video.currentTime
+      let active = 0
+      steps.forEach((s, i) => {
+        const start = Number(s.dataset.start)
+        const end = Number(s.dataset.end)
+        if (t >= start) active = i
+        const done = Math.min(1, Math.max(0, (t - start) / (end - start || 1)))
+        fills[i].style.width = `${done * 100}%`
+      })
+      number.textContent = String(active + 1)
+      text.textContent = labels[active]
+      steps.forEach((s, i) =>
+        i === active
+          ? s.setAttribute('aria-current', 'step')
+          : s.removeAttribute('aria-current'),
+      )
+    }
+
+    const tick = () => {
+      draw()
+      frame = video.paused ? 0 : requestAnimationFrame(tick)
+    }
+
+    const showState = () => {
+      const playing = !video.paused
+      figure.toggleAttribute('data-playing', playing)
+      toggle.setAttribute('aria-label', playing ? 'Pause demo' : 'Play demo')
+    }
+
+    const update = () => {
+      if (onScreen && !held) {
+        load()
+        video.play().catch(() => {
+          // Refused (e.g. iPhone Low Power Mode): wait for a tap on Play.
+          held = true
+          showState()
+        })
+      } else if (!video.paused) {
+        video.pause()
+      }
+    }
+
+    video.addEventListener('play', () => {
+      showState()
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(tick)
+    })
+    video.addEventListener('pause', showState)
+    video.addEventListener('seeked', draw)
+
+    toggle.addEventListener('click', () => {
+      held = !video.paused
+      if (held) video.pause()
+      else {
+        onScreen = true
+        update()
+      }
+    })
+
+    steps.forEach((s) =>
+      s.addEventListener('click', () => {
+        load()
+        video.currentTime = Number(s.dataset.start) + 0.05
+        draw()
+      }),
+    )
+
+    // Start downloading a little before it scrolls into view…
+    new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting) && !held) load()
+      },
+      { rootMargin: '400px 0px' },
+    ).observe(figure)
+    // …and play only while it's mostly on screen.
+    new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) onScreen = e.intersectionRatio >= 0.4
+        update()
+      },
+      { threshold: [0, 0.4, 0.6] },
+    ).observe(figure)
+
+    reduceMotion.addEventListener('change', () => {
+      held = reduceMotion.matches
+      update()
+    })
+    showState()
+    draw()
+  }
+</script>

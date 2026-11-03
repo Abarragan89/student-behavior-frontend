@@ -1,10 +1,10 @@
-// Content blocks for the marketing pages, written with the app's shadcn
+// Building blocks for the marketing pages, written with the app's shadcn
 // components. Rendered to HTML when the site is built; no JavaScript is sent
-// for them. (Parts that need the browser are islands: see Hero.astro.)
+// for them. (The sections themselves are in components/sections/.)
 //
 // Everything takes props, not children, so .astro pages can use them without
 // Astro wrapping the content in extra elements.
-import { ArrowRight, Check, Heart, LogIn, Smartphone } from 'lucide-react'
+import { ArrowRight, Check } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -22,8 +22,6 @@ import {
   ItemTitle,
 } from '@/components/ui/item'
 import { cn } from '@/lib/utils'
-import { LessonNotesMockup } from './LessonNotesMockup'
-import { SubPlanMockup } from './SubPlanMockup'
 
 // ---------- Building blocks ----------
 
@@ -155,159 +153,26 @@ export function FeatureCards({
 }
 
 /** "Learn more →" under a section. */
-export function MoreLink({ href, label }: { href: string; label: string }) {
+export function MoreLink({
+  href,
+  label,
+  className = 'mt-6',
+}: {
+  href: string
+  label: string
+  /** Spacing; a gap above by default. */
+  className?: string
+}) {
   return (
     <a
       href={href}
-      className="mt-6 inline-flex items-center gap-1.5 font-bold text-primary underline-offset-4 hover:underline dark:text-foreground"
+      className={cn(
+        'inline-flex items-center gap-1.5 font-bold text-primary underline-offset-4 hover:underline dark:text-foreground',
+        className,
+      )}
     >
       {label}
       <ArrowRight className="size-4" aria-hidden />
     </a>
-  )
-}
-
-// ---------- Homepage sections ----------
-
-const BEHAVIOR_STEPS: Array<Step> = [
-  {
-    title: 'Open your class',
-    text: 'Every student is a card on your dashboard, with today’s marks.',
-  },
-  {
-    title: 'Tap a student',
-    text: 'Your marks pop up: positive on one side, negative on the other.',
-  },
-  {
-    title: 'Give a mark',
-    text: 'One tap adds it to that student’s record, with the time. Back to teaching.',
-  },
-]
-
-export function BehaviorSection() {
-  return (
-    <section
-      id="how-it-works"
-      data-band
-      className="scroll-mt-16 border-y-2 border-border bg-muted"
-    >
-      <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:py-24">
-        <div>
-          <Eyebrow label="Behavior tracking" />
-          <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
-            Every student, one tap away.
-          </h2>
-          <p className="mt-4 max-w-xl text-lg text-muted-foreground">
-            See your whole class at a glance. Recognize good choices and note
-            the ones that need work, in two taps, without stopping the lesson.
-          </p>
-          <MoreLink
-            href="/behavior-tracking"
-            label="More about behavior tracking"
-          />
-        </div>
-
-        <StepList steps={BEHAVIOR_STEPS} />
-      </div>
-    </section>
-  )
-}
-
-export function LessonNotesSection() {
-  return (
-    <section className="mx-auto grid max-w-6xl items-center gap-12 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:py-24">
-      <div className="lg:order-2">
-        <Eyebrow
-          label="Lesson plans"
-          className="bg-accent text-accent-foreground"
-        />
-        <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
-          Lesson plans as simple as sticky notes.
-        </h2>
-        <p className="mt-4 max-w-xl text-lg text-muted-foreground">
-          Jot down tomorrow’s lesson the way you’d write it on a sticky note,
-          then keep it open on your phone while you teach.
-        </p>
-        <CheckList
-          className="mt-6"
-          items={[
-            'A quick outline: warm-up, key points, activity',
-            'Open it on your phone in the middle of class',
-            'No templates or boxes to fill in',
-          ]}
-        />
-        <MoreLink href="/lesson-planner" label="More about lesson plans" />
-      </div>
-
-      <div className="lg:order-1">
-        <LessonNotesMockup />
-      </div>
-    </section>
-  )
-}
-
-export function SubstituteSection() {
-  return (
-    <section data-band className="border-y-2 border-border bg-muted">
-      <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:py-24">
-        <div>
-          <Eyebrow
-            label="Substitutes"
-            className="bg-secondary text-foreground"
-          />
-          <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
-            Out tomorrow? Share the day.
-          </h2>
-          <p className="mt-4 max-w-xl text-lg text-muted-foreground">
-            Send your sub one link, or print your plan with a QR code. They get
-            that day’s plan and your class on their phone. No account needed.
-          </p>
-          <CheckList
-            className="mt-6"
-            items={[
-              'They check off the plan as they go',
-              'They give marks, labeled “Sub” for you',
-              'The link works that day only, and you can turn it off',
-            ]}
-          />
-          <MoreLink href="/substitute-plans" label="More about sub plans" />
-        </div>
-
-        <div>
-          <SubPlanMockup />
-        </div>
-      </div>
-    </section>
-  )
-}
-
-const HIGHLIGHTS: Array<Feature> = [
-  {
-    title: 'Free for teachers',
-    text: 'No cost to sign up or use. Classroom tools shouldn’t come out of your paycheck.',
-    icon: Heart,
-  },
-  {
-    title: 'Made for your phone',
-    text: 'Big buttons and short pages, built to use in the middle of a lesson.',
-    icon: Smartphone,
-  },
-  {
-    title: 'Sign in with Google',
-    text: 'Use the Google account you already have. No new password to remember.',
-    icon: LogIn,
-  },
-]
-
-export function Highlights() {
-  return (
-    <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
-      <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-        Made for teaching, not paperwork.
-      </h2>
-      <div className="mt-8">
-        <FeatureCards items={HIGHLIGHTS} className="md:grid-cols-3" />
-      </div>
-    </section>
   )
 }

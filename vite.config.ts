@@ -155,11 +155,13 @@ const config = defineConfig(({ command, mode }) => {
           // (Astro), which are never saved for offline. Of the images, only
           // the logo: the header, the offline screen and #splash show it.
           // Launch images are left out: each phone only needs one of the 22.
+          // The mark sounds, since marks can be given offline.
           globPatterns: [
             'app.html',
             'assets/**/*.{js,css,woff2}',
             'branding/favicon.ico',
             'branding/chalkboard.png',
+            'sounds/*.wav',
           ],
           // App URLs open the saved app.html, even offline. Others (/,
           // /privacy, …) always come from the network.

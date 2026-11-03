@@ -40,8 +40,11 @@ export function PresenterView({
   isToday: boolean
   /** The top bar's title: "Today", "Tue, Nov 5", "Ms. Lee’s plan". */
   heading: string
-  /** A line was tapped: check it off, or uncheck it. */
-  onCheck: (item: PlanItem) => void
+  /**
+   * A line was tapped: check it off, or uncheck it. Left out, lines can't be
+   * checked (a co-teacher who can only view the plan).
+   */
+  onCheck?: (item: PlanItem) => void
   /** Top left, e.g. the teacher's close button. */
   exit?: ReactNode
   /** Under "Nothing planned for this day.", e.g. a link to plan it. */
@@ -70,9 +73,17 @@ export function PresenterView({
       (isToday && day.sections.find((s) => isDuring(s, minutesNow()))) ||
       day.sections.find((s) => progress([s]).done < progress([s]).total)
     if (start && start !== day.sections[0]) {
-      document
-        .getElementById(sectionId(start.id))
-        ?.scrollIntoView({ block: 'start' })
+      const jump = () =>
+        document
+          .getElementById(sectionId(start.id))
+          ?.scrollIntoView({ block: 'start' })
+      jump()
+      // The router puts the page back at the top once the route has
+      // rendered (scrollRestoration in main.tsx), right after this runs.
+      // Jump again after that, before anything is painted. Not cancelled on
+      // cleanup, so it survives StrictMode's double run; unmounted, it finds
+      // no section and does nothing.
+      requestAnimationFrame(jump)
     }
   }, [day.sections, isToday])
 
@@ -156,7 +167,7 @@ function PresenterSection({
 }: {
   section: PlanSection
   isNow: boolean
-  onCheck: (item: PlanItem) => void
+  onCheck?: (item: PlanItem) => void
 }) {
   const lines = section.items.filter((i) => !isBlank(i))
   const { done, total } = progress([section])
@@ -225,7 +236,10 @@ function PresenterSection({
         <ul className="pb-2">
           {lines.map((item) => (
             <li key={item.id}>
-              <PresenterRow item={item} onCheck={() => onCheck(item)} />
+              <PresenterRow
+                item={item}
+                onCheck={onCheck && (() => onCheck(item))}
+              />
             </li>
           ))}
         </ul>
@@ -240,7 +254,8 @@ function PresenterRow({
   onCheck,
 }: {
   item: PlanItem
-  onCheck: () => void
+  /** Left out: shown, but can't be checked. */
+  onCheck?: () => void
 }) {
   const sub = item.indent > 0
   return (
@@ -249,8 +264,10 @@ function PresenterRow({
       role="checkbox"
       aria-checked={item.done}
       onClick={onCheck}
+      disabled={!onCheck}
       className={cn(
-        'flex min-h-14 w-full items-start gap-3 py-2.5 pr-4 text-left outline-none select-none hover:bg-muted/50 focus-visible:ring-4 focus-visible:ring-ring focus-visible:ring-inset active:bg-muted',
+        'flex min-h-14 w-full items-start gap-3 py-2.5 pr-4 text-left outline-none select-none focus-visible:ring-4 focus-visible:ring-ring focus-visible:ring-inset',
+        onCheck && 'hover:bg-muted/50 active:bg-muted',
         { 0: 'pl-4', 1: 'pl-14', 2: 'pl-24' }[item.indent],
       )}
     >

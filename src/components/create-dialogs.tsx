@@ -1,4 +1,11 @@
-import { createContext, useContext, useMemo, useState } from 'react'
+import {
+  Suspense,
+  createContext,
+  lazy,
+  useContext,
+  useMemo,
+  useState,
+} from 'react'
 import type { ReactNode } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import type { Me } from '#/lib/auth'
@@ -7,10 +14,17 @@ import { AddStudentsPanel } from '#/components/add-students-panel'
 import type { ConnectNotice } from '#/components/classroom-connect-notice'
 import { ResponsiveDialog } from '#/components/responsive-dialogue'
 
+// Loaded the first time it opens: it carries the QR code library.
+const LazyAddCoteacherDialog = lazy(
+  () => import('#/components/coteachers/add-coteacher-dialog'),
+)
+
 type CreateDialogs = {
   openCreateClass: () => void
   /** notice: how "Connect Google Classroom" went, shown above the Google part. */
   openAddStudents: (notice?: ConnectNotice | null) => void
+  /** Your own space only: invites into someone else's are never offered. */
+  openAddCoteacher: () => void
 }
 
 const CreateDialogsContext = createContext<CreateDialogs | null>(null)
@@ -27,9 +41,10 @@ export function useCreateDialogs() {
 }
 
 /**
- * The + menu's dialogs: Add Students and Create class. They live here, in the
- * signed-in layout, so they work from every page and from both + buttons
- * (top bar, and the phone bottom bar).
+ * The + menu's dialogs: Add Students, Create class and Add co-teacher. They
+ * live here, in the signed-in layout, so they work from every page and from
+ * both + buttons (top bar, and the phone bottom bar). Keyed by space in
+ * _authed.tsx, so switching spaces closes them.
  */
 export function CreateDialogsProvider({
   me,
@@ -42,6 +57,8 @@ export function CreateDialogsProvider({
   const [createClassOpen, setCreateClassOpen] = useState(false)
   const [addStudentsOpen, setAddStudentsOpen] = useState(false)
   const [notice, setNotice] = useState<ConnectNotice | null>(null)
+  const [addCoteacherOpen, setAddCoteacherOpen] = useState(false)
+  const [coteacherLoaded, setCoteacherLoaded] = useState(false)
 
   const dialogs = useMemo<CreateDialogs>(
     () => ({
@@ -50,9 +67,16 @@ export function CreateDialogsProvider({
         setNotice(next)
         setAddStudentsOpen(true)
       },
+      openAddCoteacher: () => {
+        setCoteacherLoaded(true)
+        setAddCoteacherOpen(true)
+      },
     }),
     [],
   )
+  const { classroom } = me
+  // Typed names only in someone else's space: Google Classroom is theirs.
+  const acting = !!me.acting_for
 
   // Show the class the students went into (no-op when already there).
   const goToClasses = () => void navigate({ to: '/classes' })
@@ -61,36 +85,39 @@ export function CreateDialogsProvider({
     <CreateDialogsContext.Provider value={dialogs}>
       {children}
 
-      <ResponsiveDialog
-        isOpen={addStudentsOpen}
-        setIsOpen={(open: boolean) => {
-          setAddStudentsOpen(open)
-          // A connect result is only news the first time.
-          if (!open) setNotice(null)
-        }}
-        title="Add Students"
-        // Visible: the + works from any page, so say which class it's for.
-        description={`To ${me.classroom.name}`}
-        showDescription
-        // Wider for the two columns of class cards. ResponsiveDialog keeps it
-        // within the screen and scrolls the body.
-        className="sm:max-w-2xl"
-      >
-        <AddStudentsPanel
-          classroom={me.classroom}
-          notice={notice}
-          onDismissNotice={() => setNotice(null)}
-          onAdded={() => {
-            // The new students are on the page by now, and a toast says how
-            // many were added.
-            setAddStudentsOpen(false)
-            goToClasses()
+      {classroom && (
+        <ResponsiveDialog
+          isOpen={addStudentsOpen}
+          setIsOpen={(open: boolean) => {
+            setAddStudentsOpen(open)
+            // A connect result is only news the first time.
+            if (!open) setNotice(null)
           }}
-          // Stays open: the cards say what was imported, and the teacher may
-          // want to bring in another class.
-          onImported={goToClasses}
-        />
-      </ResponsiveDialog>
+          title="Add Students"
+          // Visible: the + works from any page, so say which class it's for.
+          description={`To ${classroom.name}`}
+          showDescription
+          // Wider for the two columns of class cards. ResponsiveDialog keeps it
+          // within the screen and scrolls the body.
+          className="sm:max-w-2xl"
+        >
+          <AddStudentsPanel
+            classroom={classroom}
+            google={!acting}
+            notice={notice}
+            onDismissNotice={() => setNotice(null)}
+            onAdded={() => {
+              // The new students are on the page by now, and a toast says how
+              // many were added.
+              setAddStudentsOpen(false)
+              goToClasses()
+            }}
+            // Stays open: the cards say what was imported, and the teacher may
+            // want to bring in another class.
+            onImported={goToClasses}
+          />
+        </ResponsiveDialog>
+      )}
 
       <ResponsiveDialog
         isOpen={createClassOpen}
@@ -100,6 +127,16 @@ export function CreateDialogsProvider({
       >
         <CreateClassForm onSuccess={() => setCreateClassOpen(false)} />
       </ResponsiveDialog>
+
+      {coteacherLoaded && !acting && (
+        <Suspense fallback={null}>
+          <LazyAddCoteacherDialog
+            open={addCoteacherOpen}
+            onOpenChange={setAddCoteacherOpen}
+            ownerName={me.teacher.name}
+          />
+        </Suspense>
+      )}
     </CreateDialogsContext.Provider>
   )
 }

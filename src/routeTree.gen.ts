@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as ConferenceRouteImport } from './routes/conference'
+import { Route as InviteRouteImport } from './routes/invite'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as SubRouteImport } from './routes/sub'
 import { Route as AuthedAccountRouteImport } from './routes/_authed/account'
@@ -30,6 +31,11 @@ const AuthedRoute = AuthedRouteImport.update({
 const ConferenceRoute = ConferenceRouteImport.update({
   id: '/conference',
   path: '/conference',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InviteRoute = InviteRouteImport.update({
+  id: '/invite',
+  path: '/invite',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -93,6 +99,7 @@ const AuthedLessonPlansDatePresentRoute =
 export interface FileRoutesByFullPath {
   '/': typeof AuthedRouteWithChildren
   '/conference': typeof ConferenceRoute
+  '/invite': typeof InviteRoute
   '/login': typeof LoginRoute
   '/sub': typeof SubRoute
   '/account': typeof AuthedAccountRoute
@@ -108,6 +115,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof AuthedRouteWithChildren
   '/conference': typeof ConferenceRoute
+  '/invite': typeof InviteRoute
   '/login': typeof LoginRoute
   '/sub': typeof SubRoute
   '/account': typeof AuthedAccountRoute
@@ -124,6 +132,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authed': typeof AuthedRouteWithChildren
   '/conference': typeof ConferenceRoute
+  '/invite': typeof InviteRoute
   '/login': typeof LoginRoute
   '/sub': typeof SubRoute
   '/_authed/account': typeof AuthedAccountRoute
@@ -141,6 +150,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/conference'
+    | '/invite'
     | '/login'
     | '/sub'
     | '/account'
@@ -156,6 +166,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/conference'
+    | '/invite'
     | '/login'
     | '/sub'
     | '/account'
@@ -171,6 +182,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_authed'
     | '/conference'
+    | '/invite'
     | '/login'
     | '/sub'
     | '/_authed/account'
@@ -187,6 +199,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AuthedRoute: typeof AuthedRouteWithChildren
   ConferenceRoute: typeof ConferenceRoute
+  InviteRoute: typeof InviteRoute
   LoginRoute: typeof LoginRoute
   SubRoute: typeof SubRoute
 }
@@ -205,6 +218,13 @@ declare module '@tanstack/react-router' {
       path: '/conference'
       fullPath: '/conference'
       preLoaderRoute: typeof ConferenceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invite': {
+      id: '/invite'
+      path: '/invite'
+      fullPath: '/invite'
+      preLoaderRoute: typeof InviteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -317,6 +337,7 @@ const AuthedRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   AuthedRoute: AuthedRouteWithChildren,
   ConferenceRoute: ConferenceRoute,
+  InviteRoute: InviteRoute,
   LoginRoute: LoginRoute,
   SubRoute: SubRoute,
 }

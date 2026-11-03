@@ -40,6 +40,8 @@ body {
   --accent-foreground: oklch(0 0 0);
   --destructive: oklch(0.6368 0.2078 25.3313);
   --destructive-foreground: oklch(1 0 0);
+  --success: oklch(0.55 0.15 150);
+  --success-foreground: oklch(1 0 0);
   --border: oklch(0 0 0);
   --input: oklch(0.5555 0 0);
   --ring: oklch(0.7853 0.1041 274.7134);
@@ -105,6 +107,8 @@ body {
   --accent-foreground: oklch(0 0 0);
   --destructive: oklch(0.7106 0.1661 22.2162);
   --destructive-foreground: oklch(0 0 0);
+  --success: oklch(0.8 0.18 151);
+  --success-foreground: oklch(0 0 0);
   --border: oklch(0.4459 0 0);
   --input: oklch(1 0 0);
   --ring: oklch(0.6801 0.1583 276.9349);
@@ -168,6 +172,8 @@ body {
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -265,7 +271,8 @@ body {
   [data-slot='drawer-viewport'],
   [data-slot='drawer-popup'],
   [data-slot='alert-dialog-overlay'],
-  [data-slot='alert-dialog-content'] {
+  [data-slot='alert-dialog-content'],
+  [data-slot='dropdown-menu-content'] {
     display: none !important;
   }
   /* Conference notices (src/components/conferences/print-notices.tsx): one
@@ -277,5 +284,10 @@ body {
   .notice-page:last-child {
     break-after: auto;
     page-break-after: auto;
+  }
+  /* The conference schedule (print-schedule.tsx): each day on a new page. */
+  .schedule-day + .schedule-day {
+    break-before: page;
+    page-break-before: always;
   }
 }

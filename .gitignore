@@ -15,3 +15,5 @@ mock-ups
 daily-schedule-accordion
 # Astro (site/)
 .astro
+# Capture scripts (npm run capture): keys, frames, app build
+scripts/capture/.out

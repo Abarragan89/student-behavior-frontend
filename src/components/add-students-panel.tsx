@@ -2,7 +2,7 @@ import { useId } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { FieldSeparator } from '@/components/ui/field'
 import { Spinner } from '@/components/ui/spinner'
-import type { Me } from '#/lib/auth'
+import type { OpenClassroom } from '#/lib/auth'
 import { classroomStatusQueryOptions } from '#/lib/classroom'
 import AddStudentsForm from '#/components/forms/add-students-form'
 import { ConnectClassroomButton } from '#/components/connect-classroom-button'
@@ -12,17 +12,21 @@ import { GoogleClassCards } from '#/components/google-class-cards'
 
 /**
  * The Add Students dialog's content: type names in, or bring a class in from
- * Google Classroom underneath (or connect it first).
+ * Google Classroom underneath (or connect it first). A co-teacher in another
+ * teacher's space types names only: Google Classroom is the owner's account.
  */
 export function AddStudentsPanel({
   classroom,
+  google = true,
   notice,
   onDismissNotice,
   onAdded,
   onImported,
 }: {
   /** The open class: typed names are added to it. */
-  classroom: Me['classroom']
+  classroom: OpenClassroom
+  /** Offer Google Classroom import. */
+  google?: boolean
   /** How "Connect Google Classroom" went, when it just sent them back. */
   notice: ConnectNotice | null
   onDismissNotice: () => void
@@ -33,7 +37,11 @@ export function AddStudentsPanel({
 }) {
   const connectHeadingId = useId()
   // Loaded ahead by the Classes page; on other pages this is its first load.
-  const status = useQuery(classroomStatusQueryOptions)
+  const status = useQuery({ ...classroomStatusQueryOptions, enabled: google })
+
+  if (!google) {
+    return <AddStudentsForm classroomId={classroom.id} onSuccess={onAdded} />
+  }
 
   return (
     <div className="flex flex-col gap-8">

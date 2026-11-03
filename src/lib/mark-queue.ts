@@ -15,6 +15,7 @@ import {
   undoMarkBatch,
 } from './marks'
 import type { MarkBatch, QueuedMark } from './marks'
+import { currentSpace, spaceFromMeta } from './space-state'
 
 // Giving and undoing marks, as a queue that survives bad Wi-Fi.
 //
@@ -44,15 +45,16 @@ export function registerMarkMutations(queryClient: QueryClient) {
   }
   queryClient.setMutationDefaults([...MARK_MUTATION_KEY, 'give'], {
     ...common,
-    mutationFn: (mark: QueuedMark) =>
-      waitIfSignedOut(queryClient, () => sendGive(mark)),
+    // Sent to the space it was given in, even after switching spaces.
+    mutationFn: (mark: QueuedMark, { meta }) =>
+      waitIfSignedOut(queryClient, () => sendGive(mark, spaceFromMeta(meta))),
     onSuccess: (result: unknown, mark: QueuedMark) =>
       checkClassRoster(queryClient, result, mark),
   })
   queryClient.setMutationDefaults([...MARK_MUTATION_KEY, 'undo'], {
     ...common,
-    mutationFn: (mark: QueuedMark) =>
-      waitIfSignedOut(queryClient, () => sendUndo(mark)),
+    mutationFn: (mark: QueuedMark, { meta }) =>
+      waitIfSignedOut(queryClient, () => sendUndo(mark, spaceFromMeta(meta))),
   })
 }
 
@@ -73,8 +75,9 @@ export function enqueue<T>(
   const me = queryClient.getQueryData(meQueryOptions.queryKey)
   const observer = new MutationObserver<unknown, unknown, T>(queryClient, {
     mutationKey,
-    // Whose it is, so a saved queue is only ever sent for the same teacher.
-    meta: { owner: me?.teacher.email },
+    // Whose it is, so a saved queue is only ever sent for the same teacher,
+    // and the space it was made in (null: their own), which it's sent to.
+    meta: { owner: me?.teacher.email, space: currentSpace() },
   })
   void observer
     .mutate(variables)
@@ -160,29 +163,37 @@ export function countUnsent(mutations: Array<QueuedMark>) {
 
 // ---------- Sending ----------
 
-async function sendGive(mark: QueuedMark): Promise<unknown> {
+async function sendGive(
+  mark: QueuedMark,
+  space: string | null,
+): Promise<unknown> {
   const { classroomId, markTypeId, id, occurredAt } = mark
   switch (mark.target) {
     case 'student':
       return giveMark(classroomId, mark.studentIds[0], markTypeId, {
         id,
         occurredAt,
+        space,
       })
     case 'selected':
       return giveMarkToStudents(classroomId, mark.studentIds, markTypeId, {
         batchId: id,
         occurredAt,
+        space,
       })
     case 'class':
       return giveMarkToClass(classroomId, markTypeId, {
         batchId: id,
         occurredAt,
+        space,
       })
   }
 }
 
-function sendUndo(mark: QueuedMark) {
-  return mark.target === 'student' ? undoMark(mark.id) : undoMarkBatch(mark.id)
+function sendUndo(mark: QueuedMark, space: string | null) {
+  return mark.target === 'student'
+    ? undoMark(mark.id, space)
+    : undoMarkBatch(mark.id, space)
 }
 
 /**
@@ -278,9 +289,11 @@ function onMarkFailed(
   toast.error(`Couldn’t save ${what} for ${who}`, {
     description: notFound
       ? 'The student, class or mark type has changed since.'
-      : error instanceof ApiError && error.status === 400
-        ? 'It was given too long ago to save.'
-        : 'Something went wrong on our side.',
+      : error instanceof ApiError && error.status === 403
+        ? 'You can no longer give marks in that classroom.'
+        : error instanceof ApiError && error.status === 400
+          ? 'It was given too long ago to save.'
+          : 'Something went wrong on our side.',
   })
 }
 
@@ -298,6 +311,6 @@ function describeStudents(queryClient: QueryClient, mark: QueuedMark) {
   if (mark.target === 'selected') return `${mark.studentIds.length} students`
   const student = queryClient
     .getQueryData(meQueryOptions.queryKey)
-    ?.classroom.students.find((s) => s.id === mark.studentIds[0])
+    ?.classroom?.students.find((s) => s.id === mark.studentIds[0])
   return student?.first_name ?? 'a student'
 }

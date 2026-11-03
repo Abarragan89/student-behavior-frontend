@@ -35,7 +35,7 @@ import {
 } from '#/lib/conferences'
 import type { Conference } from '#/lib/conferences'
 import { timeZone } from '#/lib/marks'
-import { useOnline } from '#/lib/online'
+import { useCanSave } from '#/lib/workspace'
 import { OfflineNote } from '#/components/offline-note'
 import { ResponsiveDialog } from '#/components/responsive-dialogue'
 
@@ -88,14 +88,16 @@ function SettingsForm({
 }) {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
-  const online = useOnline()
+  // Online, and allowed: a co-teacher may only view conferences.
+  const canSave = useCanSave('conferences')
   // Already loaded by the login check (see _authed.tsx).
   const { data: me } = useSuspenseQuery(meQueryOptions)
   const classrooms = me?.classrooms ?? []
 
   const [title, setTitle] = useState(conference?.title ?? 'Parent conferences')
   const [noticeName, setNoticeName] = useState(
-    conference?.notice_name ?? me?.teacher.name ?? '',
+    // A co-teacher sets these up for the class's own teacher.
+    conference?.notice_name ?? me?.acting_for?.name ?? me?.teacher.name ?? '',
   )
   const [location, setLocation] = useState(conference?.location ?? '')
   const [picked, setPicked] = useState<Array<string>>(
@@ -226,7 +228,7 @@ function SettingsForm({
         <OfflineNote action="save" />
         <Button
           type="submit"
-          disabled={missing || busy || !online}
+          disabled={missing || busy || !canSave}
           aria-busy={busy}
           className="h-12 rounded-lg border-2 border-border text-base font-bold shadow-sm"
         >
@@ -238,7 +240,7 @@ function SettingsForm({
             type="button"
             variant="outline"
             onClick={() => setDeleteOpen(true)}
-            disabled={busy || !online}
+            disabled={busy || !canSave}
             className="h-12 rounded-lg border-2 border-border bg-card text-base font-bold text-destructive"
           >
             <Trash2 className="size-5" />

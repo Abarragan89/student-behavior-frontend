@@ -4,9 +4,24 @@
 // request needs `credentials: 'include'` or the browser leaves the cookies off
 // and the backend answers 401.
 
+import { currentSpace } from './space-state'
+
 export const API_URL = import.meta.env.VITE_API_URL
 
 export const loginUrl = `${API_URL}/auth/google/login`
+
+/** Signs in, then comes back to the co-teacher invite page (/invite). */
+export const inviteLoginUrl = `${loginUrl}?next=invite`
+
+/** The header naming the owner whose space a co-teacher is working in. */
+export const ACTING_FOR_HEADER = 'X-Acting-For'
+
+/**
+ * Options for every call. `space` is whose space it's for: left out, the
+ * tab's current space (space-state.ts); null, your own. Queued changes pass
+ * the space they were made in, so switching spaces never re-aims them.
+ */
+export type ApiOptions = { timeoutMs?: number; space?: string | null }
 
 // Starts "Connect Google Classroom". Like loginUrl, the browser goes here
 // (it's a page navigation to Google and back, not a fetch).
@@ -91,11 +106,14 @@ function withRefreshLock<T>(refresh: () => Promise<T>): Promise<T> {
 export async function apiFetch(
   path: string,
   init: RequestInit = {},
-  { timeoutMs = DEFAULT_TIMEOUT_MS }: { timeoutMs?: number } = {},
+  { timeoutMs = DEFAULT_TIMEOUT_MS, space = currentSpace() }: ApiOptions = {},
 ): Promise<Response> {
+  const headers = new Headers(init.headers)
+  if (space) headers.set(ACTING_FOR_HEADER, space)
   const send = () =>
     fetch(`${API_URL}${path}`, {
       ...init,
+      headers,
       credentials: 'include',
       signal: timeoutSignal(timeoutMs, init.signal),
     })
@@ -109,7 +127,7 @@ export async function apiFetch(
 
 export async function apiGet<T>(
   path: string,
-  options?: { timeoutMs?: number },
+  options?: ApiOptions,
 ): Promise<T> {
   const res = await apiFetch(path, {}, options)
   if (!res.ok) throw apiErrorFrom(res)
@@ -121,7 +139,7 @@ async function apiSend<T>(
   method: 'POST' | 'PUT' | 'PATCH',
   path: string,
   body?: unknown,
-  options?: { timeoutMs?: number },
+  options?: ApiOptions,
 ): Promise<T> {
   const res = await apiFetch(
     path,
@@ -141,21 +159,32 @@ async function apiSend<T>(
 export function apiPost<T>(
   path: string,
   body?: unknown,
-  options?: { timeoutMs?: number },
+  options?: ApiOptions,
 ): Promise<T> {
   return apiSend<T>('POST', path, body, options)
 }
 
-export function apiPut<T>(path: string, body?: unknown): Promise<T> {
-  return apiSend<T>('PUT', path, body)
+export function apiPut<T>(
+  path: string,
+  body?: unknown,
+  options?: ApiOptions,
+): Promise<T> {
+  return apiSend<T>('PUT', path, body, options)
 }
 
-export function apiPatch<T>(path: string, body?: unknown): Promise<T> {
-  return apiSend<T>('PATCH', path, body)
+export function apiPatch<T>(
+  path: string,
+  body?: unknown,
+  options?: ApiOptions,
+): Promise<T> {
+  return apiSend<T>('PATCH', path, body, options)
 }
 
 // For routes that answer 204 with no body.
-export async function apiDelete(path: string): Promise<void> {
-  const res = await apiFetch(path, { method: 'DELETE' })
+export async function apiDelete(
+  path: string,
+  options?: ApiOptions,
+): Promise<void> {
+  const res = await apiFetch(path, { method: 'DELETE' }, options)
   if (!res.ok) throw apiErrorFrom(res)
 }

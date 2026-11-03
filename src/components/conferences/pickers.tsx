@@ -19,7 +19,7 @@ import type {
   ConferenceSlot,
   ConferenceStudent,
 } from '#/lib/conferences'
-import { useOnline } from '#/lib/online'
+import { useCanSave } from '#/lib/workspace'
 import { OfflineNote } from '#/components/offline-note'
 import { ResponsiveDialog } from '#/components/responsive-dialogue'
 import { useSaveConference } from './use-save'
@@ -74,7 +74,8 @@ function StudentList({
   onDone: () => void
 }) {
   const queryClient = useQueryClient()
-  const online = useOnline()
+  // Online, and allowed: a co-teacher may only view conferences.
+  const canSave = useCanSave('conferences')
   const save = useSaveConference(conference.id)
   const [search, setSearch] = useState('')
   const tz = conference.timezone
@@ -132,7 +133,7 @@ function StudentList({
   }
 
   const busy = save.isPending
-  const disabled = busy || !online
+  const disabled = busy || !canSave
 
   return (
     <div className="flex flex-col gap-4">
@@ -242,7 +243,8 @@ function OpenTimes({
   onDone: () => void
 }) {
   const queryClient = useQueryClient()
-  const online = useOnline()
+  // Online, and allowed: a co-teacher may only view conferences.
+  const canSave = useCanSave('conferences')
   const save = useSaveConference(conference.id)
   const tz = conference.timezone
   const now = Date.now()
@@ -250,7 +252,7 @@ function OpenTimes({
     (s) => s.student_id === null && Date.parse(s.starts_at) > now,
   )
   const days = slotsByDay(open, tz)
-  const disabled = save.isPending || !online
+  const disabled = save.isPending || !canSave
 
   return (
     <div className="flex flex-col gap-4">

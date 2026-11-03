@@ -41,6 +41,8 @@ export type ConferenceSlot = {
   student_id: string | null
   /** Sent back with edits, so a change made meanwhile isn't overwritten. */
   version: number
+  /** The teacher checked the meeting off. Only ever true with a student. */
+  completed: boolean
 }
 
 export type NoticeState = {
@@ -70,6 +72,7 @@ export type Conference = {
   timezone: string
   /** Families may move their time online. */
   parent_changes: boolean
+  /** Goes up with every change; deleting a day sends it back. */
   version: number
   created_at: string
   updated_at: string
@@ -180,6 +183,17 @@ export function latestSlot(
   )
 }
 
+/** The conference's version as the page last heard it from the server. */
+export function latestVersion(
+  queryClient: QueryClient,
+  conference: Conference,
+) {
+  return (
+    queryClient.getQueryData(conferenceQueryOptions(conference.id).queryKey)
+      ?.version ?? conference.version
+  )
+}
+
 export type ConferenceSettings = {
   title: string
   notice_name: string
@@ -249,6 +263,34 @@ export function removeTime(id: string, slot: ConferenceSlot) {
   return send<Conference>(
     'DELETE',
     `/conferences/${id}/slots/${slot.id}?version=${slot.version}`,
+  )
+}
+
+/**
+ * Checks a meeting off, or not. Sends who the page shows in the time, so a
+ * time that changed hands meanwhile isn't checked for the wrong student.
+ */
+export function markCompleted(
+  id: string,
+  slot: ConferenceSlot,
+  completed: boolean,
+) {
+  return send<Conference>(
+    'PUT',
+    `/conferences/${id}/slots/${slot.id}/completed`,
+    { completed, student_id: slot.student_id },
+  )
+}
+
+/**
+ * Deletes every time on day ("2026-11-12" in the conference's time zone).
+ * version is the conference's version the page showed: if a family moved
+ * meanwhile, nothing is deleted (ConferenceConflict 'stale').
+ */
+export function deleteDay(id: string, day: string, version: number) {
+  return send<Conference>(
+    'DELETE',
+    `/conferences/${id}/days/${day}?version=${version}`,
   )
 }
 
@@ -335,6 +377,18 @@ export function slotsByDay<T extends { starts_at: string }>(
     else days.push({ day, slots: [s] })
   }
   return days
+}
+
+/**
+ * Where a meeting stands. 'no_show': it has ended and the teacher didn't
+ * check it off (a meeting still going isn't one yet).
+ */
+export type MeetingState = 'open' | 'upcoming' | 'completed' | 'no_show'
+
+export function meetingState(slot: ConferenceSlot, now: number): MeetingState {
+  if (!slot.student_id) return 'open'
+  if (slot.completed) return 'completed'
+  return Date.parse(slot.ends_at) <= now ? 'no_show' : 'upcoming'
 }
 
 /**

@@ -1,0 +1,39 @@
+---
+// Sub plans: the printed plan's QR code, and what the sub sees.
+import Showcase from '../media/Showcase.astro'
+import Stack from '../media/Stack.astro'
+import PaperSheet from '../media/PaperSheet.astro'
+import PhoneVideo from '../media/PhoneVideo.astro'
+import { CheckList, MoreLink } from '../landing/LandingSections'
+import { CLIPS, PRINTS } from '../../captures'
+
+interface Props {
+  muted?: boolean
+  more?: boolean
+}
+const { muted = false, more = true } = Astro.props
+---
+
+<Showcase
+  muted={muted}
+  reverse
+  eyebrow="Sub plans"
+  eyebrowClass="bg-secondary text-foreground"
+  title="Out tomorrow? Print your plan with a QR code."
+  lead="Your substitute scans it and gets today’s plan and your class on their phone. They check off the plan as they go and give behavior marks, labeled “Sub” for you. No account needed."
+>
+  <CheckList
+    className="mt-6"
+    items={[
+      'The link works on that day only',
+      'Turn it off anytime, and it stops right away',
+      'They can’t see other days, past marks or student pages',
+    ]}
+  />
+  {more && <MoreLink href="/substitute-plans" label="More about sub plans" />}
+
+  <Stack slot="visual" phoneSide="right">
+    <PaperSheet slot="paper" {...PRINTS.planPrintQr} tilt={-2} crop="34rem" />
+    <PhoneVideo slot="phone" clip={CLIPS.subView} size="sm" />
+  </Stack>
+</Showcase>

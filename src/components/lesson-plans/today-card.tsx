@@ -1,6 +1,12 @@
 import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRight, NotebookPen, Pencil, Presentation } from 'lucide-react'
+import {
+  ArrowRight,
+  Eye,
+  NotebookPen,
+  Pencil,
+  Presentation,
+} from 'lucide-react'
 import { buttonVariants } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { cn } from '@/lib/utils'
@@ -8,6 +14,7 @@ import { formatClockRange } from '#/lib/calendar'
 import { formatLongDate } from '#/lib/day'
 import { lessonPlanDayQueryOptions, progress } from '#/lib/lesson-plans'
 import { ProgressBar } from '#/components/lesson-plans/progress-bar'
+import { usePermission } from '#/lib/workspace'
 
 /**
  * Today's plan at a glance, above the calendar: how much is done, what's
@@ -15,6 +22,8 @@ import { ProgressBar } from '#/components/lesson-plans/progress-bar'
  */
 export function TodayCard({ today }: { today: string }) {
   const day = useQuery(lessonPlanDayQueryOptions(today))
+  // A co-teacher with View only opens the plan to read it.
+  const editable = usePermission('lesson_plans') === 'edit'
   const sections = day.data?.sections ?? []
   const { done, total } = progress(sections)
   const upNext = sections.filter(
@@ -112,8 +121,12 @@ export function TodayCard({ today }: { today: string }) {
               'h-12 rounded-lg border-2 border-border bg-card px-4 text-base font-bold',
             )}
           >
-            <Pencil className="size-4" />
-            Edit
+            {editable ? (
+              <Pencil className="size-4" />
+            ) : (
+              <Eye className="size-4" />
+            )}
+            {editable ? 'Edit' : 'Open'}
           </Link>
         </div>
       ) : (
@@ -125,7 +138,7 @@ export function TodayCard({ today }: { today: string }) {
             'h-12 rounded-lg border-2 border-border text-base font-bold shadow-sm',
           )}
         >
-          {day.isPending ? 'Open today' : 'Plan today'}
+          {day.isPending || !editable ? 'Open today' : 'Plan today'}
           <ArrowRight className="size-5" />
         </Link>
       )}

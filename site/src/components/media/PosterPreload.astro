@@ -1,0 +1,13 @@
+---
+// Put in a page's head slot for the video in its first screen: its first
+// frame is the biggest thing there, so it loads before everything else.
+import type { Clip } from '../../captures'
+import { posterImage } from './poster'
+
+interface Props {
+  clip: Clip
+}
+const poster = await posterImage(Astro.props.clip)
+---
+
+<link rel="preload" as="image" href={poster.src} fetchpriority="high" />

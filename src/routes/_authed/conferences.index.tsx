@@ -22,16 +22,20 @@ import { cn } from '@/lib/utils'
 import { conferencesQueryOptions } from '#/lib/conferences'
 import type { ConferenceSummary } from '#/lib/conferences'
 import { useOnline } from '#/lib/online'
+import { mayLoad, usePermission } from '#/lib/workspace'
 import { OfflineNote } from '#/components/offline-note'
 import { SettingsDialog } from '#/components/conferences/settings-dialog'
 
 // /conferences: the teacher's parent conferences. ?new=true opens "New
 // parent conferences" (from the Add menu).
 export const Route = createFileRoute('/_authed/conferences/')({
+  // A co-teacher needs at least View on Conferences (_authed.tsx checks).
+  staticData: { feature: { key: 'conferences', level: 'view' } },
   validateSearch: (search: Record<string, unknown>): { new?: boolean } => ({
     new: search.new === true || search.new === 'true' ? true : undefined,
   }),
   loader: ({ context: { queryClient } }) => {
+    if (!mayLoad(queryClient, 'conferences')) return
     void queryClient.query(conferencesQueryOptions).catch(() => null)
   },
   component: ConferencesPage,
@@ -41,16 +45,20 @@ function ConferencesPage() {
   const search = Route.useSearch()
   const navigate = Route.useNavigate()
   const online = useOnline()
+  // A co-teacher with View only sees the conferences, sets none up.
+  const editable = usePermission('conferences') === 'edit'
   const list = useQuery(conferencesQueryOptions)
-  const creating = search.new === true
+  const creating = search.new === true && editable
   const setCreating = (open: boolean) =>
     void navigate({ search: { new: open || undefined }, replace: true })
 
   return (
     <main className="mx-auto flex w-full max-w-3xl min-w-0 flex-1 flex-col gap-6 px-4 py-6 sm:py-8">
-      <header className="flex items-center justify-between gap-3">
+      {/* Phones: New goes under the title, which shares its row with the
+          avatar (see _authed.tsx). */}
+      <header className="flex flex-col items-start gap-3 max-md:pr-12 md:flex-row md:items-center md:justify-between">
         <h1 className="text-2xl font-bold">Parent conferences</h1>
-        {list.data && list.data.length > 0 && (
+        {list.data && list.data.length > 0 && editable && (
           <Button
             onClick={() => setCreating(true)}
             disabled={!online}
@@ -81,17 +89,19 @@ function ConferencesPage() {
                 notice lets the family pick another open time.
               </EmptyDescription>
             </EmptyHeader>
-            <EmptyContent>
-              <OfflineNote action="set up conferences" />
-              <Button
-                onClick={() => setCreating(true)}
-                disabled={!online}
-                className="h-12 rounded-lg border-2 border-border px-6 text-base font-bold shadow-sm"
-              >
-                <Plus className="size-5" />
-                Set up conferences
-              </Button>
-            </EmptyContent>
+            {editable && (
+              <EmptyContent>
+                <OfflineNote action="set up conferences" />
+                <Button
+                  onClick={() => setCreating(true)}
+                  disabled={!online}
+                  className="h-12 rounded-lg border-2 border-border px-6 text-base font-bold shadow-sm"
+                >
+                  <Plus className="size-5" />
+                  Set up conferences
+                </Button>
+              </EmptyContent>
+            )}
           </Empty>
         ) : (
           <ul className="flex flex-col gap-3">

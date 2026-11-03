@@ -1,53 +1,70 @@
 ---
-import { ArrowDown } from 'lucide-react'
+// The homepage's first screen: what TeachForFree is, the sign-in button, and
+// the app itself playing in a phone, sized to fit on screen with them.
+import { ArrowDown, Check } from 'lucide-react'
 import ButtonLink from '../ButtonLink.astro'
 import InstallApp from '../islands/InstallApp'
+import PhoneVideo from '../media/PhoneVideo.astro'
 import { Eyebrow } from './LandingSections'
-import { StudentGridDemo } from './StudentGridDemo'
+import { CLIPS } from '../../captures'
 import { loginUrl } from '../../site'
 ---
 
 <section
-  class="mx-auto grid max-w-6xl items-center gap-12 px-4 py-12 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:py-20"
+  class="mx-auto grid max-w-6xl items-center gap-10 px-4 pt-8 pb-14 sm:px-6 lg:min-h-[calc(100svh-4.25rem)] lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-16 lg:py-6"
 >
   <div>
-    <Eyebrow label="Free for teachers" className="bg-secondary text-foreground" />
+    <Eyebrow
+      label="Free forever · For teachers"
+      className="bg-secondary text-foreground"
+    />
     <h1
-      class="mt-5 text-4xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl"
+      class="mt-5 text-4xl leading-[1.25] font-bold tracking-tight text-balance sm:text-5xl lg:text-[3.5rem]"
     >
-      Track behavior. Teach from your notes. All from{' '}
+      Track behavior while you teach from{' '}
       <span
         class="box-decoration-clone rounded-md bg-accent px-2 text-accent-foreground"
-        >your phone.</span
+        >your lesson plan.</span
       >
     </h1>
-    <p class="mt-6 max-w-xl text-lg text-muted-foreground">
-      Two simple tools: tap a student to give a positive or negative mark, and
-      keep short lesson outlines you can glance at while you teach.
+    <p class="mt-6 max-w-xl text-lg text-muted-foreground sm:text-xl">
+      Your plan for the day and your class, together on your phone. Check off
+      lines as you go, and give a student a mark in two taps.
     </p>
     <div class="mt-8 flex flex-col gap-3 sm:flex-row">
       <ButtonLink href={loginUrl} rel="nofollow">
-        Sign in with Google — it's free
+        Sign in with Google — free forever
       </ButtonLink>
       <InstallApp client:only="react" placement="hero">
         <!-- Holds the button's place on phones until it appears. -->
         <div slot="fallback" class="h-12 sm:hidden" aria-hidden="true"></div>
       </InstallApp>
-      <ButtonLink href="#how-it-works" variant="outline">
+      <!-- Phones scroll anyway; the space goes to the video instead. -->
+      <ButtonLink
+        href="#how-it-works"
+        variant="outline"
+        class="hidden sm:inline-flex"
+      >
         See how it works
         <ArrowDown className="size-5" />
       </ButtonLink>
     </div>
+    <ul
+      class="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm font-bold"
+      aria-label="What it costs"
+    >
+      {
+        ['No trial', 'No paid plan', 'No ads'].map((item) => (
+          <li class="flex items-center gap-1.5">
+            <span class="grid size-5 place-items-center rounded-full border-2 border-border bg-chart-5">
+              <Check className="size-3" strokeWidth={3.5} aria-hidden />
+            </span>
+            {item}
+          </li>
+        ))
+      }
+    </ul>
   </div>
 
-  <div>
-    <p
-      class="mb-4 flex items-center justify-center gap-1 font-mono text-sm font-bold"
-    >
-      Try it: tap a student
-      <ArrowDown className="size-4" />
-    </p>
-    <!-- Drawn with the page; becomes tappable when scrolled into view. -->
-    <StudentGridDemo client:visible />
-  </div>
+  <PhoneVideo clip={CLIPS.planAndMarks} size="hero" priority />
 </section>

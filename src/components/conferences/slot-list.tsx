@@ -2,10 +2,12 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
+  Check,
   Clock,
   EllipsisVertical,
   KeyRound,
   Plus,
+  Printer,
   Trash2,
   UserMinus,
 } from 'lucide-react'
@@ -32,10 +34,14 @@ import { cn } from '@/lib/utils'
 import {
   assignStudent,
   conferenceQueryOptions,
+  deleteDay,
   formatSlotDay,
   formatSlotRange,
   fullName,
   latestSlot,
+  latestVersion,
+  markCompleted,
+  meetingState,
   newCode,
   removeTime,
   shortName,
@@ -45,8 +51,9 @@ import type {
   Conference,
   ConferenceSlot,
   ConferenceStudent,
+  MeetingState,
 } from '#/lib/conferences'
-import { useOnline } from '#/lib/online'
+import { useCanSave } from '#/lib/workspace'
 import { useSaveConference } from './use-save'
 
 /** What the teacher should know about a student's notice. */
@@ -71,15 +78,24 @@ export function noticeStatus(
   return 'printed'
 }
 
-/** The conference's times by day, each with who has it. */
+/**
+ * The conference's times by day, each with who has it and a round checkbox
+ * to check the meeting off.
+ */
 export function SlotList({
   conference,
+  now,
   onPickStudent,
   onEditTime,
+  onPrintDay,
 }: {
   conference: Conference
+  /** Date.now(), ticking: a meeting that ends becomes a no-show. */
+  now: number
   onPickStudent: (slot: ConferenceSlot) => void
   onEditTime: (slot: ConferenceSlot) => void
+  /** Prints the schedule for day ("2026-11-12"). */
+  onPrintDay: (day: string) => void
 }) {
   const tz = conference.timezone
   const students = new Map(conference.students.map((s) => [s.id, s]))
@@ -96,9 +112,18 @@ export function SlotList({
     <div className="flex flex-col gap-5">
       {slotsByDay(conference.slots, tz).map(({ day, slots }) => (
         <section key={day} className="flex flex-col gap-2">
-          <h2 className="text-lg font-bold">
-            {formatSlotDay(slots[0].starts_at, tz)}
-          </h2>
+          {/* The ⋯ lines up with the rows' (their border and padding). */}
+          <div className="flex items-center gap-2 pr-2 sm:pr-2.5">
+            <h2 className="min-w-0 flex-1 text-lg font-bold">
+              {formatSlotDay(slots[0].starts_at, tz)}
+            </h2>
+            <DayMenu
+              conference={conference}
+              day={day}
+              slots={slots}
+              onPrint={() => onPrintDay(day)}
+            />
+          </div>
           <ul className="flex flex-col gap-2">
             {slots.map((slot) => {
               const student = slot.student_id
@@ -110,6 +135,7 @@ export function SlotList({
                   conference={conference}
                   slot={slot}
                   student={student}
+                  now={now}
                   picked={
                     !!student &&
                     pickedByFamily.has(
@@ -128,10 +154,98 @@ export function SlotList({
   )
 }
 
+/** A day's ⋯ menu: print just that day, or delete all its times. */
+function DayMenu({
+  conference,
+  day,
+  slots,
+  onPrint,
+}: {
+  conference: Conference
+  day: string
+  slots: Array<ConferenceSlot>
+  onPrint: () => void
+}) {
+  const queryClient = useQueryClient()
+  // Online, and allowed: a co-teacher may only view conferences.
+  const canSave = useCanSave('conferences')
+  const save = useSaveConference(conference.id)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const label = formatSlotDay(slots[0].starts_at, conference.timezone)
+  const times = `${slots.length} ${slots.length === 1 ? 'time' : 'times'}`
+  const booked = slots.filter((s) => s.student_id).length
+
+  // Sent with the version the page shows: if a family moved meanwhile, the
+  // server refuses, the page reloads, and this dialog shows the new counts.
+  const remove = () =>
+    save.mutate(
+      () =>
+        deleteDay(conference.id, day, latestVersion(queryClient, conference)),
+      {
+        onSuccess: () => {
+          setDeleteOpen(false)
+          toast.success(`Deleted ${label}`, { description: `${times} removed` })
+        },
+      },
+    )
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          aria-label={`More for ${label}`}
+          className="flex size-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-4 focus-visible:ring-ring"
+        >
+          <EllipsisVertical className="size-5" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="end"
+          className="w-60 rounded-lg border-2 border-border p-1 shadow-md ring-0"
+        >
+          <DropdownMenuItem
+            className="h-10 rounded-md font-bold"
+            onClick={onPrint}
+          >
+            <Printer />
+            Print this day
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            variant="destructive"
+            className="h-10 rounded-md font-bold"
+            disabled={!canSave}
+            onClick={() => setDeleteOpen(true)}
+          >
+            <Trash2 />
+            Delete this day
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <Confirm
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title={`Delete ${label}?`}
+        body={
+          `This removes all ${times} on this day.` +
+          (booked === 0
+            ? ''
+            : booked === 1
+              ? ' 1 student loses their time and moves to No time yet: give them a new time, then print them a new notice.'
+              : ` ${booked} students lose their time and move to No time yet: give them new times, then print them new notices.`)
+        }
+        action="Delete day"
+        busy={save.isPending}
+        onConfirm={remove}
+      />
+    </>
+  )
+}
+
 function SlotRow({
   conference,
   slot,
   student,
+  now,
   picked,
   onPickStudent,
   onEditTime,
@@ -139,19 +253,44 @@ function SlotRow({
   conference: Conference
   slot: ConferenceSlot
   student: ConferenceStudent | undefined
+  now: number
   picked: boolean
   onPickStudent: () => void
   onEditTime: () => void
 }) {
   const queryClient = useQueryClient()
-  const online = useOnline()
+  // Online, and allowed: a co-teacher may only view conferences.
+  const canSave = useCanSave('conferences')
   const save = useSaveConference(conference.id)
+  // Its own, so a check going out doesn't show the remove dialog as busy.
+  const check = useSaveConference(conference.id)
   const [removeOpen, setRemoveOpen] = useState(false)
   const [codeOpen, setCodeOpen] = useState(false)
+  // The check the teacher just tapped, shown until the server answers.
+  const [checking, setChecking] = useState<boolean | null>(null)
   const tz = conference.timezone
   const time = formatSlotRange(slot.starts_at, slot.ends_at, tz)
-  const past = Date.parse(slot.ends_at) < Date.now()
-  const notice = student ? noticeStatus(conference, slot) : null
+  const past = Date.parse(slot.ends_at) <= now
+  const completed = checking ?? slot.completed
+  const state: MeetingState = student
+    ? meetingState({ ...slot, completed }, now)
+    : 'open'
+  // Once the meeting is over, the notice doesn't matter anymore.
+  const notice = student && !past ? noticeStatus(conference, slot) : null
+
+  const toggle = () => {
+    const next = !completed
+    setChecking(next)
+    check.mutate(
+      () =>
+        markCompleted(
+          conference.id,
+          latestSlot(queryClient, conference.id, slot),
+          next,
+        ),
+      { onSettled: () => setChecking(null) },
+    )
+  }
 
   const latest = () => latestSlot(queryClient, conference.id, slot)
   const remove = () =>
@@ -169,17 +308,30 @@ function SlotRow({
   return (
     <li
       className={cn(
-        'flex items-center gap-2 rounded-lg border-2 border-border bg-card p-2 shadow-sm',
-        past && 'opacity-60',
+        'flex items-center gap-1.5 rounded-lg border-2 border-border bg-card p-1.5 shadow-sm transition-colors motion-reduce:transition-none sm:gap-2 sm:p-2',
+        state === 'completed' && 'border-success bg-success/10',
+        state === 'no_show' && 'border-destructive bg-destructive/10',
+        state === 'open' && past && 'opacity-60',
       )}
     >
-      <span className="w-28 shrink-0 pl-1 text-sm font-bold tabular-nums sm:w-36 sm:text-base">
+      {student ? (
+        <CompleteToggle
+          checked={completed}
+          missed={state === 'no_show'}
+          label={`Meeting with ${fullName(student)}, ${time}, complete`}
+          disabled={!canSave}
+          onToggle={toggle}
+        />
+      ) : (
+        <span aria-hidden className="size-10 shrink-0" />
+      )}
+      <span className="w-26 shrink-0 text-sm font-bold tabular-nums sm:w-36 sm:text-base">
         {time}
       </span>
       <button
         type="button"
         onClick={onPickStudent}
-        disabled={!online}
+        disabled={!canSave}
         className={cn(
           'flex min-h-11 min-w-0 flex-1 flex-col justify-center rounded-md px-2 py-1 text-left transition-colors hover:bg-muted focus-visible:ring-4 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed motion-reduce:transition-none',
         )}
@@ -191,6 +343,11 @@ function SlotRow({
               <span className="hidden sm:inline">{fullName(student)}</span>
             </span>
             <span className="flex flex-wrap gap-1">
+              {state === 'no_show' && (
+                <Badge className="bg-destructive font-bold text-destructive-foreground">
+                  No show
+                </Badge>
+              )}
               {picked && <Badge variant="secondary">Picked by family</Badge>}
               {notice === 'outdated' && (
                 <Badge className="bg-chart-3 text-foreground">
@@ -209,7 +366,10 @@ function SlotRow({
           <span className="flex items-center gap-1 font-medium whitespace-nowrap text-muted-foreground">
             <Plus aria-hidden className="size-4 shrink-0" />
             <span className="sr-only">Open. </span>
-            Add a student
+            {/* Phones have room for "Add" only; screen readers hear it all. */}
+            <span>
+              Add<span className="sr-only sm:not-sr-only"> a student</span>
+            </span>
           </span>
         )}
       </button>
@@ -217,7 +377,7 @@ function SlotRow({
       <DropdownMenu>
         <DropdownMenuTrigger
           aria-label={`More for ${time}`}
-          disabled={!online}
+          disabled={!canSave}
           className="flex size-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-4 focus-visible:ring-ring disabled:opacity-50"
         >
           <EllipsisVertical className="size-5" />
@@ -290,6 +450,53 @@ function SlotRow({
   )
 }
 
+/**
+ * The round checkbox that checks a meeting off: an empty ring, filled with
+ * the success color and a check once complete. A missed meeting's ring is
+ * the destructive color.
+ */
+function CompleteToggle({
+  checked,
+  missed,
+  label,
+  disabled,
+  onToggle,
+}: {
+  checked: boolean
+  missed: boolean
+  label: string
+  disabled: boolean
+  onToggle: () => void
+}) {
+  return (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={checked}
+      aria-label={label}
+      title={checked ? 'Complete' : 'Mark complete'}
+      disabled={disabled}
+      onClick={onToggle}
+      className="group flex size-10 shrink-0 items-center justify-center rounded-full outline-none focus-visible:ring-4 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      <span
+        aria-hidden
+        className={cn(
+          'flex size-7 items-center justify-center rounded-full border-2 transition-colors motion-reduce:transition-none',
+          checked
+            ? 'border-success bg-success text-success-foreground'
+            : cn(
+                'bg-card group-hover:bg-success/15 group-disabled:group-hover:bg-card',
+                missed ? 'border-destructive' : 'border-border',
+              ),
+        )}
+      >
+        {checked && <Check className="size-4" strokeWidth={3} />}
+      </span>
+    </button>
+  )
+}
+
 /** Students in the classes who don't have a time yet. */
 export function UnscheduledPanel({
   conference,
@@ -298,7 +505,8 @@ export function UnscheduledPanel({
   conference: Conference
   onPick: (student: ConferenceStudent) => void
 }) {
-  const online = useOnline()
+  // Online, and allowed: a co-teacher may only view conferences.
+  const canSave = useCanSave('conferences')
   const scheduled = new Set(conference.slots.map((s) => s.student_id))
   const waiting = conference.students.filter(
     (s) => s.in_classes && !scheduled.has(s.id),
@@ -318,7 +526,7 @@ export function UnscheduledPanel({
           <li key={s.id}>
             <button
               type="button"
-              disabled={!online}
+              disabled={!canSave}
               onClick={() => onPick(s)}
               className="min-h-10 rounded-full border-2 border-border bg-card px-3 text-sm font-bold transition-colors hover:bg-primary/10 focus-visible:ring-4 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-50 motion-reduce:transition-none"
             >

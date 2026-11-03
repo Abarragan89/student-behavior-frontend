@@ -1,7 +1,15 @@
 import { useState } from 'react'
-import { CalendarClock, CirclePlus, Plus, School, UserPlus } from 'lucide-react'
+import {
+  CalendarClock,
+  CirclePlus,
+  Plus,
+  School,
+  UserPlus,
+  UsersRound,
+} from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import {
   Popover,
@@ -11,11 +19,58 @@ import {
 } from '@/components/ui/popover'
 import { bottomTabClass } from '#/components/bottom-tab'
 import { useCreateDialogs } from '#/components/create-dialogs'
+import { meQueryOptions } from '#/lib/auth'
+import type { Me } from '#/lib/auth'
+import { canEdit } from '#/lib/workspace'
+
+type Item = { label: string; icon: LucideIcon; onSelect: () => void }
+
+/**
+ * What the Add menu offers in this space. In a co-teacher's space, only what
+ * their permissions allow, and never Add co-teacher (only the owner invites).
+ */
+export function useCreateItems(me: Me | null | undefined): Array<Item> {
+  const { openAddStudents, openCreateClass, openAddCoteacher } =
+    useCreateDialogs()
+  const navigate = useNavigate()
+  if (!me) return []
+  const items: Array<Item> = []
+  if (canEdit(me, 'classes')) {
+    if (me.classroom) {
+      items.push({
+        label: 'Add students',
+        icon: UserPlus,
+        onSelect: () => openAddStudents(),
+      })
+    }
+    items.push({
+      label: 'Create class',
+      icon: School,
+      onSelect: openCreateClass,
+    })
+  }
+  if (canEdit(me, 'conferences')) {
+    items.push({
+      label: 'Conference sign-ups',
+      icon: CalendarClock,
+      onSelect: () =>
+        void navigate({ to: '/conferences', search: { new: true } }),
+    })
+  }
+  if (!me.acting_for) {
+    items.push({
+      label: 'Add co-teacher',
+      icon: UsersRound,
+      onSelect: openAddCoteacher,
+    })
+  }
+  return items
+}
 
 /**
  * The Add menu: things to add. A round + in the top bar on wide screens, and
- * a tab like the others in the phone bottom bar (placement="bottom-bar",
- * opens upward).
+ * the first tab of the phone bottom bar (placement="bottom-bar", opens upward
+ * from the left edge).
  */
 export function CreateMenu({
   placement = 'header',
@@ -23,28 +78,11 @@ export function CreateMenu({
   placement?: 'header' | 'bottom-bar'
 }) {
   const [open, setOpen] = useState(false)
-  const { openAddStudents, openCreateClass } = useCreateDialogs()
-  const navigate = useNavigate()
+  const { data: me } = useQuery(meQueryOptions)
+  const items = useCreateItems(me)
   const inBar = placement === 'bottom-bar'
-
-  const items: Array<{
-    label: string
-    icon: LucideIcon
-    onSelect: () => void
-  }> = [
-    {
-      label: 'Add students',
-      icon: UserPlus,
-      onSelect: () => openAddStudents(),
-    },
-    { label: 'Create class', icon: School, onSelect: openCreateClass },
-    {
-      label: 'Conference sign-ups',
-      icon: CalendarClock,
-      onSelect: () =>
-        void navigate({ to: '/conferences', search: { new: true } }),
-    },
-  ]
+  // A co-teacher who can only look: nothing to add.
+  if (items.length === 0) return null
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -78,7 +116,7 @@ export function CreateMenu({
 
       <PopoverContent
         side={inBar ? 'top' : 'bottom'}
-        align={inBar ? 'center' : 'end'}
+        align={inBar ? 'start' : 'end'}
         sideOffset={8}
         className="w-56 gap-1 rounded-lg border-2 border-border p-2 shadow-md ring-0"
       >

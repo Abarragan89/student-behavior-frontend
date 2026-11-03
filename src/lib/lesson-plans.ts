@@ -1,6 +1,8 @@
 import { queryOptions } from '@tanstack/react-query'
 import type { QueryClient } from '@tanstack/react-query'
 import { ApiError, apiDelete, apiGet, apiPatch, apiPost, apiPut } from './api'
+import type { ApiOptions } from './api'
+import { currentSpace } from './space-state'
 import { monthGrid } from './calendar'
 import { SHARED_STALE_MS } from './freshness'
 
@@ -232,11 +234,16 @@ function reorder<T extends { id: string }>(list: Array<T>, ids: Array<string>) {
     .map(({ value }) => value)
 }
 
-/** Changes for date still waiting to be sent (or on their way), in order. */
+/**
+ * Changes for date still waiting to be sent (or on their way), in order.
+ * Only this space's: another space's plan for the same date is another plan.
+ */
 export function pendingOps(queryClient: QueryClient, date?: string) {
+  const space = currentSpace()
   return queryClient
     .getMutationCache()
     .findAll({ mutationKey: LESSON_PLAN_MUTATION_KEY, status: 'pending' })
+    .filter((m) => (m.meta?.space ?? null) === space)
     .sort((a, b) => a.mutationId - b.mutationId)
     .map((m) => m.state.variables as Op | undefined)
     .filter((op): op is Op => !!op && (date === undefined || op.date === date))
@@ -327,9 +334,9 @@ export function progress(sections: Array<PlanSection>) {
  * Sends one change. A change to something already deleted (on another
  * device, or by a later change in the queue) is done: nothing left to change.
  */
-export async function sendOp(op: Op): Promise<unknown> {
+export async function sendOp(op: Op, space?: string | null): Promise<unknown> {
   try {
-    return await send(op)
+    return await send(op, { space })
   } catch (error) {
     const gone = error instanceof ApiError && error.status === 404
     if (gone && op.kind !== 'section-add' && op.kind !== 'item-add') return null
@@ -337,46 +344,70 @@ export async function sendOp(op: Op): Promise<unknown> {
   }
 }
 
-function send(op: Op) {
+function send(op: Op, o: ApiOptions) {
   switch (op.kind) {
     case 'section-add':
-      return apiPost(`/lesson-plans/${op.date}/sections`, {
-        id: op.id,
-        title: op.title,
-        start_time: op.start_time,
-        end_time: op.end_time,
-        position: op.position,
-      })
+      return apiPost(
+        `/lesson-plans/${op.date}/sections`,
+        {
+          id: op.id,
+          title: op.title,
+          start_time: op.start_time,
+          end_time: op.end_time,
+          position: op.position,
+        },
+        o,
+      )
     case 'section-edit':
-      return apiPut(`/lesson-plan-sections/${op.id}`, {
-        title: op.title,
-        start_time: op.start_time,
-        end_time: op.end_time,
-      })
+      return apiPut(
+        `/lesson-plan-sections/${op.id}`,
+        {
+          title: op.title,
+          start_time: op.start_time,
+          end_time: op.end_time,
+        },
+        o,
+      )
     case 'section-delete':
-      return apiDelete(`/lesson-plan-sections/${op.id}`)
+      return apiDelete(`/lesson-plan-sections/${op.id}`, o)
     case 'section-order':
-      return apiPut(`/lesson-plans/${op.date}/section-order`, { ids: op.ids })
+      return apiPut(
+        `/lesson-plans/${op.date}/section-order`,
+        { ids: op.ids },
+        o,
+      )
     case 'item-add':
-      return apiPost(`/lesson-plan-sections/${op.sectionId}/items`, {
-        id: op.id,
-        text: op.text,
-        indent: op.indent,
-        position: op.position,
-      })
+      return apiPost(
+        `/lesson-plan-sections/${op.sectionId}/items`,
+        {
+          id: op.id,
+          text: op.text,
+          indent: op.indent,
+          position: op.position,
+        },
+        o,
+      )
     case 'item-edit':
-      return apiPatch(`/lesson-plan-items/${op.id}`, {
-        text: op.text,
-        indent: op.indent,
-      })
+      return apiPatch(
+        `/lesson-plan-items/${op.id}`,
+        {
+          text: op.text,
+          indent: op.indent,
+        },
+        o,
+      )
     case 'item-delete':
-      return apiDelete(`/lesson-plan-items/${op.id}`)
+      return apiDelete(`/lesson-plan-items/${op.id}`, o)
     case 'item-order':
-      return apiPut(`/lesson-plan-sections/${op.sectionId}/item-order`, {
-        ids: op.ids,
-      })
+      return apiPut(
+        `/lesson-plan-sections/${op.sectionId}/item-order`,
+        {
+          ids: op.ids,
+        },
+        o,
+      )
     case 'done':
-      return apiPut(`/lesson-plan-items/${op.id}/done`, { done: op.done })
+      return apiPut(`/lesson-plan-items/${op.id}/done`, { done: op.done }, o)
   }
 }
 

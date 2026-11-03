@@ -59,23 +59,32 @@ function saveErrorMessage(error: unknown) {
  * The student's name as the page heading, with an Edit button. Editing shows
  * the first and last name; Save turns on once either is changed.
  */
-export function StudentNameForm({ student }: { student: StudentDetail }) {
+export function StudentNameForm({
+  student,
+  readOnly = false,
+}: {
+  student: StudentDetail
+  /** A co-teacher with View only: the name, no Edit. */
+  readOnly?: boolean
+}) {
   const [editing, setEditing] = useState(false)
   const fullName = `${student.first_name} ${student.last_name}`.trim()
 
-  if (!editing) {
+  if (!editing || readOnly) {
     return (
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <h1 className="min-w-0 text-2xl font-bold break-words">{fullName}</h1>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setEditing(true)}
-          className="rounded-lg border-2 border-border font-bold"
-        >
-          <Pencil />
-          Edit
-        </Button>
+        {!readOnly && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setEditing(true)}
+            className="rounded-lg border-2 border-border font-bold"
+          >
+            <Pencil />
+            Edit
+          </Button>
+        )}
       </div>
     )
   }

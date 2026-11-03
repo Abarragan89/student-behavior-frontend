@@ -16,7 +16,7 @@ const current = Astro.url.pathname.replace(/\.html$/, '')
     <Logo />
     <!-- Wide screens only; phones get the same links in the footer. -->
     <nav aria-label="Main" class="hidden flex-1 lg:block">
-      <ul class="flex items-center justify-center gap-6 text-sm font-bold">
+      <ul class="flex items-center justify-center gap-5 text-sm font-bold">
         {
           links.map((link) => (
             <li>

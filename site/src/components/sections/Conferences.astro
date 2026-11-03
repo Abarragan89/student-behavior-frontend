@@ -1,0 +1,39 @@
+---
+// Parent conferences: the bilingual notice, and a family picking a time.
+import Showcase from '../media/Showcase.astro'
+import Stack from '../media/Stack.astro'
+import PaperSheet from '../media/PaperSheet.astro'
+import PhoneVideo from '../media/PhoneVideo.astro'
+import { CheckList, MoreLink } from '../landing/LandingSections'
+import { CLIPS, PRINTS } from '../../captures'
+
+interface Props {
+  muted?: boolean
+  more?: boolean
+}
+const { muted = false, more = true } = Astro.props
+---
+
+<Showcase
+  muted={muted}
+  isNew
+  eyebrow="Parent conferences"
+  eyebrowClass="bg-accent text-accent-foreground"
+  title="Conference sign-ups without the paper chase."
+  lead="Set your times, put each student in one, and print a notice for every family in English and Spanish. Families scan the QR code to move to another open time, and you see every change."
+>
+  <CheckList
+    className="mt-6"
+    items={[
+      'Taken times gray out for other families right away',
+      'No last-minute changes: times lock 24 hours before',
+      'Families see only their own child’s first name',
+    ]}
+  />
+  {more && <MoreLink href="/parent-conferences" label="More about parent conferences" />}
+
+  <Stack slot="visual">
+    <PaperSheet slot="paper" {...PRINTS.conferenceNotice} tilt={2} />
+    <PhoneVideo slot="phone" clip={CLIPS.conferenceFamily} size="sm" class="-rotate-1" />
+  </Stack>
+</Showcase>

@@ -26,7 +26,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 )
 
 /** Pages opened from a link by someone without an account. */
-const LINK_PAGES = new Set(['/sub', '/conference'])
+const LINK_PAGES = new Set(['/sub', '/conference', '/invite'])
 
 function RootComponent() {
   // A substitute's link (/sub) and a family's conference page (/conference)

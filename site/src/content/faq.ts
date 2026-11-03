@@ -23,7 +23,7 @@ export const FAQ_GROUPS: Array<FaqGroup> = [
         id: 'is-it-free',
         question: 'Is TeachForFree really free?',
         answer: [
-          'Yes. There’s nothing to pay, no paid plan, and no ads. TeachForFree is a personal project by one developer, made so classroom tools don’t come out of a teacher’s paycheck.',
+          'Yes, and it will stay free. There’s no trial, no paid plan and no ads, and everything TeachForFree does today will always be free. It’s a personal project by one developer, made so classroom tools don’t come out of a teacher’s paycheck.',
         ],
       },
       {
@@ -156,6 +156,51 @@ export const FAQ_GROUPS: Array<FaqGroup> = [
         answer: [
           'Turn it off. It stops working right away, and marks or checkmarks already given stay. Links also stop on their own at midnight at the end of that day, and you can see when a link was last opened.',
         ],
+      },
+    ],
+  },
+  {
+    title: 'Parent conferences',
+    items: [
+      {
+        id: 'conference-families',
+        question: 'How do families pick a conference time?',
+        answer: [
+          'You set up the times (a range and how long each meeting is) and put each student in one. Then print the notices: one page per student, with their time and a QR code.',
+          'A family scans the code with their phone’s camera to see their time, and can move to any open time. Times that other families take gray out right away, and you see each change on your list.',
+        ],
+      },
+      {
+        id: 'conference-spanish',
+        question: 'Are the conference notices in Spanish?',
+        answer: [
+          'Yes. Each notice has English on the top half and Spanish on the bottom half, each with its own QR code. The family’s page switches between English and Español with one tap.',
+        ],
+      },
+      {
+        id: 'conference-account',
+        question: 'Do families need an account or an app?',
+        answer: [
+          'No. The QR code on their notice is all they need. Send notices home in folders rather than leaving them on desks. If one gets lost, make a new QR code for that student and the old one stops working.',
+        ],
+      },
+      {
+        id: 'conference-last-minute',
+        question: 'Can families change their time at the last minute?',
+        answer: [
+          'No. Families can’t move into or out of a time in the 24 hours before it. You can also turn online changes off, and then families can only see their time.',
+        ],
+      },
+      {
+        id: 'conference-privacy',
+        question: 'What can families see?',
+        answer: [
+          'Only their own child’s first name, their time, and which other times are open. They never see who has the other times. A conference is deleted 30 days after its last time.',
+        ],
+        link: {
+          href: '/privacy#conference-sign-ups',
+          label: 'Conference sign-ups in the privacy policy',
+        },
       },
     ],
   },

@@ -22,6 +22,7 @@ export default [
       'src/components/ui/**',
       'dist/**',
       '**/.astro/**',
+      'scripts/capture/**',
     ],
   },
 ]

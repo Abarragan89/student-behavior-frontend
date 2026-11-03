@@ -47,7 +47,7 @@ export function useClassroomSwitch(openId: string) {
     const next = queued.current
     queued.current = null
     const serverOpenId = queryClient.getQueryData(meQueryOptions.queryKey)
-      ?.classroom.id
+      ?.classroom?.id
     if (next && next.id !== serverOpenId) {
       // A newer click came in meanwhile. It wins, so this result is moot.
       void send(next)

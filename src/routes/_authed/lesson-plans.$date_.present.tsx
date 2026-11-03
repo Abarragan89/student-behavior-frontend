@@ -10,6 +10,7 @@ import { LIVE_REFRESH_MS } from '#/lib/freshness'
 import { lessonPlanDayQueryOptions } from '#/lib/lesson-plans'
 import type { PlanDay, PlanItem } from '#/lib/lesson-plans'
 import { flushDrafts, runOp } from '#/lib/lesson-plan-queue'
+import { mayLoad, usePermission } from '#/lib/workspace'
 import { markTypesQueryOptions } from '#/lib/marks'
 import { useOnline } from '#/lib/online'
 import { PresenterClass } from '#/components/lesson-plans/presenter-class'
@@ -18,11 +19,18 @@ import { PresenterView } from '#/components/lesson-plans/presenter-view'
 // /lesson-plans/2026-11-05/present: the day's checklist on the whole screen,
 // to teach from. Not nested in the day page ("$date_"), so it replaces it.
 export const Route = createFileRoute('/_authed/lesson-plans/$date_/present')({
-  staticData: { fullScreen: true },
+  staticData: {
+    fullScreen: true,
+    // A co-teacher needs at least View on Lesson plans (_authed.tsx checks).
+    feature: { key: 'lesson_plans', level: 'view' },
+  },
   loader: ({ context: { queryClient }, params }) => {
+    if (!mayLoad(queryClient, 'lesson_plans')) return
     // The mark types too, so the buttons are ready when a student is tapped
     // in the class view (like the Classes page).
-    void queryClient.query(markTypesQueryOptions).catch(() => null)
+    if (mayLoad(queryClient, 'classes')) {
+      void queryClient.query(markTypesQueryOptions).catch(() => null)
+    }
     if (!isDateString(params.date)) return
     void queryClient
       .query(lessonPlanDayQueryOptions(params.date))
@@ -104,6 +112,8 @@ function TeacherPresenter({
   isToday: boolean
 }) {
   const queryClient = useQueryClient()
+  // A co-teacher with View only sees the checkmarks but can't change them.
+  const editable = usePermission('lesson_plans') === 'edit'
 
   function check(item: PlanItem) {
     runOp(queryClient, {
@@ -119,7 +129,7 @@ function TeacherPresenter({
       day={day}
       isToday={isToday}
       heading={isToday ? 'Today' : formatShortDate(day.date)}
-      onCheck={check}
+      onCheck={editable ? check : undefined}
       exit={
         <Link
           to="/lesson-plans/$date"

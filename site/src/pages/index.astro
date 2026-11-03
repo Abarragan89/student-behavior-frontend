@@ -6,19 +6,19 @@ import Hero from '../components/landing/Hero.astro'
 import ClosingBand from '../components/landing/ClosingBand.astro'
 import Section from '../components/Section.astro'
 import FaqList from '../components/FaqList.astro'
-import {
-  BehaviorSection,
-  Highlights,
-  LessonNotesSection,
-  MoreLink,
-  SubstituteSection,
-} from '../components/landing/LandingSections'
+import BehaviorReports from '../components/sections/BehaviorReports.astro'
+import SubPlans from '../components/sections/SubPlans.astro'
+import Conferences from '../components/sections/Conferences.astro'
+import FreeForever from '../components/sections/FreeForever.astro'
+import PosterPreload from '../components/media/PosterPreload.astro'
+import { MoreLink } from '../components/landing/LandingSections'
+import { CLIPS } from '../captures'
 import { faqItems } from '../content/faq'
 import { SITE_NAME } from '../site'
 
-const title = 'TeachForFree — Free behavior tracking & lesson notes for teachers'
+const title = 'Free Lesson Planner & Behavior Tracker | TeachForFree'
 const description =
-  'Free classroom tools for teachers: tap a student to give a positive or negative behavior mark, and keep short lesson notes on your phone while you teach.'
+  'Teach from your lesson plan and track behavior on your phone. Behavior reports made for you, sub plans with a QR code, and conference sign-ups. Free forever.'
 
 // What search engines read about the site (schema.org). No ratings: Google
 // only accepts real reviews.
@@ -58,17 +58,18 @@ const jsonLd = {
 
 <BaseLayout title={title} description={description} path="/" jsonLd={jsonLd}>
   <SignedInRedirect slot="head" />
+  <PosterPreload slot="head" clip={CLIPS.planAndMarks} />
   <Hero />
-  <BehaviorSection />
-  <LessonNotesSection />
-  <SubstituteSection />
-  <Highlights />
+  <BehaviorReports id="how-it-works" muted />
+  <SubPlans />
+  <Conferences muted />
+  <FreeForever />
   <Section title="Questions teachers ask" muted>
     <div class="max-w-3xl">
       <FaqList
         items={faqItems([
           'is-it-free',
-          'google-classroom',
+          'conference-families',
           'offline',
           'student-data',
         ])}

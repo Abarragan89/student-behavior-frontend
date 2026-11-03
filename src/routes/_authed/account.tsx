@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { HardDrive, LogOut } from 'lucide-react'
+import { ArrowLeft, HardDrive, LogOut, UsersRound } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -14,6 +14,9 @@ import { meQueryOptions } from '#/lib/auth'
 import { usePwaInstall } from '#/lib/pwa-install'
 import { ArchivedClasses } from '#/components/archived-classes'
 import { ClassroomConnection } from '#/components/classroom-connection'
+import { CoteachersSection } from '#/components/coteachers/coteachers-section'
+import { CoteachingSection } from '#/components/coteachers/coteaching-section'
+import { useSwitchSpace } from '#/lib/workspace'
 import { SignOutDialog } from '#/components/sign-out-dialog'
 import { TeacherAvatar } from '#/components/teacher-avatar'
 
@@ -26,10 +29,14 @@ function AccountPage() {
   const { data: me } = useSuspenseQuery(meQueryOptions)
   const [signOutOpen, setSignOutOpen] = useState(false)
   const { standalone } = usePwaInstall()
+  const { switchTo, switching } = useSwitchSpace()
 
   // Logged out: the layout is already sending the teacher to /login.
   if (!me) return null
   const { teacher } = me
+  // Your account is always your own, even in another teacher's classroom:
+  // their co-teachers, Google Classroom and archive stay theirs.
+  const owner = me.acting_for
 
   return (
     <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-4 py-10">
@@ -67,9 +74,42 @@ function AccountPage() {
         </p>
       )}
 
-      <ClassroomConnection />
+      {owner ? (
+        <Card className="gap-3 rounded-lg border-2 border-border shadow-md ring-0 [--card-spacing:--spacing(6)]">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg font-bold">
+              <UsersRound className="size-5" />
+              You’re in {owner.name}’s classroom
+            </CardTitle>
+            <CardDescription>
+              Your co-teachers, Google Classroom and archived classes are in
+              your own classes.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              variant="outline"
+              onClick={() => void switchTo(null, { to: '/account' })}
+              disabled={switching !== undefined}
+              className="h-11 rounded-lg border-2 px-4 font-bold"
+            >
+              <ArrowLeft />
+              Back to my classes
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <CoteachersSection ownerName={teacher.name} />
+      )}
 
-      <ArchivedClasses />
+      <CoteachingSection me={me} />
+
+      {!owner && (
+        <>
+          <ClassroomConnection />
+          <ArchivedClasses />
+        </>
+      )}
 
       <Button
         variant="outline"

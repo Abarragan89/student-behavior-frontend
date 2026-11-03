@@ -5,13 +5,18 @@ import { cn } from '@/lib/utils'
 import { MarkTypeList } from '#/components/mark-type-list'
 import { OfflineNote } from '#/components/offline-note'
 import { markTypesQueryOptions } from '#/lib/marks'
+import { mayLoad } from '#/lib/workspace'
 
 // Opened from the avatar menu and from "Edit marks" in the mark picker. Not in
 // the main nav: teachers set marks up once, then tweak them now and then.
 export const Route = createFileRoute('/_authed/marks')({
+  // Mark types belong to the class's teacher: a co-teacher needs Edit on
+  // Classes (_authed.tsx checks).
+  staticData: { feature: { key: 'classes', level: 'edit' } },
   // Started but not waited for, so the page shows at once (and offline, from
   // the saved list).
   loader: ({ context }) => {
+    if (!mayLoad(context.queryClient, 'classes')) return
     void context.queryClient.query(markTypesQueryOptions).catch(() => null)
   },
   component: MarksPage,

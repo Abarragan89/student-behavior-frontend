@@ -13,7 +13,10 @@ import {
   StepList,
 } from '../components/landing/LandingSections'
 import type { Feature, Step } from '../components/landing/LandingSections'
-import { StudentGridDemo } from '../components/landing/StudentGridDemo'
+import PhoneVideo from '../components/media/PhoneVideo.astro'
+import PosterPreload from '../components/media/PosterPreload.astro'
+import BehaviorReports from '../components/sections/BehaviorReports.astro'
+import { CLIPS } from '../captures'
 import { faqItems } from '../content/faq'
 
 const steps: Array<Step> = [
@@ -67,21 +70,17 @@ const features: Array<Feature> = [
 
 <BaseLayout
   title="Free Classroom Behavior Tracker for Teachers | TeachForFree"
-  description="Track student behavior from your phone: tap a student, tap a mark. Your own positive and negative marks, whole-class marking, and printable reports. Free."
+  description="Track student behavior from your phone: tap a student, tap a mark. Your own marks, whole-class marking, and behavior reports made for you. Free forever."
   path="/behavior-tracking"
 >
+  <PosterPreload slot="head" clip={CLIPS.classMarks} />
   <PageHero
     eyebrow="Behavior tracking"
     title="A free classroom behavior tracker that takes two taps."
     lead="Tap a student, tap a mark, keep teaching. TeachForFree keeps a simple record of positive and negative behavior for every student, on your phone, tablet or laptop."
     secondary={{ href: '#how-it-works', label: 'See how it works' }}
   >
-    <div slot="visual">
-      <p class="mb-4 text-center font-mono text-sm font-bold">
-        Try it: tap a student
-      </p>
-      <StudentGridDemo client:visible />
-    </div>
+    <PhoneVideo slot="visual" clip={CLIPS.classMarks} size="hero" priority />
   </PageHero>
 
   <Section id="how-it-works" title="How it works" muted>
@@ -90,9 +89,12 @@ const features: Array<Feature> = [
     </div>
   </Section>
 
+  <BehaviorReports more={false} />
+
   <Section
     title="Built for the middle of a lesson"
     intro="Everything a busy teacher needs to keep track, and nothing that slows you down."
+    muted
   >
     <FeatureCards items={features} />
   </Section>
@@ -100,7 +102,6 @@ const features: Array<Feature> = [
   <Section
     title="Simple on purpose"
     intro="TeachForFree is a record, not a game. Marks are moments you chose to note, so you can talk them through with students and families."
-    muted
   >
     <CheckList
       items={[
@@ -112,13 +113,15 @@ const features: Array<Feature> = [
     />
   </Section>
 
-  <Section title="Questions about behavior tracking">
+  <Section title="Questions about behavior tracking" muted>
     <FaqList
       items={faqItems(['customize-marks', 'whole-class', 'parents', 'export'])}
     />
     <MoreLink href="/faq" label="All questions" />
   </Section>
 
-  <RelatedPages current="/behavior-tracking" />
+  <div class="pt-16 lg:pt-20">
+    <RelatedPages current="/behavior-tracking" />
+  </div>
   <ClosingBand />
 </BaseLayout>

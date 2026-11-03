@@ -4,12 +4,15 @@ import ReactDOM from 'react-dom/client'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { routeTree } from './routeTree.gen'
 import {
+  MutationCache,
+  QueryCache,
   QueryClient,
   QueryClientProvider,
   onlineManager,
 } from '@tanstack/react-query'
 import { ApiError } from './lib/api'
 import { forgetOnTeacherChange, rememberSignedIn } from './lib/auth'
+import { dropCacheIfOtherSpace, onForbidden, watchSpace } from './lib/workspace'
 import {
   prefetchLessonPlans,
   reapplyPendingOps,
@@ -35,16 +38,27 @@ import { registerSubMutations } from './lib/sub'
 // from the real state, so an offline launch doesn't wait on requests.
 onlineManager.setOnline(navigator.onLine)
 
-const queryClient = new QueryClient({
+const queryClient: QueryClient = new QueryClient({
+  // A co-teacher refused (403): the owner changed what they may do. Fetch
+  // 'me' again so the screens catch up (workspace.ts).
+  queryCache: new QueryCache({
+    onError: (error) => onForbidden(queryClient, error),
+  }),
+  mutationCache: new MutationCache({
+    onError: (error) => onForbidden(queryClient, error),
+  }),
   defaultOptions: {
     queries: {
       // Kept as long as the copy saved on the device (see persist.ts), so
       // saved data isn't thrown away just because no page is showing it.
       gcTime: QUERY_MAX_AGE,
-      // A 401 means "not logged in"; retrying won't change that.
+      // A 401 means "not logged in", a 403 "not allowed": retrying won't
+      // change either.
       retry: (failureCount, error) =>
-        !(error instanceof ApiError && error.status === 401) &&
-        failureCount < 3,
+        !(
+          error instanceof ApiError &&
+          (error.status === 401 || error.status === 403)
+        ) && failureCount < 3,
     },
   },
 })
@@ -90,6 +104,9 @@ async function boot() {
       queueRestored,
     ])
     void restored.then(() => {
+      // Saved in another space than the one this app reopens in (it was
+      // closed right after switching): start fresh.
+      dropCacheIfOtherSpace(queryClient)
       // Checkmarks still queued go on the saved days, which can be a tap
       // behind.
       reapplyPendingOps(queryClient)
@@ -106,6 +123,8 @@ async function boot() {
   }
   forgetOnTeacherChange(queryClient)
   rememberSignedIn(queryClient)
+  // Back to your own space if a teacher stops sharing theirs.
+  watchSpace(queryClient)
 
   ReactDOM.createRoot(rootElement).render(
     <QueryClientProvider client={queryClient}>

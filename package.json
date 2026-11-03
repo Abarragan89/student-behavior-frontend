@@ -15,7 +15,8 @@
     "format": "prettier --write . && eslint --fix",
     "check": "prettier --check .",
     "check:site": "astro check --root site",
-    "generate-pwa-assets": "node scripts/generate-branding.mjs && pwa-assets-generator"
+    "generate-pwa-assets": "node scripts/generate-branding.mjs && pwa-assets-generator",
+    "capture": "node scripts/capture/run.ts"
   },
   "dependencies": {
     "@astrojs/react": "^7.1.2",
@@ -64,6 +65,7 @@
     "@vite-pwa/assets-generator": "^2.0.0",
     "@vitejs/plugin-react": "^6.0.1",
     "eslint": "^9.20.0",
+    "playwright": "^1.61.0",
     "prettier": "^3.8.1",
     "sharp": "^0.35.5",
     "typescript": "^6.0.2",
