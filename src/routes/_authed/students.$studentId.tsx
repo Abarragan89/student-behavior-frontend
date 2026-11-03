@@ -5,6 +5,8 @@ import {
   ChevronLeft,
   ChevronRight,
   CircleAlert,
+  MessageSquarePlus,
+  MessageSquareText,
   Printer,
   RefreshCw,
   Trash2,
@@ -39,6 +41,8 @@ import {
 } from '#/lib/day'
 import { localDate, markTime, timeZone } from '#/lib/marks'
 import type { Mark } from '#/lib/marks'
+import { openMarkNote } from '#/lib/mark-note'
+import { currentSpace } from '#/lib/space-state'
 import {
   busiestHour,
   schoolDaysEnding,
@@ -430,6 +434,20 @@ function StudentDay({
               classroomName={classroomName}
               // Not while another day's marks stand in for the one loading.
               readOnly={readOnly}
+              onEditNote={
+                marks.isPlaceholderData || readOnly
+                  ? undefined
+                  : (mark) =>
+                      openMarkNote({
+                        kind: 'teacher',
+                        markId: mark.id,
+                        studentId: student.id,
+                        studentName: student.first_name || student.last_name,
+                        markName: mark.name,
+                        note: mark.note ?? '',
+                        space: currentSpace(),
+                      })
+              }
               onDelete={
                 marks.isPlaceholderData || readOnly
                   ? undefined
@@ -649,21 +667,25 @@ function Stat({
 
 /**
  * Every mark in words, earliest first: the chart's table view. Each has a
- * trash can to delete it (it asks first).
+ * trash can to delete it (it asks first). A negative mark's note shows on a
+ * second line, under its name, and its note button adds or edits it.
  */
 function MarkList({
   marks,
   timeZone: zone,
   classroomName,
+  onEditNote,
   onDelete,
   readOnly = false,
 }: {
   marks: Array<Mark>
   timeZone: string
   classroomName?: (id: string) => string | undefined
+  /** A note (or its button) was pressed. Left out, they're off. */
+  onEditNote?: (mark: Mark) => void
   /** The trash can was pressed. Left out, the trash cans are off. */
   onDelete?: (mark: Mark) => void
-  /** No trash cans at all (a co-teacher with View only). */
+  /** No note buttons or trash cans at all (a co-teacher with View only). */
   readOnly?: boolean
 }) {
   const sorted = [...marks].sort((a, b) =>
@@ -671,50 +693,97 @@ function MarkList({
   )
   return (
     <ol className="flex flex-col divide-y divide-foreground/10">
-      {sorted.map((mark) => (
-        <li key={mark.id} className="flex items-center gap-3 py-2.5">
-          <span className="w-18 shrink-0 text-sm text-muted-foreground tabular-nums">
-            {formatTime(markTime(mark), zone)}
-          </span>
-          <span
-            aria-hidden
-            className={cn(
-              'size-2.5 shrink-0 rounded-full',
-              mark.is_positive ? 'bg-chart-5' : 'bg-destructive',
-            )}
-          />
-          <span className="min-w-0 flex-1 truncate text-sm font-bold">
-            {mark.name}
-          </span>
-          {/* Given through a link the teacher shared with a substitute. */}
-          {mark.from_sub && (
-            <span className="shrink-0 rounded-full border-2 border-border bg-muted px-2 text-xs font-bold">
-              Sub
-              <span className="sr-only"> (given by a substitute)</span>
-            </span>
-          )}
-          <span className="shrink-0 text-right text-xs text-muted-foreground">
-            {mark.is_positive ? 'Positive' : 'Negative'}
-            {classroomName && (
-              <span className="block">{classroomName(mark.classroom_id)}</span>
-            )}
-          </span>
-          {/* Small and quiet, but a 36px target. The negative margins keep
+      {sorted.map((mark) => {
+        const time = formatTime(markTime(mark), zone)
+        return (
+          <li key={mark.id} className="flex flex-col py-2.5">
+            <div className="flex items-center gap-3">
+              <span className="w-18 shrink-0 text-sm text-muted-foreground tabular-nums">
+                {time}
+              </span>
+              <span
+                aria-hidden
+                className={cn(
+                  'size-2.5 shrink-0 rounded-full',
+                  mark.is_positive ? 'bg-chart-5' : 'bg-destructive',
+                )}
+              />
+              <span className="min-w-0 flex-1 truncate text-sm font-bold">
+                {mark.name}
+              </span>
+              {/* Given through a link the teacher shared with a substitute. */}
+              {mark.from_sub && (
+                <span className="shrink-0 rounded-full border-2 border-border bg-muted px-2 text-xs font-bold">
+                  Sub
+                  <span className="sr-only"> (given by a substitute)</span>
+                </span>
+              )}
+              <span className="shrink-0 text-right text-xs text-muted-foreground">
+                {mark.is_positive ? 'Positive' : 'Negative'}
+                {classroomName && (
+                  <span className="block">
+                    {classroomName(mark.classroom_id)}
+                  </span>
+                )}
+              </span>
+              {/* Notes are for negative marks. A positive one keeps the space,
+              so the columns line up. */}
+              {!readOnly &&
+                (mark.is_positive ? (
+                  <span aria-hidden className="-my-1.5 -mr-2 size-9 shrink-0" />
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="icon-lg"
+                    aria-label={`${mark.note ? 'Edit the note on' : 'Add a note to'} “${mark.name}” at ${time}`}
+                    disabled={!onEditNote}
+                    onClick={() => onEditNote?.(mark)}
+                    className="-my-1.5 -mr-2 rounded-lg text-muted-foreground"
+                  >
+                    {mark.note ? (
+                      <MessageSquareText className="size-4" />
+                    ) : (
+                      <MessageSquarePlus className="size-4" />
+                    )}
+                  </Button>
+                ))}
+              {/* Small and quiet, but a 36px target. The negative margins keep
               the row as tall as before. */}
-          {!readOnly && (
-            <Button
-              variant="ghost"
-              size="icon-lg"
-              aria-label={`Delete “${mark.name}” at ${formatTime(markTime(mark), zone)}`}
-              disabled={!onDelete}
-              onClick={() => onDelete?.(mark)}
-              className="-my-1.5 -mr-2 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive dark:hover:bg-destructive/20"
-            >
-              <Trash2 className="size-4" />
-            </Button>
-          )}
-        </li>
-      ))}
+              {!readOnly && (
+                <Button
+                  variant="ghost"
+                  size="icon-lg"
+                  aria-label={`Delete “${mark.name}” at ${time}`}
+                  disabled={!onDelete}
+                  onClick={() => onDelete?.(mark)}
+                  className="-my-1.5 -mr-2 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive dark:hover:bg-destructive/20"
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              )}
+            </div>
+            {/* Lined up with the name: past the time, the dot and their gaps. */}
+            {mark.note && (
+              <div className="mt-0.5 pl-26.5">
+                {readOnly || !onEditNote ? (
+                  <p className="text-sm break-words text-muted-foreground">
+                    {mark.note}
+                  </p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => onEditNote(mark)}
+                    className="-mx-1 rounded-md px-1 text-left text-sm break-words text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/30 focus-visible:outline-none"
+                  >
+                    <span className="sr-only">Edit the note: </span>
+                    {mark.note}
+                  </button>
+                )}
+              </div>
+            )}
+          </li>
+        )
+      })}
     </ol>
   )
 }

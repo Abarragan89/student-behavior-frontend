@@ -7,6 +7,8 @@ import type {
 } from '@tanstack/react-query'
 import { useToday } from './day'
 import { LIVE_REFRESH_MS } from './freshness'
+import { groupsQueryOptions } from './groups'
+import type { ClassGroups } from './groups'
 import { enqueueMark } from './mark-queue'
 import {
   localDate,
@@ -34,6 +36,15 @@ export type MarkSource = {
   ) => UseQueryResult<MarkCounts>
   /** The mark buttons. */
   useMarkTypes: () => UseQueryResult<Array<MarkType>>
+  /** Where one class's groups are cached, for team points changing at once. */
+  groupsKey: (classroomId: string) => QueryKey
+  /** The class's groups and their team points (see groups.ts). */
+  useGroups: (
+    classroomId: string,
+    enabled?: boolean,
+  ) => UseQueryResult<ClassGroups>
+  /** Whether groups can be made and changed here: the teacher, not a sub. */
+  canEditGroups: boolean
   /** Sends a tap or an Undo (see mark-queue.ts). */
   enqueue: (queryClient: QueryClient, mark: QueuedMark) => void
 }
@@ -54,6 +65,15 @@ const teacherSource: MarkSource = {
     })
   },
   useMarkTypes: () => useQuery(markTypesQueryOptions),
+  groupsKey: (classroomId) => groupsQueryOptions(classroomId).queryKey,
+  useGroups: (classroomId, enabled = true) =>
+    useQuery({
+      ...groupsQueryOptions(classroomId),
+      enabled,
+      // Team points given on other devices (or by a sub).
+      refetchInterval: LIVE_REFRESH_MS,
+    }),
+  canEditGroups: true,
   enqueue: enqueueMark,
 }
 

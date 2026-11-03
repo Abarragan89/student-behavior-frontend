@@ -27,8 +27,8 @@ import { Clock } from './clock'
 
 /**
  * The open class, over the presenter's notes, for giving marks mid-lesson:
- * Switch, Select and Select all, but no links away, so the lesson stays one
- * tap away. A round button in the corner (today's class ring around a
+ * Switch, Select, Random and the Students | Groups tabs, but no links away,
+ * so the lesson stays one tap away. A round button in the corner (today's class ring around a
  * people icon) slides it in, and the same button slides it back out.
  *
  * It stays mounted while hidden, so it opens at once with the counts already

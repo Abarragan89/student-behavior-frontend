@@ -236,8 +236,8 @@ function AddSectionInput({
         <textarea
           rows={1}
           value={box.value}
-          aria-label="Add a section"
-          placeholder="Add a section…"
+          aria-label="Add a subject"
+          placeholder="Add a subject…"
           enterKeyHint="next"
           onChange={(e) => box.set(e.target.value)}
           onKeyDown={(e) => {

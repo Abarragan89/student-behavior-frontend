@@ -12,6 +12,7 @@ import { buttonVariants } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/sonner'
 import { cn } from '@/lib/utils'
 import { Wordmark } from '#/components/Wordmark'
+import { MarkNoteHost } from '#/components/mark-note-dialog'
 import { PwaUpdater } from '#/components/pwa-updater'
 import { ThemeProvider } from '#/components/theme-provider'
 
@@ -41,6 +42,9 @@ function RootComponent() {
       {/* For toast() anywhere in the app. Top center stays clear of the
           devtools button and is easy to spot on phones. */}
       <Toaster position="top-center" />
+      {/* The note sheet opened from a give-mark toast's "Add note". Here,
+          like the toaster, so it outlives the page that gave the mark. */}
+      <MarkNoteHost />
       {!isLinkPage && <PwaUpdater />}
       <TanStackDevtools
         config={{

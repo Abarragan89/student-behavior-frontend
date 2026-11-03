@@ -12,7 +12,9 @@ import { applyOp } from './lesson-plans'
 import type { Op, PlanDay, PlanItem } from './lesson-plans'
 import type { MarkSource } from './mark-source'
 import { LIVE_REFRESH_MS, SHARED_STALE_MS } from './freshness'
-import { enqueue, retryDelay, shouldRetry } from './mark-queue'
+import { groupName, withQueuedGroupMarks } from './groups'
+import type { ClassGroups } from './groups'
+import { enqueue, retryDelay, shouldRetry, unknownTarget } from './mark-queue'
 import { withQueuedMarks } from './marks'
 import type { MarkBatch, MarkCounts, MarkType, QueuedMark } from './marks'
 
@@ -206,6 +208,29 @@ export function subRosterQueryOptions(classroomId: string) {
   })
 }
 
+/**
+ * The class's groups and team scores, to mark a whole group. The sub can't
+ * change them. Unsent group taps are added on top, as for the counts.
+ */
+export function subGroupsQueryOptions(classroomId: string) {
+  return queryOptions({
+    queryKey: [SUB, 'groups', classroomId],
+    queryFn: async ({ client }) => {
+      try {
+        const groups = await subGet<ClassGroups>(
+          `/classrooms/${encodeURIComponent(classroomId)}/groups`,
+        )
+        return withQueuedGroupMarks(client, SUB_MARK_KEY, classroomId, groups)
+      } catch (error) {
+        onRefused(client, error)
+        throw error
+      }
+    },
+    staleTime: SHARED_STALE_MS,
+    retry: retryUnlessRefused,
+  })
+}
+
 /** Today's counts. The server knows the day; the device's date isn't sent. */
 export function subCountsQueryOptions(classroomId: string) {
   return queryOptions({
@@ -251,6 +276,15 @@ export function subMarkSource(planDate: string): MarkSource {
         refetchInterval: LIVE_REFRESH_MS,
       }),
     useMarkTypes: () => useQuery(subMarkTypesQueryOptions),
+    groupsKey: (classroomId) => subGroupsQueryOptions(classroomId).queryKey,
+    useGroups: (classroomId, enabled = true) =>
+      useQuery({
+        ...subGroupsQueryOptions(classroomId),
+        enabled,
+        // Team points the teacher gives meanwhile.
+        refetchInterval: LIVE_REFRESH_MS,
+      }),
+    canEditGroups: false,
     enqueue: (queryClient, mark) =>
       enqueue(queryClient, [...SUB_MARK_KEY, mark.kind], mark),
   }
@@ -265,6 +299,8 @@ export function subMarkSource(planDate: string): MarkSource {
 
 export const SUB_MARK_KEY = ['sub-marks'] as const
 export const SUB_PLAN_KEY = ['sub-plan'] as const
+/** A note on a mark the sub gave, sent after that mark (see mark-queue.ts). */
+export const SUB_MARK_NOTE_KEY = ['sub-mark-notes'] as const
 
 /** How to send the sub's marks and checkmarks. Run once, at start-up. */
 export function registerSubMutations(queryClient: QueryClient) {
@@ -284,6 +320,17 @@ export function registerSubMutations(queryClient: QueryClient) {
   queryClient.setMutationDefaults([...SUB_MARK_KEY, 'undo'], {
     ...marks,
     mutationFn: sendUndo,
+  })
+  queryClient.setMutationDefaults(SUB_MARK_NOTE_KEY, {
+    scope: marks.scope,
+    retry: shouldRetry,
+    retryDelay,
+    mutationFn: ({ markId, note }: { markId: string; note: string }) =>
+      subSend<{ id: string; note: string }>(
+        'PUT',
+        `/marks/${encodeURIComponent(markId)}/note`,
+        { note },
+      ),
   })
   queryClient.setMutationDefaults([...SUB_PLAN_KEY, 'done'], {
     scope: { id: 'sub-plan' },
@@ -315,6 +362,7 @@ export function registerSubMutations(queryClient: QueryClient) {
       queryClient.isMutating({ mutationKey: SUB_MARK_KEY }) === 0
     ) {
       void queryClient.invalidateQueries({ queryKey: [SUB, 'mark-counts'] })
+      void queryClient.invalidateQueries({ queryKey: [SUB, 'groups'] })
     }
   })
 }
@@ -365,6 +413,16 @@ function sendGive(mark: QueuedMark): Promise<unknown> {
         all_students: true,
         occurred_at: occurredAt,
       })
+    case 'group':
+      return subSend('POST', `${classPath}/mark-batches`, {
+        batch_id: id,
+        mark_type_id: markTypeId,
+        student_ids: mark.studentIds,
+        group_id: mark.groupId,
+        occurred_at: occurredAt,
+      })
+    default:
+      return unknownTarget(mark.target)
   }
 }
 
@@ -374,13 +432,16 @@ function sendUndo(mark: QueuedMark) {
     : subDelete(`/mark-batches/${encodeURIComponent(mark.id)}`)
 }
 
-/** A whole-class mark reached a different roster: fetch it again. */
+/**
+ * A whole-class mark reached a different roster, or a group's mark skipped
+ * members who left: fetch the roster (and groups) again.
+ */
 function checkClassRoster(
   queryClient: QueryClient,
   result: unknown,
   mark: QueuedMark,
 ) {
-  if (mark.target !== 'class') return
+  if (mark.target !== 'class' && mark.target !== 'group') return
   const reached = new Set((result as MarkBatch).marks.map((m) => m.student_id))
   const shown = new Set(mark.studentIds)
   const same =
@@ -389,6 +450,11 @@ function checkClassRoster(
     void queryClient.invalidateQueries({
       queryKey: subRosterQueryOptions(mark.classroomId).queryKey,
     })
+    if (mark.target === 'group') {
+      void queryClient.invalidateQueries({
+        queryKey: subGroupsQueryOptions(mark.classroomId).queryKey,
+      })
+    }
   }
 }
 
@@ -402,6 +468,11 @@ function onMarkFailed(
   void queryClient.invalidateQueries({
     queryKey: subCountsQueryOptions(mark.classroomId).queryKey,
   })
+  if (mark.target === 'group') {
+    void queryClient.invalidateQueries({
+      queryKey: subGroupsQueryOptions(mark.classroomId).queryKey,
+    })
+  }
   onRefused(queryClient, error)
 
   const name =
@@ -413,10 +484,16 @@ function onMarkFailed(
       ? 'the class'
       : mark.target === 'selected'
         ? `${mark.studentIds.length} students`
-        : (queryClient
-            .getQueryData(subRosterQueryOptions(mark.classroomId).queryKey)
-            ?.find((s) => s.id === mark.studentIds[0])?.first_name ??
-          'a student')
+        : mark.target === 'group'
+          ? groupName(
+              queryClient,
+              subGroupsQueryOptions(mark.classroomId).queryKey,
+              mark.groupId,
+            )
+          : (queryClient
+              .getQueryData(subRosterQueryOptions(mark.classroomId).queryKey)
+              ?.find((s) => s.id === mark.studentIds[0])?.first_name ??
+            'a student')
 
   if (mark.kind === 'undo') {
     toast.error(`Couldn’t undo “${name}” for ${who}`, {

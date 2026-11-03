@@ -101,7 +101,7 @@ export const FAQ_GROUPS: Array<FaqGroup> = [
         id: 'points',
         question: 'Does TeachForFree use points or rewards?',
         answer: [
-          'No. A mark is simply positive or negative, with the behavior and the time. Each student’s card shows today’s count, and their page shows when each mark happened, so you have a clear record to talk through with students and families.',
+          'No. A mark is simply positive or negative, with the behavior, the time, and an optional short note on a negative mark. Each student’s card shows today’s count, and their page shows when each mark happened, so you have a clear record to talk through with students and families.',
         ],
       },
     ],
@@ -140,7 +140,7 @@ export const FAQ_GROUPS: Array<FaqGroup> = [
         question: 'How do I share my plans with a substitute?',
         answer: [
           'Open the day and tap Share. You get a link that works on that date only, and you choose which classes it opens. Send it however you like, or print the plan with a QR code the sub can scan.',
-          'The sub sees that day’s plan, can check off lines as they go, and can give behavior marks in the classes you picked. Their marks are labeled “Sub” for you.',
+          'The sub sees that day’s plan, can check off lines as they go, and can give behavior marks in the classes you picked, with a short note on a negative mark if they want. Their marks are labeled “Sub” for you.',
         ],
       },
       {
@@ -231,7 +231,7 @@ export const FAQ_GROUPS: Array<FaqGroup> = [
         id: 'student-data',
         question: 'Is student information safe? What about FERPA and COPPA?',
         answer: [
-          'Student names and lesson plans are encrypted in the database. Student information is never sold, never used for ads, and never used to train AI. Students don’t sign in, and nothing is collected from them directly.',
+          'Student names, lesson plans, and notes on marks are encrypted in the database. Student information is never sold, never used for ads, and never used to train AI. Students don’t sign in, and nothing is collected from them directly.',
           'The information belongs to you and your school, and it’s used only to run TeachForFree for you. Check your school’s rules before adding students. The privacy policy explains the details, including FERPA and COPPA.',
         ],
         link: { href: '/privacy', label: 'Read the privacy policy' },

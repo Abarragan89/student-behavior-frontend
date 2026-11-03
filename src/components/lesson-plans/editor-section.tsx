@@ -37,17 +37,22 @@ import {
 import { cn } from '@/lib/utils'
 import { formatClockRange } from '#/lib/calendar'
 import {
+  MAX_INDENT,
   MAX_LINE_LENGTH,
   MAX_TITLE_LENGTH,
   cachedSection,
   isBlank,
 } from '#/lib/lesson-plans'
-import type { PlanSection } from '#/lib/lesson-plans'
+import type { Indent, PlanSection } from '#/lib/lesson-plans'
 import { runOp } from '#/lib/lesson-plan-queue'
 import { uuidv7 } from '#/lib/uuid'
 import { CopySectionDialog } from '#/components/lesson-plans/copy-section-dialog'
 import { DragHandle } from '#/components/lesson-plans/drag-handle'
-import { EditorLine } from '#/components/lesson-plans/editor-line'
+import {
+  EditorLine,
+  INDENT_MARGIN,
+  IndentButtons,
+} from '#/components/lesson-plans/editor-line'
 import {
   addLineField,
   focusField,
@@ -293,6 +298,10 @@ export function EditorSection({
  * "Add a line…" at the end of a section. Enter adds the line and keeps the
  * cursor here for the next one, so a list goes in as fast as it's typed.
  * Pasting several lines adds one line each.
+ *
+ * Tab (or the in button on a phone) makes the next line a sub-step before
+ * anything is typed. The level stays for the lines after it, like a notes
+ * app, until the teacher leaves the box.
  */
 function AddLineInput({
   section,
@@ -305,19 +314,29 @@ function AddLineInput({
 }) {
   const queryClient = useQueryClient()
   const ref = useRef<HTMLTextAreaElement>(null)
+  const [indent, setIndent] = useState<Indent>(0)
+  const [focused, setFocused] = useState(false)
   const field = addLineField(section.id)
   const box = useAddBox({
     id: field,
-    onAdd: (text) => addLines(queryClient, date, section.id, text),
+    onAdd: (text) => addLines(queryClient, date, section.id, text, indent),
   })
   useFocusTarget(field, ref, box.set)
   useAutoGrow(ref, box.value)
+
+  /** In (+1) or out (-1) a level, from 0 up to MAX_INDENT. */
+  const step = (by: 1 | -1) =>
+    setIndent((now) => Math.max(0, Math.min(now + by, MAX_INDENT)) as Indent)
+  const what = indent > 0 ? 'sub-step' : 'line'
 
   return (
     <div className="flex items-start gap-1 py-0.5 pr-2">
       <span
         aria-hidden
-        className="flex size-10 shrink-0 items-center justify-center text-muted-foreground"
+        className={cn(
+          'flex size-10 shrink-0 items-center justify-center text-muted-foreground',
+          INDENT_MARGIN[indent],
+        )}
       >
         <Plus className="size-5" />
       </span>
@@ -325,8 +344,8 @@ function AddLineInput({
         ref={ref}
         rows={1}
         value={box.value}
-        aria-label={`Add a line to “${name}”`}
-        placeholder="Add a line…"
+        aria-label={`Add a ${what} to “${name}”`}
+        placeholder={`Add a ${what}…`}
         enterKeyHint="enter"
         onChange={(e) => {
           box.set(e.target.value)
@@ -335,23 +354,53 @@ function AddLineInput({
         }}
         onKeyDown={(e) => {
           if (e.nativeEvent.isComposing || e.keyCode === 229) return
-          if (e.key === 'Enter') {
+          if (e.key === 'Tab') {
             e.preventDefault()
-            box.commit()
+            step(e.shiftKey ? -1 : 1)
             return
           }
-          // Backspace in the empty box goes back to the last line.
+          const empty = box.value === ''
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            // Enter with nothing typed on a sub-step moves out, like a line.
+            if (empty && indent > 0) step(-1)
+            else box.commit()
+            return
+          }
+          if (e.key !== 'Backspace' || !empty) return
+          // Backspace in the empty box moves out a level first, then goes
+          // back to the last line.
+          if (indent > 0) {
+            e.preventDefault()
+            step(-1)
+            return
+          }
           const last = cachedSection(queryClient, date, section.id)?.items.at(
             -1,
           )
-          if (e.key === 'Backspace' && box.value === '' && last) {
+          if (last) {
             e.preventDefault()
             focusField(last.id, last.text.length)
           }
         }}
-        onBlur={() => box.commit()}
+        onFocus={() => setFocused(true)}
+        onBlur={() => {
+          // Adds what's typed at this level, then starts fresh next time.
+          box.commit()
+          setFocused(false)
+          setIndent(0)
+        }}
         className="field-sizing-content min-h-10 min-w-0 flex-1 resize-none rounded-md bg-transparent px-2 py-2 text-base leading-snug outline-none placeholder:text-muted-foreground focus-visible:bg-muted/60 scroll-mb-[calc(6rem+env(safe-area-inset-bottom))]"
       />
+      {focused && (
+        <div className="flex shrink-0 items-center">
+          <IndentButtons
+            indent={indent}
+            onIn={() => step(1)}
+            onOut={() => step(-1)}
+          />
+        </div>
+      )}
     </div>
   )
 }
@@ -362,6 +411,7 @@ function addLines(
   date: string,
   sectionId: string,
   text: string,
+  indent: Indent,
 ) {
   const section = cachedSection(queryClient, date, sectionId)
   if (!section) return undefined
@@ -376,7 +426,7 @@ function addLines(
       sectionId,
       id,
       text: line.slice(0, MAX_LINE_LENGTH),
-      indent: 0,
+      indent,
       position: position++,
     })
   }
