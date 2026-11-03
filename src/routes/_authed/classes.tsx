@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { Archive, CircleAlert, Plus, Users } from 'lucide-react'
@@ -12,12 +13,16 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty'
 import { Spinner } from '@/components/ui/spinner'
+import { cn } from '@/lib/utils'
 import { ArchiveClassDialog } from '#/components/archive-class-dialog'
 import type { ArchiveTarget } from '#/components/archive-class-dialog'
 import { ClassHeader } from '#/components/class-header'
 import { ClassRoster } from '#/components/class-roster'
 import { connectNotice } from '#/components/classroom-connect-notice'
 import { useCreateDialogs } from '#/components/create-dialogs'
+import { PrintReportsDialog } from '#/components/print-reports-dialog'
+import type { ReportsToPrint } from '#/components/print-reports-dialog'
+import { PrintedReports } from '#/components/printed-reports'
 import { SwitchClassDialog } from '#/components/switch-class-dialog'
 import { useClassroomSwitch } from '#/hooks/useClassroomSwitch'
 import {
@@ -25,7 +30,7 @@ import {
   validateClassroomResult,
 } from '#/lib/classroom'
 import { meQueryOptions } from '#/lib/auth'
-import type { Me, OpenClassroom } from '#/lib/auth'
+import type { Me, OpenClassroom, Student } from '#/lib/auth'
 import { markTypesQueryOptions } from '#/lib/marks'
 import { canEdit, currentSpace, mayLoad } from '#/lib/workspace'
 
@@ -93,6 +98,29 @@ function ClassesContent({
   const shownName =
     me.classrooms.find((c) => c.id === shownId)?.name ?? classroom.name
 
+  // Print, while picking students: the dialog is for the students picked
+  // then, and what it last printed stays on the page for the paper. Both
+  // belong to one class, and are dropped when another class is open.
+  const [printPick, setPrintPick] = useState<{
+    classroomId: string
+    students: Array<Student>
+  } | null>(null)
+  const [printOpen, setPrintOpen] = useState(false)
+  const [printed, setPrinted] = useState<ReportsToPrint | null>(null)
+  const pickedForPrint =
+    printPick?.classroomId === classroom.id ? printPick : null
+  const shownPrinted = printed?.classroomId === classroom.id ? printed : null
+
+  function printReports(reports: ReportsToPrint) {
+    // On the page before the print dialog opens; the dialog is hidden on
+    // paper while it closes (styles.css).
+    flushSync(() => {
+      setPrintOpen(false)
+      setPrinted(reports)
+    })
+    window.print()
+  }
+
   // Back from "Connect Google Classroom": reopen Add Students, where the
   // Connect button and the class cards are, with how it went. Then take it
   // out of the address bar, so a reload doesn't do it again.
@@ -108,102 +136,137 @@ function ClassesContent({
   }, [connected, connectError, openAddStudents, navigate, teacher.email])
 
   return (
-    <main
-      aria-busy={isLoading || undefined}
-      className="mx-auto flex w-full max-w-5xl min-w-0 flex-1 flex-col gap-2 px-4 py-6 sm:py-8"
-    >
-      <ClassHeader
-        classroom={classroom}
-        name={shownName}
-        loading={isLoading}
-        onSwitch={() => setSwitchOpen(true)}
-        headingRef={headingRef}
-        // Long names stop before the phone avatar (see _authed.tsx).
-        className="max-md:pr-12"
-      />
-
-      {/* Red icon, black text: small red text on white is hard to read. */}
-      {error && (
-        <p role="alert" className="flex items-center gap-2 text-sm font-medium">
-          <CircleAlert className="size-5 shrink-0 text-destructive" />
-          {error}
-        </p>
-      )}
-
-      {isLoading ? (
-        <p
-          role="status"
-          className="flex items-center justify-center gap-2 py-16 font-medium text-muted-foreground"
-        >
-          <Spinner aria-hidden className="size-5" />
-          Opening {shownName}…
-        </p>
-      ) : classroom.students.length > 0 ? (
-        // Keyed by class, so switching classes starts fresh (no picks carried
-        // over).
-        <ClassRoster
-          key={classroom.id}
+    <>
+      <main
+        aria-busy={isLoading || undefined}
+        className={cn(
+          'mx-auto flex w-full max-w-5xl min-w-0 flex-1 flex-col gap-2 px-4 py-6 sm:py-8',
+          // Reports to print: they're the paper, not the class grid.
+          shownPrinted && 'print:hidden',
+        )}
+      >
+        <ClassHeader
           classroom={classroom}
-          readOnly={!editable}
+          name={shownName}
+          loading={isLoading}
+          onSwitch={() => setSwitchOpen(true)}
+          headingRef={headingRef}
+          // Long names stop before the phone avatar (see _authed.tsx).
+          className="max-md:pr-12"
         />
-      ) : (
-        <NoStudents
-          firstName={teacher.name.split(' ')[0]}
-          onAdd={editable ? () => openAddStudents() : undefined}
-        />
-      )}
 
-      {/* At the very bottom, below the students (mt-auto), and set apart
+        {/* Red icon, black text: small red text on white is hard to read. */}
+        {error && (
+          <p
+            role="alert"
+            className="flex items-center gap-2 text-sm font-medium"
+          >
+            <CircleAlert className="size-5 shrink-0 text-destructive" />
+            {error}
+          </p>
+        )}
+
+        {isLoading ? (
+          <p
+            role="status"
+            className="flex items-center justify-center gap-2 py-16 font-medium text-muted-foreground"
+          >
+            <Spinner aria-hidden className="size-5" />
+            Opening {shownName}…
+          </p>
+        ) : classroom.students.length > 0 ? (
+          // Keyed by class, so switching classes starts fresh (no picks carried
+          // over).
+          <ClassRoster
+            key={classroom.id}
+            classroom={classroom}
+            readOnly={!editable}
+            onPrintReports={(students) => {
+              setPrintPick({ classroomId: classroom.id, students })
+              setPrintOpen(true)
+            }}
+          />
+        ) : (
+          <NoStudents
+            firstName={teacher.name.split(' ')[0]}
+            onAdd={editable ? () => openAddStudents() : undefined}
+          />
+        )}
+
+        {/* At the very bottom, below the students (mt-auto), and set apart
           by a line: it's for the end of the year, not everyday use. Only
           for your own classes: a co-teacher never archives the owner's. */}
-      {!isLoading && editable && !me.acting_for && (
-        <div className="mt-auto pt-10">
-          <div className="border-t-2 border-border pt-6">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setArchiveTarget({
-                  id: classroom.id,
-                  name: classroom.name,
-                  onlyClass: me.classrooms.length <= 1,
-                })
-                setArchiveOpen(true)
-              }}
-              className="h-11 rounded-lg border-2 px-4 font-bold"
-            >
-              <Archive />
-              Archive class
-            </Button>
+        {!isLoading && editable && !me.acting_for && (
+          <div className="mt-auto pt-10">
+            <div className="border-t-2 border-border pt-6">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setArchiveTarget({
+                    id: classroom.id,
+                    name: classroom.name,
+                    onlyClass: me.classrooms.length <= 1,
+                  })
+                  setArchiveOpen(true)
+                }}
+                className="h-11 rounded-lg border-2 px-4 font-bold"
+              >
+                <Archive />
+                Archive class
+              </Button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {archiveTarget && (
-        <ArchiveClassDialog
-          target={archiveTarget}
-          open={archiveOpen}
-          onOpenChange={setArchiveOpen}
-          onArchived={() => {
-            justArchived.current = true
-            window.scrollTo({ top: 0 })
-          }}
-          onCreateClass={openCreateClass}
-          finalFocus={() => {
-            if (!justArchived.current) return true
-            justArchived.current = false
-            return headingRef.current
-          }}
+        {archiveTarget && (
+          <ArchiveClassDialog
+            target={archiveTarget}
+            open={archiveOpen}
+            onOpenChange={setArchiveOpen}
+            onArchived={() => {
+              justArchived.current = true
+              window.scrollTo({ top: 0 })
+            }}
+            onCreateClass={openCreateClass}
+            finalFocus={() => {
+              if (!justArchived.current) return true
+              justArchived.current = false
+              return headingRef.current
+            }}
+          />
+        )}
+
+        <SwitchClassDialog
+          classrooms={me.classrooms}
+          openId={shownId}
+          open={switchOpen}
+          onOpenChange={setSwitchOpen}
+          onPick={select}
+        />
+
+        {pickedForPrint && (
+          <PrintReportsDialog
+            open={printOpen}
+            onOpenChange={setPrintOpen}
+            classroomId={pickedForPrint.classroomId}
+            students={pickedForPrint.students}
+            onPrint={printReports}
+          />
+        )}
+      </main>
+
+      {/* Only on paper, outside <main>, which is hidden there meanwhile. */}
+      {shownPrinted && (
+        <PrintedReports
+          reports={shownPrinted}
+          className={classroom.name}
+          classrooms={me.classrooms}
+          // Whose class it is, which for a co-teacher is the teacher who
+          // shared it.
+          teacherName={me.acting_for?.name ?? teacher.name}
         />
       )}
-
-      <SwitchClassDialog
-        classrooms={me.classrooms}
-        openId={shownId}
-        open={switchOpen}
-        onOpenChange={setSwitchOpen}
-        onPick={select}
-      />
-    </main>
+    </>
   )
 }
 

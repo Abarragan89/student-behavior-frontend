@@ -5,6 +5,7 @@ import { meQueryOptions } from './auth'
 import type { Me } from './auth'
 import { timeZone } from './marks'
 import type { Mark } from './marks'
+import { schoolDaysEnding } from './mark-stats'
 
 // One student, for their own page. Names are stored encrypted by the
 // backend; they're only plain text in its responses.
@@ -103,6 +104,52 @@ export function studentDailyQueryOptions(
         `/students/${encodeURIComponent(studentId)}/marks/daily?${params}`,
       )
     },
+    retry: retryServerErrors,
+  })
+}
+
+/** How many school days the student page's chart and the printed report show. */
+export const REPORT_DAYS = 10
+
+/**
+ * The printed behavior reports for everyone in a class, in one request (one
+ * per student would run into the backend's rate limits for a class of 20+).
+ * No names: those come from the roster.
+ */
+export type ClassReports = {
+  timezone: string
+  from: string
+  to: string // the report's day
+  students: Array<{
+    student_id: string
+    /** The teacher's classes they're in, oldest first. */
+    classroom_ids: Array<string>
+    /** The day's marks, earliest first, from any of the teacher's classes. */
+    marks: Array<Mark>
+    /** One per day from `from` to `to`, oldest first. */
+    days: DailyCounts['days']
+  }>
+}
+
+/**
+ * A class's reports for one day, with the school days leading up to it.
+ * Always refetched when asked for (staleTime 0), so a mark given a moment
+ * ago is on the paper. Not saved on the device (see SAVED_QUERIES).
+ */
+export function classReportsQueryOptions(classroomId: string, date: string) {
+  return queryOptions({
+    queryKey: ['class-reports', classroomId, date],
+    queryFn: () => {
+      const params = new URLSearchParams({
+        from: schoolDaysEnding(date, REPORT_DAYS)[0],
+        to: date,
+        tz: timeZone(),
+      })
+      return apiGet<ClassReports>(
+        `/classrooms/${encodeURIComponent(classroomId)}/reports?${params}`,
+      )
+    },
+    staleTime: 0,
     retry: retryServerErrors,
   })
 }

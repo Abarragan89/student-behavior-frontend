@@ -75,6 +75,35 @@ export function formatWhen(
   return `${formatDay(start, timeZone, lang)}, ${formatRange(start, end, timeZone, lang)}`
 }
 
+/**
+ * Days for a sign-up notice, capitalized: "Thursday, November 5 and Friday,
+ * November 6" ("Jueves, 5 de noviembre y viernes, 6 de noviembre"). More
+ * than three are shown first to last: "Thursday, November 5 – Friday,
+ * November 13". days are times on each day, in order.
+ */
+export function formatDayList(
+  days: Array<string>,
+  timeZone: string,
+  lang: Lang,
+) {
+  if (days.length === 0) return ''
+  if (days.length > 3) {
+    return capitalize(
+      new Intl.DateTimeFormat(LOCALE[lang], {
+        timeZone,
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+      }).formatRange(new Date(days[0]), new Date(days[days.length - 1])),
+    )
+  }
+  return capitalize(
+    new Intl.ListFormat(LOCALE[lang], { type: 'conjunction' }).format(
+      days.map((d) => formatDay(d, timeZone, lang)),
+    ),
+  )
+}
+
 /** Spanish days are lower case; at the start of a line they need a capital. */
 export function capitalize(s: string) {
   return s.charAt(0).toLocaleUpperCase() + s.slice(1)
@@ -103,6 +132,7 @@ export const familyStrings = {
     yourTime: 'Your time',
     noTime: (first: string) => `${first} doesn’t have a conference time yet.`,
     pickBelow: 'Choose an open time below.',
+    firstCome: 'Times are first come, first served.',
     changeHeading: 'Change your time',
     tapOpen: 'Tap an open time to choose it.',
     open: 'Open',
@@ -110,11 +140,15 @@ export const familyStrings = {
     mine: 'Your time',
     noneOpen:
       'There are no other open times right now. This page updates by itself.',
+    noneOpenNoTime: (teacher: string) =>
+      `There are no open times right now. This page updates by itself. If none open up, please contact ${teacher}.`,
     confirmTitle: 'Switch to this time?',
+    confirmTitleNew: 'Choose this time?',
     confirmBody: (from: string, to: string) =>
       `Your conference will move from ${from} to ${to}. Your current time will open up for another family.`,
     confirmBodyNew: (to: string) => `Your conference will be ${to}.`,
     confirmYes: 'Yes, switch',
+    confirmYesNew: 'Yes, choose it',
     cancel: 'Cancel',
     moving: 'Switching…',
     moved: (to: string) => `Done! Your conference is now ${to}.`,
@@ -127,6 +161,8 @@ export const familyStrings = {
       `Your conference is less than ${hours} hours away, so it can’t be changed here. If you can’t come, please contact ${teacher}.`,
     closed: (teacher: string) =>
       `Changes can’t be made online right now. To change your time, please contact ${teacher}.`,
+    closedNoTime: (teacher: string) =>
+      `Times can’t be chosen online right now. Please contact ${teacher} to get a time.`,
     stale: 'Your time was just changed. Please check it and try again.',
     tooMany:
       'Too many changes for now. Please wait a few minutes and try again.',
@@ -157,6 +193,7 @@ export const familyStrings = {
     noTime: (first: string) =>
       `${first} todavía no tiene un horario para la conferencia.`,
     pickBelow: 'Elija un horario disponible abajo.',
+    firstCome: 'Los horarios se asignan por orden de llegada.',
     changeHeading: 'Cambiar su horario',
     tapOpen: 'Toque un horario disponible para elegirlo.',
     open: 'Disponible',
@@ -164,11 +201,15 @@ export const familyStrings = {
     mine: 'Su horario',
     noneOpen:
       'No hay otros horarios disponibles en este momento. Esta página se actualiza sola.',
+    noneOpenNoTime: (teacher: string) =>
+      `No hay horarios disponibles en este momento. Esta página se actualiza sola. Si no se abre ninguno, comuníquese con ${teacher}.`,
     confirmTitle: '¿Cambiar a este horario?',
+    confirmTitleNew: '¿Elegir este horario?',
     confirmBody: (from: string, to: string) =>
       `Su conferencia pasará del ${from} al ${to}. Su horario actual quedará disponible para otra familia.`,
     confirmBodyNew: (to: string) => `Su conferencia será el ${to}.`,
     confirmYes: 'Sí, cambiar',
+    confirmYesNew: 'Sí, elegirlo',
     cancel: 'Cancelar',
     moving: 'Cambiando…',
     moved: (to: string) => `¡Listo! Su conferencia ahora es el ${to}.`,
@@ -181,6 +222,8 @@ export const familyStrings = {
       `Faltan menos de ${hours} horas para su conferencia, así que ya no se puede cambiar aquí. Si no puede venir, comuníquese con ${teacher}.`,
     closed: (teacher: string) =>
       `En este momento no se pueden hacer cambios en línea. Para cambiar su horario, comuníquese con ${teacher}.`,
+    closedNoTime: (teacher: string) =>
+      `En este momento no se pueden elegir horarios en línea. Comuníquese con ${teacher} para obtener un horario.`,
     stale: 'Su horario acaba de cambiar. Revíselo e intente de nuevo.',
     tooMany:
       'Demasiados cambios por ahora. Espere unos minutos e intente de nuevo.',
@@ -221,6 +264,13 @@ export const noticeStrings = {
       'Can’t come at this time? Please contact me to find another time.',
     scanChange: 'Scan to see or change your time',
     scanSee: 'Scan to see your conference time',
+    // A sign-up notice: the student has no time yet.
+    signUpLabel: 'Sign up for a conference',
+    signUpCall: 'Choose your time',
+    signUpDays: (days: string) => `Conference days: ${days}`,
+    signUpBody: (hours: number) =>
+      `Scan the QR code with your phone’s camera to see the open times and choose one. Times are first come, first served, so please choose soon. You can choose until ${hours} hours before a time.`,
+    scanSignUp: 'Scan to choose your time',
     private: (first: string) =>
       `This code is only for ${first}’s conference. Please don’t share it.`,
     thanks: (teacher: string) =>
@@ -239,6 +289,12 @@ export const noticeStrings = {
       '¿No puede venir a esta hora? Comuníquese conmigo para buscar otro horario.',
     scanChange: 'Escanee para ver o cambiar su horario',
     scanSee: 'Escanee para ver su horario',
+    signUpLabel: 'Inscríbase para una conferencia',
+    signUpCall: 'Elija su horario',
+    signUpDays: (days: string) => `Días de conferencias: ${days}`,
+    signUpBody: (hours: number) =>
+      `Escanee el código QR con la cámara de su teléfono para ver los horarios disponibles y elegir uno. Los horarios se asignan por orden de llegada, así que elija pronto. Puede elegir hasta ${hours} horas antes de un horario.`,
+    scanSignUp: 'Escanee para elegir su horario',
     private: (first: string) =>
       `Este código es solo para la conferencia de ${first}. Por favor, no lo comparta.`,
     thanks: (teacher: string) =>

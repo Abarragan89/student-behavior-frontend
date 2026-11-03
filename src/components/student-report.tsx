@@ -1,16 +1,20 @@
-import { useEffect } from 'react'
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import {
   formatFullDate,
   formatHourSpan,
   formatTime,
-  isWeekend,
   timeZoneLabel,
 } from '#/lib/day'
 import { localDate, markTime } from '#/lib/marks'
 import type { Mark } from '#/lib/marks'
-import { busiestHour, countByType } from '#/lib/mark-stats'
+import {
+  busiestHour,
+  countByType,
+  perDay,
+  schoolDaysToShow,
+  sumDays,
+} from '#/lib/mark-stats'
 import type { TypeCount } from '#/lib/mark-stats'
 import type { DailyCounts, StudentDetail } from '#/lib/students'
 import {
@@ -31,7 +35,8 @@ import { Wordmark } from '#/components/Wordmark'
  * It's on the page all the time but only shows on paper (`print:block`), so
  * the browser's own Print menu prints it too. Laid out for the paper, not the
  * screen (no sm: or md:), so a phone and a computer print the same page.
- * Always dark ink on white, in dark mode too.
+ * Always dark ink on white, in dark mode too. The page using it names the
+ * saved PDF (usePrintTitle), since a page can print several reports at once.
  *
  * Families see "Needs work" where the app says "Negative".
  */
@@ -64,27 +69,6 @@ export function StudentReport({
     markTime(a).localeCompare(markTime(b)),
   )
   const summary = daySummary(first, positive, negative)
-
-  // The saved PDF is named after the page title.
-  const title = `Behavior report – ${fullName} – ${date}`
-  useEffect(() => {
-    let saved: string | null = null
-    const before = () => {
-      saved ??= document.title
-      document.title = title
-    }
-    const after = () => {
-      if (saved !== null) document.title = saved
-      saved = null
-    }
-    window.addEventListener('beforeprint', before)
-    window.addEventListener('afterprint', after)
-    return () => {
-      window.removeEventListener('beforeprint', before)
-      window.removeEventListener('afterprint', after)
-      after()
-    }
-  }, [title])
 
   return (
     <article className="hidden bg-white text-[10pt] leading-snug text-neutral-900 [-webkit-print-color-adjust:exact] [print-color-adjust:exact] print:block">
@@ -338,10 +322,7 @@ function RecentDays({
   trend: DailyCounts | undefined
   date: string
 }) {
-  // The school days, plus the report's day and any weekend day with marks.
-  const days = trend?.days.filter(
-    (d) => !isWeekend(d.date) || d.date === date || d.positive + d.negative > 0,
-  )
+  const days = trend && schoolDaysToShow(trend.days, date)
   if (!days?.length) {
     return (
       <Section title="Recent school days">
@@ -353,11 +334,9 @@ function RecentDays({
     )
   }
 
-  const positive = days.reduce((sum, d) => sum + d.positive, 0)
-  const negative = days.reduce((sum, d) => sum + d.negative, 0)
   // Averaged over days with marks only: a day without any may be a day the
   // student was away, which would make every day look quieter.
-  const marked = days.filter((d) => d.positive + d.negative > 0)
+  const { positive, negative, marked } = sumDays(days)
 
   return (
     <Section title={`Last ${days.length} school days`}>
@@ -384,11 +363,11 @@ function RecentDays({
       <TrendStrip days={days} reportDate={date} />
       <p className="mt-1 text-[9pt]">
         In all: {positive} positive, {negative} needs work.
-        {marked.length >= 2 && (
+        {marked >= 2 && (
           <>
             {' '}
-            A typical day with marks: {perDay(positive / marked.length)}{' '}
-            positive, {perDay(negative / marked.length)} needs work.
+            A typical day with marks: {perDay(positive / marked)} positive,{' '}
+            {perDay(negative / marked)} needs work.
           </>
         )}
       </p>
@@ -441,13 +420,6 @@ function daySummary(first: string, positive: number, negative: number) {
     headline,
     detail: `${positive} of ${total} marks were positive${percent}.`,
   }
-}
-
-/** An average per day in words: "about 4", "less than 1", "0". */
-function perDay(average: number) {
-  if (average === 0) return '0'
-  if (average < 1) return 'less than 1'
-  return `about ${Math.round(average)}`
 }
 
 function times(n: number) {

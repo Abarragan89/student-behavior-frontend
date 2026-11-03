@@ -90,8 +90,12 @@ export type ConferenceNotice = {
   student_id: string
   first_name: string
   last_name: string
-  starts_at: string
-  ends_at: string
+  /**
+   * null: a sign-up notice. The student has no time yet, and the notice
+   * invites the family to choose one with the QR code.
+   */
+  starts_at: string | null
+  ends_at: string | null
   /** The family's page, in English and in Spanish. */
   url: string
   url_es: string
@@ -411,6 +415,49 @@ export function previewTimes(start: string, end: string, minutes: number) {
     count,
     lastEnd: `${pad(Math.floor(lastEnd / 60))}:${pad(lastEnd % 60)}`,
   }
+}
+
+/** What the teacher should know about a student's notice. */
+export type NoticeStatus = 'none' | 'printed' | 'outdated'
+
+/**
+ * Whether the family has been told the student's time. startsAt is the
+ * student's time now (null: none, as on a sign-up notice). 'outdated': what
+ * the family was last told (on paper, or chose themselves) isn't their time
+ * anymore, because the teacher changed it.
+ */
+export function noticeStatus(
+  conference: Conference,
+  studentId: string,
+  startsAt: string | null,
+): NoticeStatus {
+  const n = conference.notices.find((x) => x.student_id === studentId)
+  if (!n?.printed_at) return 'none'
+  const told = n.notified_starts_at ? Date.parse(n.notified_starts_at) : null
+  const now = startsAt ? Date.parse(startsAt) : null
+  return told === now ? 'printed' : 'outdated'
+}
+
+/** Families can choose a time that starts more than this far ahead. */
+const CUTOFF_MS = CUTOFF_HOURS * 60 * 60 * 1000
+
+/**
+ * The days a family with a sign-up notice could still choose a time on:
+ * days with a time starting more than CUTOFF_HOURS from now, in order.
+ * Each is a time on that day, for formatting in the conference's time zone.
+ */
+export function signUpDays(conference: Conference, now: number) {
+  return slotsByDay(
+    conference.slots.filter((s) => Date.parse(s.starts_at) > now + CUTOFF_MS),
+    conference.timezone,
+  ).map((d) => d.slots[0].starts_at)
+}
+
+/** How many open times a family could still choose. */
+export function openForSignUp(conference: Conference, now: number) {
+  return conference.slots.filter(
+    (s) => !s.student_id && Date.parse(s.starts_at) > now + CUTOFF_MS,
+  ).length
 }
 
 /** "Mia L.": short enough for a time row on a phone. */

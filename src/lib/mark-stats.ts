@@ -66,3 +66,39 @@ export function schoolDaysEnding(date: string, count: number) {
   }
   return days.reverse()
 }
+
+/** One day's counts, as the daily endpoint sends them. */
+export type DayCount = { date: string; positive: number; negative: number }
+
+/**
+ * The days a recent-days chart shows: the school days, plus `keep` (the day
+ * being looked at) and any weekend day with marks.
+ */
+export function schoolDaysToShow<T extends DayCount>(
+  days: Array<T>,
+  keep: string,
+) {
+  return days.filter(
+    (d) => !isWeekend(d.date) || d.date === keep || d.positive + d.negative > 0,
+  )
+}
+
+/** Totals over some days, and how many of them had any marks. */
+export function sumDays(days: Array<DayCount>) {
+  let positive = 0
+  let negative = 0
+  let marked = 0
+  for (const d of days) {
+    positive += d.positive
+    negative += d.negative
+    if (d.positive + d.negative > 0) marked++
+  }
+  return { positive, negative, marked }
+}
+
+/** An average per day in words: "about 4", "less than 1", "0". */
+export function perDay(average: number) {
+  if (average === 0) return '0'
+  if (average < 1) return 'less than 1'
+  return `about ${Math.round(average)}`
+}

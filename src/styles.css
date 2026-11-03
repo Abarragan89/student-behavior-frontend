@@ -285,6 +285,12 @@ body {
     break-after: auto;
     page-break-after: auto;
   }
+  /* Several behavior reports (printed-reports.tsx): each student on a new
+     page. */
+  .report-page + .report-page {
+    break-before: page;
+    page-break-before: always;
+  }
   /* The conference schedule (print-schedule.tsx): each day on a new page. */
   .schedule-day + .schedule-day {
     break-before: page;
