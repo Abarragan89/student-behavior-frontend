@@ -1,7 +1,7 @@
 ---
 title: Privacy Policy
 description: 'How TeachForFree handles teacher and student information: what we collect, how we protect it, Google Classroom data, and how to delete it.'
-updated: 2026-11-02
+updated: 2026-11-03
 ---
 
 ## Who we are
@@ -20,7 +20,7 @@ This policy covers the TeachForFree website, the installed app (the version you 
 - There are no analytics tools, ad trackers, or third-party tracking scripts.
 - Student names and lesson plan text are encrypted in our database.
 - Marks have no free-text notes. A mark records only which student, which class, which kind of mark, and when.
-- Families can change their parent conference time with a code on a printed notice. Other families never see which student has which time, and we don't collect anything about parents.
+- Families can choose or change their parent conference time with a code on a printed notice. Other families never see which student has which time, and we don't collect anything about parents.
 - Google Classroom is optional. We only read your classes and rosters, and only when you ask. We never store student email addresses.
 - You can delete marks, students, and classes yourself, and you can ask us to delete your whole account at any time.
 
@@ -173,11 +173,11 @@ The link's secret key comes after the "#" in the web address. Browsers don't sen
 
 ## Conference sign-ups
 
-A teacher can schedule parent conferences and print a notice for each student's family, in English and Spanish, with the student's conference time and a QR code. The family doesn't need an account. Anyone who has a student's code can:
+A teacher can schedule parent conferences and print a notice for each student's family, in English and Spanish, with the student's conference time (or, if the student doesn't have one yet, an invitation to choose one) and a QR code. The family doesn't need an account. Anyone who has a student's code can:
 
 - see the student's first name, the name the teacher signs notices with, the location, and the student's conference time
 - see the conference's other times as open or unavailable, but never who has them
-- move the student to an open time, if the teacher allows changes online, until 24 hours before the conference
+- choose an open time for the student, or move them to one, if the teacher allows changes online, until 24 hours before the time
 
 A code works for one student only, and a student has one time, so a code can hold only one time. The page updates live while it's open, so families see right away when a time is taken. The teacher sees every change a family makes, can turn online changes off, and can replace a student's code at any time. The old code stops working right away.
 

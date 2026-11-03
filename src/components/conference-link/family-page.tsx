@@ -213,9 +213,9 @@ function Conference({
             <h2 id="change-heading" className="text-lg font-bold">
               {view.mine ? t.changeHeading : t.pickBelow}
             </h2>
-            {view.mine && (
-              <p className="text-sm text-muted-foreground">{t.tapOpen}</p>
-            )}
+            <p className="text-sm text-muted-foreground">
+              {view.mine ? t.tapOpen : t.firstCome}
+            </p>
           </div>
           <SlotGrid view={view} lang={lang} t={t} onPick={setTarget} />
         </section>
@@ -250,7 +250,10 @@ function CurrentTime({
   const { mine, timezone: tz } = view
   let note: string | null = null
   if (mine?.locked) note = t.lockedMine(view.cutoff_hours, view.teacher_name)
-  else if (!view.changes_open) note = t.closed(view.teacher_name)
+  else if (!view.changes_open)
+    note = mine
+      ? t.closed(view.teacher_name)
+      : t.closedNoTime(view.teacher_name)
 
   return (
     <section className="flex flex-col gap-2 rounded-xl border-2 border-border bg-card p-4 shadow-md">
@@ -299,7 +302,7 @@ function SlotGrid({
     <div className="flex flex-col gap-4">
       {!anyOpen && (
         <p className="rounded-lg border-2 border-dashed border-border p-3 text-sm font-medium">
-          {t.noneOpen}
+          {view.mine ? t.noneOpen : t.noneOpenNoTime(view.teacher_name)}
         </p>
       )}
       {days.map(({ day, slots }) => (
@@ -395,7 +398,9 @@ function MoveSheet({
           {
             taken: t.taken,
             locked: t.lockedTarget(view.cutoff_hours),
-            closed: t.closed(view.teacher_name),
+            closed: view.mine
+              ? t.closed(view.teacher_name)
+              : t.closedNoTime(view.teacher_name),
             stale: t.stale,
           }[error.reason],
         )
@@ -419,7 +424,7 @@ function MoveSheet({
       setIsOpen={(open: boolean) => {
         if (!open && !busy) onClose()
       }}
-      title={t.confirmTitle}
+      title={view.mine ? t.confirmTitle : t.confirmTitleNew}
     >
       {target && (
         <div className="flex flex-col gap-4" lang={lang}>
@@ -450,7 +455,7 @@ function MoveSheet({
               className="h-12 rounded-lg border-2 border-border text-base font-bold shadow-sm"
             >
               {busy && <Spinner aria-hidden className="size-5" />}
-              {busy ? t.moving : t.confirmYes}
+              {busy ? t.moving : view.mine ? t.confirmYes : t.confirmYesNew}
             </Button>
             <Button
               variant="outline"

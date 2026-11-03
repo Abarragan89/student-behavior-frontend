@@ -39,8 +39,13 @@ import {
 } from '#/lib/day'
 import { localDate, markTime, timeZone } from '#/lib/marks'
 import type { Mark } from '#/lib/marks'
-import { busiestHour, schoolDaysEnding } from '#/lib/mark-stats'
 import {
+  busiestHour,
+  schoolDaysEnding,
+  schoolDaysToShow,
+} from '#/lib/mark-stats'
+import {
+  REPORT_DAYS,
   studentDailyQueryOptions,
   studentFromMe,
   studentMarksQueryOptions,
@@ -48,6 +53,7 @@ import {
 } from '#/lib/students'
 import type { StudentDetail } from '#/lib/students'
 import { DayTimeline } from '#/components/day-timeline'
+import { RecentDaysChart, recentDaysSummary } from '#/components/recent-days'
 import { DeleteMarkDialog } from '#/components/delete-mark-dialog'
 import type { DeleteMarkTarget } from '#/components/delete-mark-dialog'
 import { DeleteStudentDialog } from '#/components/delete-student-dialog'
@@ -55,6 +61,7 @@ import type { DeleteStudentTarget } from '#/components/delete-student-dialog'
 import { StudentNameForm } from '#/components/forms/student-name-form'
 import { StudentReport } from '#/components/student-report'
 import { MarkRing, initials } from '#/components/student-card'
+import { usePrintTitle } from '#/hooks/usePrintTitle'
 
 export const Route = createFileRoute('/_authed/students/$studentId')({
   // A co-teacher needs at least View on Classes (_authed.tsx checks).
@@ -82,9 +89,6 @@ export const Route = createFileRoute('/_authed/students/$studentId')({
 
 const cardClass =
   'gap-5 rounded-xl border-2 border-border p-4 shadow-md ring-0 sm:p-6'
-
-// How many school days the printed report shows for context.
-const RECENT_DAYS = 10
 
 function StudentPage() {
   const { studentId } = Route.useParams()
@@ -206,11 +210,28 @@ function StudentDay({
   const zone = timeZone()
   const marks = useQuery(studentMarksQueryOptions(student.id, date))
   const now = useMinutesNow(date === today, zone)
-  // For the printed report only: the school days leading up to this one.
+  // On screen: the last school days up to today, so opening a day from the
+  // chart doesn't move it. A day picked from before them ends it instead.
+  // (The same query as the report's below when the day is today.)
+  const recentEnd =
+    date < schoolDaysEnding(today, REPORT_DAYS)[0] ? date : today
+  const recent = useQuery({
+    ...studentDailyQueryOptions(
+      student.id,
+      schoolDaysEnding(recentEnd, REPORT_DAYS)[0],
+      recentEnd,
+    ),
+    // Moving to other days keeps these on screen (faded) until they arrive.
+    // Same student only.
+    placeholderData: (previous, previousQuery) =>
+      previousQuery?.queryKey[1] === student.id ? previous : undefined,
+  })
+  const recentDays = recent.data && schoolDaysToShow(recent.data.days, date)
+  // For the printed report: the school days leading up to this one.
   const trend = useQuery(
     studentDailyQueryOptions(
       student.id,
-      schoolDaysEnding(date, RECENT_DAYS)[0],
+      schoolDaysEnding(date, REPORT_DAYS)[0],
       date,
     ),
   )
@@ -229,6 +250,9 @@ function StudentDay({
     student.classrooms.length > 1
       ? (id: string) => classroomNames.get(id)
       : undefined
+  // The saved PDF is named after the page title.
+  const fullName = `${student.first_name} ${student.last_name}`.trim()
+  usePrintTitle(`Behavior report – ${fullName} – ${date}`)
 
   return (
     <>
@@ -283,6 +307,57 @@ function StudentDay({
             Print report
           </Button>
         </div>
+
+        <Card className={cardClass}>
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg font-bold">
+              {recentEnd === today
+                ? `Last ${recentDays?.length ?? REPORT_DAYS} school days`
+                : `${recentDays?.length ?? REPORT_DAYS} school days to ${formatLongDate(recentEnd)}`}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Pick a day to see it below.
+            </p>
+          </div>
+
+          {recentDays ? (
+            <>
+              <RecentDaysChart
+                days={recentDays}
+                selected={date}
+                onSelect={onShowDay}
+                faded={recent.isPlaceholderData}
+              />
+              <p className="text-sm">{recentDaysSummary(recentDays)}</p>
+            </>
+          ) : recent.isError ? (
+            <div className="flex flex-col items-center gap-3 py-8 text-center">
+              <p className="flex items-center gap-2 text-sm font-medium">
+                <CircleAlert className="size-5 shrink-0 text-destructive" />
+                Couldn’t load recent days.
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => void recent.refetch()}
+                disabled={recent.isFetching}
+                className="rounded-lg border-2 border-border font-bold"
+              >
+                <RefreshCw
+                  className={cn(recent.isFetching && 'animate-spin')}
+                />
+                Try again
+              </Button>
+            </div>
+          ) : (
+            <p
+              role="status"
+              className="flex items-center justify-center gap-2 py-16 text-sm font-medium text-muted-foreground"
+            >
+              <Spinner aria-hidden className="size-4" />
+              Loading recent days…
+            </p>
+          )}
+        </Card>
 
         <Card className={cardClass}>
           <div className="flex flex-col gap-1">

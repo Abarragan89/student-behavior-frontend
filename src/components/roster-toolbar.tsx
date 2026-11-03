@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { Volume2, VolumeX } from 'lucide-react'
+import { Printer, Volume2, VolumeX } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { formatStudentCount } from '#/lib/classroom'
@@ -9,8 +9,9 @@ const linkClass = 'h-9 px-2 text-base font-bold'
 
 /**
  * Beside the roster's heading, at the right. Normally the speaker button,
- * "Select" and "Select all". While picking students, the button that gives
- * them a mark, plus Cancel.
+ * "Select" and "Select all". While picking students: Cancel, Print (their
+ * behavior reports, when onPrint is given) and the button that gives them a
+ * mark. Kept short to fit one line on a phone: Print is just its icon there.
  */
 export function RosterToolbar({
   selecting,
@@ -18,6 +19,7 @@ export function RosterToolbar({
   onSelect,
   onSelectAll,
   onGive,
+  onPrint,
   onCancel,
 }: {
   selecting: boolean
@@ -25,6 +27,8 @@ export function RosterToolbar({
   onSelect: () => void
   onSelectAll: () => void
   onGive: () => void
+  /** Left out where there are no reports to print (presenter, substitute). */
+  onPrint?: () => void
   onCancel: () => void
 }) {
   // The pressed button disappears when the bar switches, so move focus to
@@ -57,6 +61,19 @@ export function RosterToolbar({
           >
             Cancel
           </Button>
+          {onPrint && (
+            <Button
+              variant="outline"
+              onClick={onPrint}
+              disabled={selectedCount === 0}
+              aria-label="Print reports"
+              title="Print reports"
+              className="h-9 rounded-lg border-2 border-border bg-card px-2.5 text-base font-bold"
+            >
+              <Printer className="size-5" aria-hidden />
+              <span className="max-sm:hidden">Print</span>
+            </Button>
+          )}
           <Button
             onClick={onGive}
             disabled={selectedCount === 0}
@@ -64,7 +81,7 @@ export function RosterToolbar({
           >
             {selectedCount === 0
               ? 'Select students'
-              : `Give mark to ${formatStudentCount(selectedCount)}`}
+              : `Mark ${formatStudentCount(selectedCount)}`}
           </Button>
         </>
       ) : (

@@ -412,7 +412,7 @@ function ConferenceEditor({
       </main>
 
       {notices ? (
-        <PrintNotices conference={conference} notices={notices} />
+        <PrintNotices conference={conference} notices={notices} now={now} />
       ) : (
         <PrintSchedule conference={conference} day={scheduleDay} now={now} />
       )}

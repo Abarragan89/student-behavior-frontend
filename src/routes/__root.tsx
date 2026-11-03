@@ -42,9 +42,9 @@ function RootComponent() {
           devtools button and is easy to spot on phones. */}
       <Toaster position="top-center" />
       {!isLinkPage && <PwaUpdater />}
-      {/* <TanStackDevtools
+      <TanStackDevtools
         config={{
-          position: 'bottom-right',
+          position: 'bottom-left',
         }}
         plugins={[
           {
@@ -52,7 +52,7 @@ function RootComponent() {
             render: <TanStackRouterDevtoolsPanel />,
           },
         ]}
-      /> */}
+      />
     </ThemeProvider>
   )
 }

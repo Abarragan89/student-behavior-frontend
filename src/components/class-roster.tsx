@@ -17,9 +17,10 @@ import type { MarkTarget } from '#/hooks/useGiveMark'
  * not in a card, so phones get the full width.
  *
  * Tapping a card opens the marks to give that student. Above the grid,
- * "Select" lets the teacher tap several cards and give them all one mark.
- * "Select all" starts with every card picked, so the teacher can untick the
- * few who shouldn't get it.
+ * "Select" lets the teacher tap several cards and give them all one mark, or
+ * print their behavior reports (when onPrintReports is given). "Select all"
+ * starts with every card picked, so the teacher can untick the few who
+ * shouldn't get it.
  *
  * Read-only (a co-teacher who can view but not edit Classes): no marks to
  * give, so there's no toolbar, and a card opens the student's page.
@@ -28,11 +29,17 @@ export function ClassRoster({
   classroom,
   pageLinks = true,
   readOnly = false,
+  onPrintReports,
 }: {
   classroom: Pick<OpenClassroom, 'id' | 'name' | 'students'>
   /** The marks dialog's links to other pages (see MarkDialog). */
   pageLinks?: boolean
   readOnly?: boolean
+  /**
+   * Print was pressed while picking, with the picked students in roster
+   * order. They stay picked. Left out, there's no Print button.
+   */
+  onPrintReports?: (students: Array<Student>) => void
 }) {
   const navigate = useNavigate()
   const { id: classroomId, name, students } = classroom
@@ -138,6 +145,7 @@ export function ClassRoster({
                   : { kind: 'selected', students: selected },
             )
           }
+          onPrint={onPrintReports && (() => onPrintReports(selected))}
           onCancel={stopSelecting}
         />
       )}

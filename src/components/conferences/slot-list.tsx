@@ -43,6 +43,7 @@ import {
   markCompleted,
   meetingState,
   newCode,
+  noticeStatus,
   removeTime,
   shortName,
   slotsByDay,
@@ -55,28 +56,6 @@ import type {
 } from '#/lib/conferences'
 import { useCanSave } from '#/lib/workspace'
 import { useSaveConference } from './use-save'
-
-/** What the teacher should know about a student's notice. */
-export type NoticeStatus = 'none' | 'printed' | 'outdated'
-
-/**
- * 'outdated': the time the family was last told about (on paper, or picked
- * themselves) isn't their time anymore, because the teacher moved it.
- */
-export function noticeStatus(
-  conference: Conference,
-  slot: ConferenceSlot,
-): NoticeStatus {
-  const n = conference.notices.find((x) => x.student_id === slot.student_id)
-  if (!n?.printed_at) return 'none'
-  if (
-    !n.notified_starts_at ||
-    Date.parse(n.notified_starts_at) !== Date.parse(slot.starts_at)
-  ) {
-    return 'outdated'
-  }
-  return 'printed'
-}
 
 /**
  * The conference's times by day, each with who has it and a round checkbox
@@ -276,7 +255,10 @@ function SlotRow({
     ? meetingState({ ...slot, completed }, now)
     : 'open'
   // Once the meeting is over, the notice doesn't matter anymore.
-  const notice = student && !past ? noticeStatus(conference, slot) : null
+  const notice =
+    student && !past
+      ? noticeStatus(conference, student.id, slot.starts_at)
+      : null
 
   const toggle = () => {
     const next = !completed
@@ -511,6 +493,12 @@ export function UnscheduledPanel({
   const waiting = conference.students.filter(
     (s) => s.in_classes && !scheduled.has(s.id),
   )
+  // Whose family already has a sign-up notice (no time, printed).
+  const signedUp = new Set(
+    waiting
+      .filter((s) => noticeStatus(conference, s.id, null) === 'printed')
+      .map((s) => s.id),
+  )
   if (waiting.length === 0) return null
   return (
     <section className="flex flex-col gap-2 rounded-xl border-2 border-dashed border-border p-4">
@@ -519,7 +507,12 @@ export function UnscheduledPanel({
         <span className="text-muted-foreground">({waiting.length})</span>
       </h2>
       <p className="text-sm text-muted-foreground">
-        Tap a name to give them an open time.
+        Tap a name to give them an open time
+        {conference.parent_changes &&
+          ', or print them a sign-up notice so their family can choose one'}
+        .
+        {signedUp.size > 0 &&
+          ` ${signedUp.size} ${signedUp.size === 1 ? 'has' : 'have'} a sign-up notice.`}
       </p>
       <ul className="flex flex-wrap gap-2">
         {waiting.map((s) => (
@@ -528,9 +521,18 @@ export function UnscheduledPanel({
               type="button"
               disabled={!canSave}
               onClick={() => onPick(s)}
-              className="min-h-10 rounded-full border-2 border-border bg-card px-3 text-sm font-bold transition-colors hover:bg-primary/10 focus-visible:ring-4 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-50 motion-reduce:transition-none"
+              className="inline-flex min-h-10 items-center gap-1.5 rounded-full border-2 border-border bg-card px-3 text-sm font-bold transition-colors hover:bg-primary/10 focus-visible:ring-4 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-50 motion-reduce:transition-none"
             >
               {shortName(s)}
+              {signedUp.has(s.id) && (
+                <>
+                  <Printer
+                    aria-hidden
+                    className="size-3.5 text-muted-foreground"
+                  />
+                  <span className="sr-only">(sign-up notice printed)</span>
+                </>
+              )}
             </button>
           </li>
         ))}
