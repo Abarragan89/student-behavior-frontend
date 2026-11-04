@@ -23,6 +23,9 @@ import { Route as AuthedLessonPlansIndexRouteImport } from './routes/_authed/les
 import { Route as AuthedLessonPlansDateRouteImport } from './routes/_authed/lesson-plans.$date'
 import { Route as AuthedStudentsStudentIdRouteImport } from './routes/_authed/students.$studentId'
 import { Route as AuthedLessonPlansDatePresentRouteImport } from './routes/_authed/lesson-plans.$date_.present'
+import { Route as AuthedLessonPlansTemplatesIndexRouteImport } from './routes/_authed/lesson-plans.templates.index'
+import { Route as AuthedLessonPlansTemplatesTemplateIdRouteImport } from './routes/_authed/lesson-plans.templates.$templateId'
+import { Route as AuthedLessonPlansTemplatesNewRouteImport } from './routes/_authed/lesson-plans.templates.new'
 
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
@@ -95,6 +98,24 @@ const AuthedLessonPlansDatePresentRoute =
     path: '/lesson-plans/$date/present',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedLessonPlansTemplatesIndexRoute =
+  AuthedLessonPlansTemplatesIndexRouteImport.update({
+    id: '/lesson-plans/templates/',
+    path: '/lesson-plans/templates/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedLessonPlansTemplatesTemplateIdRoute =
+  AuthedLessonPlansTemplatesTemplateIdRouteImport.update({
+    id: '/lesson-plans/templates/$templateId',
+    path: '/lesson-plans/templates/$templateId',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedLessonPlansTemplatesNewRoute =
+  AuthedLessonPlansTemplatesNewRouteImport.update({
+    id: '/lesson-plans/templates/new',
+    path: '/lesson-plans/templates/new',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthedRouteWithChildren
@@ -111,6 +132,9 @@ export interface FileRoutesByFullPath {
   '/conferences/': typeof AuthedConferencesIndexRoute
   '/lesson-plans/': typeof AuthedLessonPlansIndexRoute
   '/lesson-plans/$date/present': typeof AuthedLessonPlansDatePresentRoute
+  '/lesson-plans/templates/$templateId': typeof AuthedLessonPlansTemplatesTemplateIdRoute
+  '/lesson-plans/templates/new': typeof AuthedLessonPlansTemplatesNewRoute
+  '/lesson-plans/templates/': typeof AuthedLessonPlansTemplatesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AuthedRouteWithChildren
@@ -127,6 +151,9 @@ export interface FileRoutesByTo {
   '/conferences': typeof AuthedConferencesIndexRoute
   '/lesson-plans': typeof AuthedLessonPlansIndexRoute
   '/lesson-plans/$date/present': typeof AuthedLessonPlansDatePresentRoute
+  '/lesson-plans/templates/$templateId': typeof AuthedLessonPlansTemplatesTemplateIdRoute
+  '/lesson-plans/templates/new': typeof AuthedLessonPlansTemplatesNewRoute
+  '/lesson-plans/templates': typeof AuthedLessonPlansTemplatesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -144,6 +171,9 @@ export interface FileRoutesById {
   '/_authed/conferences/': typeof AuthedConferencesIndexRoute
   '/_authed/lesson-plans/': typeof AuthedLessonPlansIndexRoute
   '/_authed/lesson-plans/$date_/present': typeof AuthedLessonPlansDatePresentRoute
+  '/_authed/lesson-plans/templates/$templateId': typeof AuthedLessonPlansTemplatesTemplateIdRoute
+  '/_authed/lesson-plans/templates/new': typeof AuthedLessonPlansTemplatesNewRoute
+  '/_authed/lesson-plans/templates/': typeof AuthedLessonPlansTemplatesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -162,6 +192,9 @@ export interface FileRouteTypes {
     | '/conferences/'
     | '/lesson-plans/'
     | '/lesson-plans/$date/present'
+    | '/lesson-plans/templates/$templateId'
+    | '/lesson-plans/templates/new'
+    | '/lesson-plans/templates/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -178,6 +211,9 @@ export interface FileRouteTypes {
     | '/conferences'
     | '/lesson-plans'
     | '/lesson-plans/$date/present'
+    | '/lesson-plans/templates/$templateId'
+    | '/lesson-plans/templates/new'
+    | '/lesson-plans/templates'
   id:
     | '__root__'
     | '/_authed'
@@ -194,6 +230,9 @@ export interface FileRouteTypes {
     | '/_authed/conferences/'
     | '/_authed/lesson-plans/'
     | '/_authed/lesson-plans/$date_/present'
+    | '/_authed/lesson-plans/templates/$templateId'
+    | '/_authed/lesson-plans/templates/new'
+    | '/_authed/lesson-plans/templates/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -304,6 +343,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedLessonPlansDatePresentRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/lesson-plans/templates/': {
+      id: '/_authed/lesson-plans/templates/'
+      path: '/lesson-plans/templates'
+      fullPath: '/lesson-plans/templates/'
+      preLoaderRoute: typeof AuthedLessonPlansTemplatesIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/lesson-plans/templates/$templateId': {
+      id: '/_authed/lesson-plans/templates/$templateId'
+      path: '/lesson-plans/templates/$templateId'
+      fullPath: '/lesson-plans/templates/$templateId'
+      preLoaderRoute: typeof AuthedLessonPlansTemplatesTemplateIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/lesson-plans/templates/new': {
+      id: '/_authed/lesson-plans/templates/new'
+      path: '/lesson-plans/templates/new'
+      fullPath: '/lesson-plans/templates/new'
+      preLoaderRoute: typeof AuthedLessonPlansTemplatesNewRouteImport
+      parentRoute: typeof AuthedRoute
+    }
   }
 }
 
@@ -317,6 +377,9 @@ interface AuthedRouteChildren {
   AuthedConferencesIndexRoute: typeof AuthedConferencesIndexRoute
   AuthedLessonPlansIndexRoute: typeof AuthedLessonPlansIndexRoute
   AuthedLessonPlansDatePresentRoute: typeof AuthedLessonPlansDatePresentRoute
+  AuthedLessonPlansTemplatesTemplateIdRoute: typeof AuthedLessonPlansTemplatesTemplateIdRoute
+  AuthedLessonPlansTemplatesNewRoute: typeof AuthedLessonPlansTemplatesNewRoute
+  AuthedLessonPlansTemplatesIndexRoute: typeof AuthedLessonPlansTemplatesIndexRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
@@ -329,6 +392,10 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedConferencesIndexRoute: AuthedConferencesIndexRoute,
   AuthedLessonPlansIndexRoute: AuthedLessonPlansIndexRoute,
   AuthedLessonPlansDatePresentRoute: AuthedLessonPlansDatePresentRoute,
+  AuthedLessonPlansTemplatesTemplateIdRoute:
+    AuthedLessonPlansTemplatesTemplateIdRoute,
+  AuthedLessonPlansTemplatesNewRoute: AuthedLessonPlansTemplatesNewRoute,
+  AuthedLessonPlansTemplatesIndexRoute: AuthedLessonPlansTemplatesIndexRoute,
 }
 
 const AuthedRouteWithChildren =

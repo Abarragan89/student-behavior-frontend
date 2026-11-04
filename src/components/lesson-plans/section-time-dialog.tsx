@@ -1,25 +1,22 @@
 import { useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 import { CircleAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { lessonPlanDayQueryOptions } from '#/lib/lesson-plans'
 import type { PlanSection } from '#/lib/lesson-plans'
-import { flushDrafts, runOp } from '#/lib/lesson-plan-queue'
+import { flushDrafts } from '#/lib/lesson-plan-queue'
 import { ResponsiveDialog } from '#/components/responsive-dialogue'
+import { usePlanTarget } from '#/components/lesson-plans/plan-target'
 
 /** Sets or clears when a section happens, like 8:15–9:00. Both are optional. */
 export function SectionTimeDialog({
   open,
   onOpenChange,
   section,
-  date,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   section: PlanSection
-  date: string
 }) {
   return (
     <ResponsiveDialog
@@ -31,11 +28,7 @@ export function SectionTimeDialog({
     >
       {/* A new form each time it opens, starting from the section's times. */}
       {open && (
-        <TimeForm
-          section={section}
-          date={date}
-          onDone={() => onOpenChange(false)}
-        />
+        <TimeForm section={section} onDone={() => onOpenChange(false)} />
       )}
     </ResponsiveDialog>
   )
@@ -43,14 +36,12 @@ export function SectionTimeDialog({
 
 function TimeForm({
   section,
-  date,
   onDone,
 }: {
   section: PlanSection
-  date: string
   onDone: () => void
 }) {
-  const queryClient = useQueryClient()
+  const target = usePlanTarget()
   const [start, setStart] = useState(section.start_time ?? '')
   const [end, setEnd] = useState(section.end_time ?? '')
   const backwards = start !== '' && end !== '' && end <= start
@@ -58,13 +49,10 @@ function TimeForm({
   function save(startTime: string | null, endTime: string | null) {
     // Save a title still being typed first, then send it with the times.
     flushDrafts()
-    const day = queryClient.getQueryData(
-      lessonPlanDayQueryOptions(date).queryKey,
-    )
-    const current = day?.sections.find((s) => s.id === section.id) ?? section
-    runOp(queryClient, {
+    const current = target.section(section.id) ?? section
+    target.run({
       kind: 'section-edit',
-      date,
+      date: target.date,
       id: section.id,
       title: current.title,
       start_time: startTime,

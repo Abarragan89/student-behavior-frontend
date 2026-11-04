@@ -1,13 +1,11 @@
 import { useRef, useState } from 'react'
 import type { KeyboardEvent, PointerEvent } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { IndentDecrease, IndentIncrease, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { MAX_INDENT, MAX_LINE_LENGTH, cachedSection } from '#/lib/lesson-plans'
+import { MAX_INDENT, MAX_LINE_LENGTH } from '#/lib/lesson-plans'
 import type { Indent, PlanItem, PlanSection } from '#/lib/lesson-plans'
-import { runOp } from '#/lib/lesson-plan-queue'
 import { uuidv7 } from '#/lib/uuid'
 import { DragHandle } from '#/components/lesson-plans/drag-handle'
 import {
@@ -17,6 +15,7 @@ import {
   useDraftText,
   useFocusTarget,
 } from '#/components/lesson-plans/editor-text'
+import { usePlanTarget } from '#/components/lesson-plans/plan-target'
 
 /** How far in each level sits. The "Add a line" box moves by the same. */
 export const INDENT_MARGIN = {
@@ -46,14 +45,13 @@ export function EditorLine({
   item,
   index,
   section,
-  date,
 }: {
   item: PlanItem
   index: number
   section: PlanSection
-  date: string
 }) {
-  const queryClient = useQueryClient()
+  const target = usePlanTarget()
+  const { date } = target
   const ref = useRef<HTMLTextAreaElement>(null)
   const [focused, setFocused] = useState(false)
   const deleted = useRef(false)
@@ -61,7 +59,7 @@ export function EditorLine({
     id: item.id,
     value: item.text,
     onSave: (text) =>
-      runOp(queryClient, { kind: 'item-edit', date, id: item.id, text }),
+      target.run({ kind: 'item-edit', date, id: item.id, text }),
   })
   useFocusTarget(item.id, ref, draft.replace)
   useAutoGrow(ref, draft.text)
@@ -73,14 +71,13 @@ export function EditorLine({
 
   /** In (+1) or out (-1) a level, from 0 up to MAX_INDENT. */
   function move(by: 1 | -1) {
-    // The cache, not this render, so two quick Tabs go two levels.
+    // The plan now, not this render, so two quick Tabs go two levels.
     const now =
-      cachedSection(queryClient, date, section.id)?.items.find(
-        (i) => i.id === item.id,
-      )?.indent ?? item.indent
+      target.section(section.id)?.items.find((i) => i.id === item.id)?.indent ??
+      item.indent
     const indent = Math.max(0, Math.min(now + by, MAX_INDENT)) as Indent
     if (indent !== now) {
-      runOp(queryClient, { kind: 'item-edit', date, id: item.id, indent })
+      target.run({ kind: 'item-edit', date, id: item.id, indent })
     }
   }
   const moveIn = () => move(1)
@@ -90,7 +87,7 @@ export function EditorLine({
     if (deleted.current) return
     deleted.current = true
     draft.drop()
-    runOp(queryClient, { kind: 'item-delete', date, id: item.id })
+    target.run({ kind: 'item-delete', date, id: item.id })
   }
 
   function onKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
@@ -98,9 +95,9 @@ export function EditorLine({
     if (e.nativeEvent.isComposing || e.keyCode === 229) return
     const el = e.currentTarget
     const text = draft.text
-    // The cache, not this render: two quick keys can come before a re-render.
-    const lines =
-      cachedSection(queryClient, date, section.id)?.items ?? section.items
+    // The plan now, not this render: two quick keys can come before a
+    // re-render.
+    const lines = target.section(section.id)?.items ?? section.items
     const at = Math.max(
       0,
       lines.findIndex((i) => i.id === item.id),
@@ -117,7 +114,7 @@ export function EditorLine({
       const after = text.slice(el.selectionEnd)
       draft.commit(before)
       const id = uuidv7()
-      runOp(queryClient, {
+      target.run({
         kind: 'item-add',
         date,
         sectionId: section.id,
@@ -154,7 +151,7 @@ export function EditorLine({
       if (joined.length > MAX_LINE_LENGTH) return
       e.preventDefault()
       if (text !== '') {
-        runOp(queryClient, {
+        target.run({
           kind: 'item-edit',
           date,
           id: previous.id,

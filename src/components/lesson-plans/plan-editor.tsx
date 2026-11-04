@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 import {
   DndContext,
   KeyboardSensor,
@@ -20,12 +19,12 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers'
-import { Copy, Plus } from 'lucide-react'
+import { Copy, LayoutTemplate, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { MAX_TITLE_LENGTH, lessonPlanDayQueryOptions } from '#/lib/lesson-plans'
+import { MAX_TITLE_LENGTH } from '#/lib/lesson-plans'
 import type { PlanDay } from '#/lib/lesson-plans'
-import { flushDrafts, runOp } from '#/lib/lesson-plan-queue'
+import { flushDrafts } from '#/lib/lesson-plan-queue'
 import { uuidv7 } from '#/lib/uuid'
 import { EditorSection } from '#/components/lesson-plans/editor-section'
 import {
@@ -33,6 +32,11 @@ import {
   focusField,
   useAddBox,
 } from '#/components/lesson-plans/editor-text'
+import {
+  PlanTargetProvider,
+  usePlanTarget,
+} from '#/components/lesson-plans/plan-target'
+import type { PlanTarget } from '#/components/lesson-plans/plan-target'
 
 type DragData = { type: 'section' } | { type: 'item'; sectionId: string }
 
@@ -56,18 +60,45 @@ const sameKind: CollisionDetection = (args) => {
 }
 
 /**
- * The day in edit mode. Every change shows at once and saves in the
- * background, in order; there's no Save button.
+ * A day, or a template, in edit mode. On a day every change shows at once
+ * and saves in the background, in order; there's no Save button. A template
+ * is changed the same way, but kept on the page until it's saved (target).
  */
 export function PlanEditor({
   day,
+  target,
   onCopyFromDay,
+  onStartWithTemplate,
 }: {
   day: PlanDay
+  /** What changes go to: useDayTarget or useTemplateDraft (plan-target.tsx). */
+  target: PlanTarget
   /** Opens "Copy from another day", offered while the day is empty. */
-  onCopyFromDay: () => void
+  onCopyFromDay?: () => void
+  /** Opens the template picker, offered while the day is empty. */
+  onStartWithTemplate?: () => void
 }) {
-  const queryClient = useQueryClient()
+  return (
+    <PlanTargetProvider value={target}>
+      <Sections
+        day={day}
+        onCopyFromDay={onCopyFromDay}
+        onStartWithTemplate={onStartWithTemplate}
+      />
+    </PlanTargetProvider>
+  )
+}
+
+function Sections({
+  day,
+  onCopyFromDay,
+  onStartWithTemplate,
+}: {
+  day: PlanDay
+  onCopyFromDay?: () => void
+  onStartWithTemplate?: () => void
+}) {
+  const target = usePlanTarget()
   const [dragging, setDragging] = useState<DragData['type'] | null>(null)
   const sensors = useSensors(
     // A few pixels of movement before a drag starts, so a tap on the handle
@@ -96,7 +127,7 @@ export function PlanEditor({
   function moveSection(from: number, to: number) {
     const ids = day.sections.map((s) => s.id)
     if (to < 0 || to >= ids.length) return
-    runOp(queryClient, {
+    target.run({
       kind: 'section-order',
       date: day.date,
       ids: arrayMove(ids, from, to),
@@ -130,7 +161,7 @@ export function PlanEditor({
       const from = ids.indexOf(String(active.id))
       const to = ids.indexOf(String(over.id))
       if (from < 0 || to < 0) return
-      runOp(queryClient, {
+      target.run({
         kind: 'item-order',
         date: day.date,
         sectionId: section.id,
@@ -159,7 +190,6 @@ export function PlanEditor({
               section={section}
               index={index}
               count={day.sections.length}
-              date={day.date}
               // Short sections are easier to drag past each other.
               collapsed={dragging === 'section'}
               onMove={moveSection}
@@ -168,9 +198,9 @@ export function PlanEditor({
         </SortableContext>
       </DndContext>
       <AddSectionInput
-        date={day.date}
         first={day.sections.length === 0}
         onCopyFromDay={onCopyFromDay}
+        onStartWithTemplate={onStartWithTemplate}
       />
     </div>
   )
@@ -179,27 +209,27 @@ export function PlanEditor({
 /**
  * "Add a section…" at the end of the day. Enter adds the section and moves
  * on to its first line. On an empty day it's a card that explains where to
- * start, with the choice to copy another day's plan instead.
+ * start, with the choice to start from a template or copy another day's plan
+ * instead.
  */
 function AddSectionInput({
-  date,
   first,
   onCopyFromDay,
+  onStartWithTemplate,
 }: {
-  date: string
   first: boolean
-  onCopyFromDay: () => void
+  onCopyFromDay?: () => void
+  onStartWithTemplate?: () => void
 }) {
-  const queryClient = useQueryClient()
+  const target = usePlanTarget()
+  const { date } = target
   const box = useAddBox({
     id: `add-section:${date}`,
     onAdd: (text) => {
-      const sections = queryClient.getQueryData(
-        lessonPlanDayQueryOptions(date).queryKey,
-      )?.sections
+      const sections = target.sections()
       if (!sections) return undefined
       const id = uuidv7()
-      runOp(queryClient, {
+      target.run({
         kind: 'section-add',
         date,
         id,
@@ -219,15 +249,25 @@ function AddSectionInput({
         first && 'border-solid bg-card shadow-md',
       )}
     >
-      {first && (
-        <div className="flex flex-col gap-1 px-1">
-          <h2 className="text-lg font-bold">Nothing planned yet</h2>
-          <p className="text-sm text-muted-foreground">
-            Start with a section, like “Period 1”, “Morning meeting” or “Math”,
-            then add lines to check off under it.
-          </p>
-        </div>
-      )}
+      {first &&
+        (target.kind === 'template' ? (
+          <div className="flex flex-col gap-1 px-1">
+            <h2 className="text-lg font-bold">Add your subjects</h2>
+            <p className="text-sm text-muted-foreground">
+              Add the subjects of a usual day, like “Morning meeting” or “Math”,
+              with their times and the lines you always do. Add as much or as
+              little as you like.
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-1 px-1">
+            <h2 className="text-lg font-bold">Nothing planned yet</h2>
+            <p className="text-sm text-muted-foreground">
+              Start with a section, like “Period 1”, “Morning meeting” or
+              “Math”, then add lines to check off under it.
+            </p>
+          </div>
+        ))}
       <div className="flex items-center gap-2">
         <Plus
           aria-hidden
@@ -254,11 +294,24 @@ function AddSectionInput({
           )}
         />
       </div>
-      {first && (
+      {first && onStartWithTemplate && (
+        <Button
+          variant="outline"
+          onClick={onStartWithTemplate}
+          className="mt-1 h-11 rounded-lg border-2 border-border bg-card text-base font-bold"
+        >
+          <LayoutTemplate className="size-4" />
+          Start with a template
+        </Button>
+      )}
+      {first && onCopyFromDay && (
         <Button
           variant="outline"
           onClick={onCopyFromDay}
-          className="mt-1 h-11 rounded-lg border-2 border-border bg-card text-base font-bold"
+          className={cn(
+            'h-11 rounded-lg border-2 border-border bg-card text-base font-bold',
+            !onStartWithTemplate && 'mt-1',
+          )}
         >
           <Copy className="size-4" />
           Copy from another day

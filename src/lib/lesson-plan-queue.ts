@@ -4,6 +4,7 @@ import { ApiError } from './api'
 import { meQueryOptions } from './auth'
 import type { Me } from './auth'
 import { stepSchoolDay } from './calendar'
+import { isDateString } from './day'
 import {
   LESSON_PLAN_MUTATION_KEY,
   OP_KINDS,
@@ -63,8 +64,18 @@ const STRUCTURAL = new Set<OpKind>(
   ),
 )
 
+/** Whether typing not saved yet must be saved before this change. */
+export function isStructural(kind: OpKind) {
+  return STRUCTURAL.has(kind)
+}
+
 /** Makes a change: on screen now, and to the server as soon as it can be. */
 export function runOp(queryClient: QueryClient, op: Op) {
+  // Only a day's changes go to the server. A template's are kept on the page
+  // until it's saved (plan-target.tsx), so one here is a bug.
+  if (!isDateString(op.date)) {
+    throw new Error(`runOp: "${op.date}" is not a day's plan`)
+  }
   if (STRUCTURAL.has(op.kind)) flushDrafts()
   const { queryKey } = lessonPlanDayQueryOptions(op.date)
   // A refetch already on its way was asked before this change, and its
