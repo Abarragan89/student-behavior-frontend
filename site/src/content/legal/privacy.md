@@ -1,7 +1,7 @@
 ---
 title: Privacy Policy
 description: 'How TeachForFree handles teacher and student information: what we collect, how we protect it, Google Classroom data, and how to delete it.'
-updated: 2026-11-03
+updated: 2026-11-04
 ---
 
 ## Who we are
@@ -53,6 +53,10 @@ We don't ask for student email addresses, birthdays, grades, photos, or ID numbe
 ### Lesson plans
 
 The sections and lines you write for each day, any start and end times you add, their order, and when a line was checked off. Teachers often write students' names in their plans, so section titles and lines are encrypted before they're saved.
+
+### Notifications (optional)
+
+If you turn on notifications in the installed app, we store, for each device you turn them on for: the address the browser gave us for sending to that device, the keys that encrypt what we send, the device's time zone (so 9:00 means 9:00 where you are), when it was set up, and when the app was last opened on it. We also keep a note of which reminders we sent, so none goes out twice. Each reminder is one subject's title and time from your own lesson plan: "Alert: Math starts in 10 minutes."
 
 ### Substitute links
 
@@ -192,6 +196,7 @@ TeachForFree doesn't save student information on the device. While a tab is open
 
 - whether you chose light or dark mode
 - whether you closed the "get the app" banner
+- whether you answered the offer to turn on notifications
 - a yes/no note that someone is signed in on this browser (nothing about who), so the homepage can send you straight to your classes
 
 Marks you give while the connection is down wait in the tab's memory and are sent when it's back. They're lost if you close the tab first.
@@ -221,7 +226,9 @@ A conference code's key, and whether the family chose English or Spanish, move i
 
 ### The app's own files
 
-Like most installable web apps, TeachForFree uses a service worker to keep a copy of the app's code, styles, fonts, and logo, so it loads quickly and works offline. It never stores student information or answers from our server. Our fonts come from TeachForFree itself, not from Google Fonts or any other font service.
+Like most installable web apps, TeachForFree uses a service worker to keep a copy of the app's code, styles, fonts, and logo, so it loads quickly and works offline. If you turn on notifications, it also shows the reminders we send. It never stores student information or answers from our server. Our fonts come from TeachForFree itself, not from Google Fonts or any other font service.
+
+Notifications show on your device's lock screen and in its notification list, so anyone who can see your device can read a subject's title there. If you write students' names in your subject titles, keep that in mind, or leave notifications off.
 
 ## Cookies
 
@@ -244,6 +251,7 @@ We share information only with service providers that help us run TeachForFree. 
 - **Cloudflare** delivers the site and protects it from attacks. All traffic between your device and TeachForFree passes through Cloudflare.
 - **Google** provides sign-in, and Google Classroom if you connect it.
 - **Hetzner** runs the server for the app, our database, and the rate-limit counters. Encrypted information stays encrypted there.
+- **Apple, Google, Mozilla, and Microsoft** deliver notifications to devices that have them turned on, through the push service of that device's browser. Each reminder is encrypted for your device before it leaves our server, so they can't read it. They see only that a message is going to that device.
 
 We may also share information:
 
@@ -289,6 +297,7 @@ We keep your account and everything you've added until you delete it or ask us t
 - The encrypted copies of a conference's codes are erased within an hour after its last time.
 - Parent conferences are deleted 30 days after their last time, with every time, code, and family change in them. A conference that never gets a time is deleted after 90 days.
 - Rate-limit counters delete themselves within an hour at most.
+- A device's notification setup is deleted when you turn notifications off or sign out on it, when the device tells us it no longer takes them, and after 30 days without the app being opened on it. Notes of which reminders were sent are deleted after 2 days.
 
 ### Deleting your account
 

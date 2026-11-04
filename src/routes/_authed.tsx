@@ -18,8 +18,10 @@ import { CreateDialogsProvider } from '#/components/create-dialogs'
 import { CreateMenu } from '#/components/create-menu'
 import { UserMenu } from '#/components/user-menu'
 import { InstallBanner } from '#/components/install/install-banner'
+import { NotificationsBanner } from '#/components/notifications/notifications-banner'
 import { SpaceBadge } from '#/components/space-badge'
 import { meQueryOptions, useMe } from '#/lib/auth'
+import { useReminders } from '#/lib/notifications'
 import type { FeatureKey } from '#/lib/coteachers'
 import { homeOf, permissionIn, spaceOf } from '#/lib/workspace'
 import { OfflineError, isOnline, useOnline } from '#/lib/online'
@@ -66,6 +68,8 @@ export const Route = createFileRoute('/_authed')({
 
 function AuthedLayout() {
   const { data: me } = useMe()
+  // Reminder taps while the app is open, and this device's subscription.
+  useReminders(!!me)
   const fullScreen = useMatches({
     select: (matches) => matches.some((m) => m.staticData.fullScreen),
   })
@@ -135,6 +139,10 @@ function AuthedLayout() {
 
         {/* Phones in the browser only; hidden in the installed app. */}
         <InstallBanner className="md:hidden print:hidden!" />
+
+        {/* The installed app only, phones and computers alike, once: the
+            offer to turn on reminders before each subject. */}
+        <NotificationsBanner className="print:hidden!" />
 
         {/* Phones: the avatar alone at the top right, floating over the
             page and scrolling away with it. The anchor sits under the
