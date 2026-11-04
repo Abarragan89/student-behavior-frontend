@@ -11,6 +11,7 @@ import { formatLongDate } from '#/lib/day'
 import { useOnline } from '#/lib/online'
 import {
   checkSubItem,
+  checkSubSection,
   subCountsQueryOptions,
   subDayQueryOptions,
   subRosterQueryOptions,
@@ -119,6 +120,9 @@ function SubPresenter({ session }: { session: SubSession }) {
         isToday
         heading={`${possessive(session.teacher_name)} plan`}
         onCheck={(item) => checkSubItem(queryClient, session.plan_date, item)}
+        onCheckSection={(section) =>
+          checkSubSection(queryClient, session.plan_date, section)
+        }
         classView={
           classrooms.length > 0
             ? (state) => (

@@ -7,8 +7,8 @@ import { cn } from '@/lib/utils'
 import { formatShortDate } from '#/lib/calendar'
 import { isDateString, useToday } from '#/lib/day'
 import { LIVE_REFRESH_MS } from '#/lib/freshness'
-import { lessonPlanDayQueryOptions } from '#/lib/lesson-plans'
-import type { PlanDay, PlanItem } from '#/lib/lesson-plans'
+import { isSectionDone, lessonPlanDayQueryOptions } from '#/lib/lesson-plans'
+import type { PlanDay, PlanItem, PlanSection } from '#/lib/lesson-plans'
 import { flushDrafts, runOp } from '#/lib/lesson-plan-queue'
 import { mayLoad, usePermission } from '#/lib/workspace'
 import { markTypesQueryOptions } from '#/lib/marks'
@@ -124,12 +124,23 @@ function TeacherPresenter({
     })
   }
 
+  // The whole section: its lines too.
+  function checkSection(section: PlanSection) {
+    runOp(queryClient, {
+      kind: 'section-done',
+      date: day.date,
+      id: section.id,
+      done: !isSectionDone(section),
+    })
+  }
+
   return (
     <PresenterView
       day={day}
       isToday={isToday}
       heading={isToday ? 'Today' : formatShortDate(day.date)}
       onCheck={editable ? check : undefined}
+      onCheckSection={editable ? checkSection : undefined}
       exit={
         <Link
           to="/lesson-plans/$date"

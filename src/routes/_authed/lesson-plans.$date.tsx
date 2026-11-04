@@ -45,7 +45,10 @@ import { canShareWithSub, mayLoad, usePermission } from '#/lib/workspace'
 import { meQueryOptions } from '#/lib/auth'
 import { OfflineNote } from '#/components/offline-note'
 import { CopyDayDialog } from '#/components/lesson-plans/copy-day-dialog'
-import { PlanEditor } from '#/components/lesson-plans/plan-editor'
+import {
+  EditorEndSpace,
+  PlanEditor,
+} from '#/components/lesson-plans/plan-editor'
 import { useDayTarget } from '#/components/lesson-plans/plan-target'
 import { TemplatePickerDialog } from '#/components/lesson-plans/template-picker-dialog'
 import { PrintDay } from '#/components/lesson-plans/print-day'
@@ -266,12 +269,15 @@ function DayPlan({ date }: { date: string }) {
 
         {day.data ? (
           online && editable ? (
-            <PlanEditor
-              day={day.data}
-              target={target}
-              onCopyFromDay={() => setCopyOpen(true)}
-              onStartWithTemplate={() => setTemplateOpen(true)}
-            />
+            <>
+              <PlanEditor
+                day={day.data}
+                target={target}
+                onCopyFromDay={() => setCopyOpen(true)}
+                onStartWithTemplate={() => setTemplateOpen(true)}
+              />
+              {sections.length > 0 && <EditorEndSpace />}
+            </>
           ) : sections.length > 0 ? (
             <>
               {editable && (

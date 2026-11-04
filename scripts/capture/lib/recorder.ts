@@ -2,9 +2,11 @@
 // named steps a scene marks (they become the captions on the site).
 import { mkdirSync, rmSync } from 'node:fs'
 import { writeFile } from 'node:fs/promises'
+import type { Locator, Page } from 'playwright'
 import type { Phone } from './browser.ts'
 import { PHONE } from './browser.ts'
 import { OUT } from './env.ts'
+import { wait } from './gestures.ts'
 
 export type Frame = { file: string; t: number }
 export type Take = {
@@ -72,6 +74,27 @@ export async function record(
     `  ${name}: ${frames.length} frames, ${((end - t0) / 1000).toFixed(1)} s`,
   )
   return { name, dir, frames, steps, end }
+}
+
+/** A print-only element, rendered as it would be on paper, saved to `file`. */
+export async function printShot(page: Page, selector: string, file: string) {
+  await page.emulateMedia({ media: 'print' })
+  await page.evaluate(() => document.fonts.ready)
+  await wait(600)
+  await page
+    .locator(selector)
+    .first()
+    .screenshot({ path: file, animations: 'disabled' })
+  await page.emulateMedia({ media: 'screen' })
+  return file
+}
+
+/** Scrolls (instantly) so a target sits `offset` px below the top. */
+export async function scrollTo(target: Locator, offset: number) {
+  await target.first().evaluate((el, off) => {
+    window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - off)
+  }, offset)
+  await wait(500)
 }
 
 /** A still of the phone screen at 2× (786×1586), for the site. */

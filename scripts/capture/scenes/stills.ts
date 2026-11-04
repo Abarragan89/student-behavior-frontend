@@ -1,12 +1,12 @@
 // Screenshots: the student page, and the printed report, lesson plan and
 // conference notice (rendered as on paper).
 import { mkdirSync } from 'node:fs'
-import type { Locator, Page } from 'playwright'
+import type { Page } from 'playwright'
 import { paper, phone } from '../lib/browser.ts'
 import { APP_URL, OUT, nextSchoolDay, schoolDaysBefore } from '../lib/env.ts'
 import { FAMILY_STUDENT, FULL_DAY, MARCUS, SHORT_DAY } from '../lib/fixtures.ts'
 import { wait } from '../lib/gestures.ts'
-import { phoneShot } from '../lib/recorder.ts'
+import { phoneShot, printShot, scrollTo } from '../lib/recorder.ts'
 import type { Scene } from '../lib/scene.ts'
 import { seedAllMarks, seedPlan, seedTeacher } from '../lib/seed.ts'
 import { seedConferenceTeacher } from './conferences.ts'
@@ -14,30 +14,8 @@ import { open } from './hero.ts'
 
 const STILLS = `${OUT}stills/`
 
-/** The print-only element, rendered as it would be on paper. */
-async function printShot(page: Page, selector: string, name: string) {
-  await page.emulateMedia({ media: 'print' })
-  await page.evaluate(() => document.fonts.ready)
-  await wait(600)
-  const file = `${STILLS}${name}.png`
-  await page
-    .locator(selector)
-    .first()
-    .screenshot({ path: file, animations: 'disabled' })
-  await page.emulateMedia({ media: 'screen' })
-  return file
-}
-
-/** Scrolls (instantly) so a target sits `offset` px below the top. */
-async function scrollTo(target: Locator, offset: number) {
-  await target.first().evaluate((el, off) => {
-    window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - off)
-  }, offset)
-  await wait(500)
-}
-
 /** The student page has loaded its day (Print report turns on). */
-async function reportReady(page: Page) {
+export async function reportReady(page: Page) {
   const button = page.getByRole('button', { name: 'Print report' })
   await button.waitFor()
   for (let i = 0; i < 100 && !(await button.isEnabled()); i++) await wait(100)
@@ -91,7 +69,7 @@ export const stills: Scene = async (ctx) => {
   await r.page.goto(`${APP_URL}/students/${marcusId}?date=${yesterday}`)
   await reportReady(r.page)
   await wait(900)
-  made.push(await printShot(r.page, 'article:visible', 'report'))
+  made.push(await printShot(r.page, 'article:visible', `${STILLS}report.png`))
   const pdf = `${STILLS}report-sample.pdf`
   await r.page.pdf({ path: pdf, format: 'Letter', printBackground: true })
   made.push(pdf)
@@ -101,7 +79,9 @@ export const stills: Scene = async (ctx) => {
   await r.page.getByRole('button', { name: 'Print this plan' }).click()
   await r.page.getByRole('button', { name: 'Print with QR code' }).click()
   await r.page.waitForFunction(() => document.querySelector('article svg'))
-  made.push(await printShot(r.page, 'article:visible', 'plan-print-qr'))
+  made.push(
+    await printShot(r.page, 'article:visible', `${STILLS}plan-print-qr.png`),
+  )
   await r.context.close()
 
   // Paper: a conference notice, English on top, Spanish below.
@@ -116,7 +96,7 @@ export const stills: Scene = async (ctx) => {
     await printShot(
       c.page,
       `.notice-page:has-text("${FAMILY_STUDENT}")`,
-      'conference-notice',
+      `${STILLS}conference-notice.png`,
     ),
   )
   await c.context.close()

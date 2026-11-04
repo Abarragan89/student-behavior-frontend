@@ -144,12 +144,19 @@ export async function turnOn(publicKey: string): Promise<TurnOnResult> {
     // installing (saving the app for offline use).
     const reg = await registration(20_000)
     if (!reg) return 'failed'
-    const sub =
-      (await reg.pushManager.getSubscription()) ??
-      (await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: base64UrlToBytes(publicKey),
-      }))
+    const key = base64UrlToBytes(publicKey)
+    let sub = await reg.pushManager.getSubscription()
+    // One left over from before the server's keys changed can't be sent to:
+    // Apple and Google refuse every push for it (403). Start over.
+    const subscribedWith = sub?.options.applicationServerKey
+    if (sub && (!subscribedWith || !sameBytes(subscribedWith, key))) {
+      await sub.unsubscribe()
+      sub = null
+    }
+    sub ??= await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: key,
+    })
     await sendSubscription(sub)
     return 'on'
   } catch (error) {

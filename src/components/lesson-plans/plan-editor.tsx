@@ -91,6 +91,17 @@ export function PlanEditor({
   )
 }
 
+/**
+ * Empty room at the end of the page, under the editor, so the last section
+ * can scroll up off the bottom of the screen while it's typed in. (A line
+ * being typed is kept clear of the phone's tab bar, which can only happen
+ * with room below it.) Not part of PlanEditor: a template's Save button
+ * comes first.
+ */
+export function EditorEndSpace() {
+  return <div aria-hidden className="h-[35vh] shrink-0" />
+}
+
 function Sections({
   day,
   onCopyFromDay,

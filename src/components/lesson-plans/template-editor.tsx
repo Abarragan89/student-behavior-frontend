@@ -44,7 +44,10 @@ import { useOnline } from '#/lib/online'
 import { currentSpace } from '#/lib/space-state'
 import { uuidv7 } from '#/lib/uuid'
 import { OfflineNote } from '#/components/offline-note'
-import { PlanEditor } from '#/components/lesson-plans/plan-editor'
+import {
+  EditorEndSpace,
+  PlanEditor,
+} from '#/components/lesson-plans/plan-editor'
 import { useTemplateDraft } from '#/components/lesson-plans/plan-target'
 import { StartFromTemplateDialog } from '#/components/lesson-plans/template-picker-dialog'
 
@@ -297,6 +300,7 @@ export function TemplateEditor({
       />
 
       {saveButton('h-12 w-full')}
+      {draft.day.sections.length > 0 && <EditorEndSpace />}
 
       <StartFromTemplateDialog
         open={pickerOpen}

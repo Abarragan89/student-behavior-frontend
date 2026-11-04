@@ -184,6 +184,7 @@ export function draftDay(sections: Array<TemplateSection>): PlanDay {
         title: s.title,
         start_time: s.start_time,
         end_time: s.end_time,
+        done: false,
         items: s.items.map((i) => ({
           id: uuidv7(),
           section_id: id,
