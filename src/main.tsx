@@ -33,6 +33,11 @@ import {
 } from './lib/persist'
 import { hideSplashAfterFirstRender } from './lib/splash'
 import { registerSubMutations } from './lib/sub'
+import { stopOnTeacherChange, takeReminderLaunch } from './lib/notifications'
+
+// Opened from a reminder: the plan is the teacher's own, so start in their
+// own space. Before anything reads the space or the saved data.
+takeReminderLaunch()
 
 // React Query assumes it's online until the browser says otherwise. Start
 // from the real state, so an offline launch doesn't wait on requests.
@@ -122,6 +127,8 @@ async function boot() {
     }
   }
   forgetOnTeacherChange(queryClient)
+  // Reminders stop when this device's teacher is signed out or changes.
+  stopOnTeacherChange(queryClient)
   rememberSignedIn(queryClient)
   // Back to your own space if a teacher stops sharing theirs.
   watchSpace(queryClient)

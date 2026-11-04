@@ -16,6 +16,7 @@ import { ArchivedClasses } from '#/components/archived-classes'
 import { ClassroomConnection } from '#/components/classroom-connection'
 import { CoteachersSection } from '#/components/coteachers/coteachers-section'
 import { CoteachingSection } from '#/components/coteachers/coteaching-section'
+import { NotificationsSection } from '#/components/notifications/notifications-section'
 import { useSwitchSpace } from '#/lib/workspace'
 import { SignOutDialog } from '#/components/sign-out-dialog'
 import { TeacherAvatar } from '#/components/teacher-avatar'
@@ -73,6 +74,9 @@ function AccountPage() {
           out, or after 7 days without opening the app.
         </p>
       )}
+
+      {/* This device's reminders: always yours, in any classroom. */}
+      <NotificationsSection />
 
       {owner ? (
         <Card className="gap-3 rounded-lg border-2 border-border shadow-md ring-0 [--card-spacing:--spacing(6)]">

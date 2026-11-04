@@ -1,4 +1,5 @@
-import { existsSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { defineConfig, loadEnv } from 'vite'
 import type { Connect, Plugin } from 'vite'
@@ -17,6 +18,19 @@ import {
   requireApiUrl,
   versionBranding,
 } from './shared/branding'
+
+/**
+ * `<file>?v=<hash of public/<file>>`. Fails the build if the file is missing:
+ * an importScripts that 404s (or gets app.html) stops the whole service
+ * worker from installing, offline mode included.
+ */
+function publicFileUrl(file: string) {
+  const hash = createHash('sha256')
+    .update(readFileSync(resolve(import.meta.dirname, 'public', file)))
+    .digest('hex')
+    .slice(0, 8)
+  return `${file}?v=${hash}`
+}
 
 /** Where `npm run dev:site` serves the marketing pages (site/). */
 const SITE_DEV_URL = 'http://localhost:4321'
@@ -172,6 +186,11 @@ const config = defineConfig(({ command, mode }) => {
           ignoreURLParametersMatching: [/^utm_/, /^fbclid$/, /^v$/],
           // The API lives on another origin and is never cached. Fonts are
           // self-hosted (src/styles.css), so they're in assets/ above.
+
+          // Push reminders: shows them and opens the plan on a tap. The ?v=
+          // changes with the file, so editing only it still makes a new
+          // service worker (and the "new version" toast).
+          importScripts: [publicFileUrl('push-sw.js')],
         },
       }),
     ],

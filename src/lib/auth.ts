@@ -9,6 +9,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { ApiError, apiFetch } from './api'
 import type { Space } from './coteachers'
 import { SHARED_STALE_MS } from './freshness'
+import { turnOff as turnOffNotifications } from './notifications'
 import { clearPersistedCache } from './persist'
 import { isStandalone } from './pwa-install'
 import { setSpace } from './space-state'
@@ -90,6 +91,13 @@ export function useLogout() {
   const navigate = useNavigate()
 
   return async () => {
+    // This device's reminders stop with the teacher: first, while the
+    // session can still remove them on the server. Never holds up signing
+    // out for long, and a failure doesn't stop it.
+    await Promise.race([
+      turnOffNotifications().catch(() => {}),
+      new Promise((resolve) => setTimeout(resolve, 2500)),
+    ])
     await apiFetch('/auth/logout', { method: 'POST' }, { space: null })
     // The next person on this device starts in their own space.
     setSpace(null)
