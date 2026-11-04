@@ -1,7 +1,5 @@
 import { useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
-import type { QueryClient } from '@tanstack/react-query'
 import {
   SortableContext,
   useSortable,
@@ -40,11 +38,9 @@ import {
   MAX_INDENT,
   MAX_LINE_LENGTH,
   MAX_TITLE_LENGTH,
-  cachedSection,
   isBlank,
 } from '#/lib/lesson-plans'
 import type { Indent, PlanSection } from '#/lib/lesson-plans'
-import { runOp } from '#/lib/lesson-plan-queue'
 import { uuidv7 } from '#/lib/uuid'
 import { CopySectionDialog } from '#/components/lesson-plans/copy-section-dialog'
 import { DragHandle } from '#/components/lesson-plans/drag-handle'
@@ -63,25 +59,28 @@ import {
   useFocusTarget,
 } from '#/components/lesson-plans/editor-text'
 import { SectionTimeDialog } from '#/components/lesson-plans/section-time-dialog'
+import { usePlanTarget } from '#/components/lesson-plans/plan-target'
+import type { PlanTarget } from '#/components/lesson-plans/plan-target'
 
 /** One section in edit mode: its title, time, menu and lines. */
 export function EditorSection({
   section,
   index,
   count,
-  date,
   collapsed,
   onMove,
 }: {
   section: PlanSection
   index: number
   count: number
-  date: string
   /** Lines hidden, while sections are being dragged. */
   collapsed: boolean
   onMove: (from: number, to: number) => void
 }) {
-  const queryClient = useQueryClient()
+  const target = usePlanTarget()
+  const { date } = target
+  // A template has no date, so there's no other day to copy it to.
+  const onDay = target.kind === 'day'
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const [timeOpen, setTimeOpen] = useState(false)
   const [copyOpen, setCopyOpen] = useState(false)
@@ -91,7 +90,7 @@ export function EditorSection({
     id: titleField(section.id),
     value: section.title,
     onSave: (text) =>
-      runOp(queryClient, {
+      target.run({
         kind: 'section-edit',
         date,
         id: section.id,
@@ -120,7 +119,7 @@ export function EditorSection({
 
   function remove() {
     title.drop()
-    runOp(queryClient, { kind: 'section-delete', date, id: section.id })
+    target.run({ kind: 'section-delete', date, id: section.id })
   }
 
   return (
@@ -190,13 +189,15 @@ export function EditorSection({
               <Clock />
               {time ? 'Change the time' : 'Add a time'}
             </DropdownMenuItem>
-            <DropdownMenuItem
-              className="h-10 rounded-md font-bold"
-              onClick={() => setCopyOpen(true)}
-            >
-              <CalendarPlus />
-              Copy to another day
-            </DropdownMenuItem>
+            {onDay && (
+              <DropdownMenuItem
+                className="h-10 rounded-md font-bold"
+                onClick={() => setCopyOpen(true)}
+              >
+                <CalendarPlus />
+                Copy to another day
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem
               className="h-10 rounded-md font-bold"
               disabled={index === 0}
@@ -243,12 +244,11 @@ export function EditorSection({
                   item={item}
                   index={i}
                   section={section}
-                  date={date}
                 />
               ))}
             </ul>
           </SortableContext>
-          <AddLineInput section={section} date={date} name={name} />
+          <AddLineInput section={section} name={name} />
         </div>
       )}
 
@@ -256,14 +256,16 @@ export function EditorSection({
         open={timeOpen}
         onOpenChange={setTimeOpen}
         section={section}
-        date={date}
       />
-      <CopySectionDialog
-        open={copyOpen}
-        onOpenChange={setCopyOpen}
-        section={section}
-        name={name}
-      />
+      {/* Not even mounted for a template: it reads the section's date. */}
+      {onDay && (
+        <CopySectionDialog
+          open={copyOpen}
+          onOpenChange={setCopyOpen}
+          section={section}
+          name={name}
+        />
+      )}
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent className="rounded-lg border-2 border-border ring-0">
           <AlertDialogHeader>
@@ -272,8 +274,8 @@ export function EditorSection({
             </AlertDialogTitle>
             <AlertDialogDescription>
               Its {section.items.length}{' '}
-              {section.items.length === 1 ? 'line goes' : 'lines go'} too. This
-              can’t be undone.
+              {section.items.length === 1 ? 'line goes' : 'lines go'} too.
+              {onDay && ' This can’t be undone.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -305,21 +307,19 @@ export function EditorSection({
  */
 function AddLineInput({
   section,
-  date,
   name,
 }: {
   section: PlanSection
-  date: string
   name: string
 }) {
-  const queryClient = useQueryClient()
+  const target = usePlanTarget()
   const ref = useRef<HTMLTextAreaElement>(null)
   const [indent, setIndent] = useState<Indent>(0)
   const [focused, setFocused] = useState(false)
   const field = addLineField(section.id)
   const box = useAddBox({
     id: field,
-    onAdd: (text) => addLines(queryClient, date, section.id, text, indent),
+    onAdd: (text) => addLines(target, section.id, text, indent),
   })
   useFocusTarget(field, ref, box.set)
   useAutoGrow(ref, box.value)
@@ -375,9 +375,7 @@ function AddLineInput({
             step(-1)
             return
           }
-          const last = cachedSection(queryClient, date, section.id)?.items.at(
-            -1,
-          )
+          const last = target.section(section.id)?.items.at(-1)
           if (last) {
             e.preventDefault()
             focusField(last.id, last.text.length)
@@ -407,22 +405,21 @@ function AddLineInput({
 
 /** Adds each non-empty line of text to the end of a section. */
 function addLines(
-  queryClient: QueryClient,
-  date: string,
+  target: PlanTarget,
   sectionId: string,
   text: string,
   indent: Indent,
 ) {
-  const section = cachedSection(queryClient, date, sectionId)
+  const section = target.section(sectionId)
   if (!section) return undefined
   let position = section.items.length
   let id: string | undefined
   for (const line of text.split(/\r?\n/)) {
     if (line.trim() === '') continue
     id = uuidv7()
-    runOp(queryClient, {
+    target.run({
       kind: 'item-add',
-      date,
+      date: target.date,
       sectionId,
       id,
       text: line.slice(0, MAX_LINE_LENGTH),

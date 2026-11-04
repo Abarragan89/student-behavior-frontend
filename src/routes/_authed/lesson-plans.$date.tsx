@@ -9,6 +9,8 @@ import {
   ChevronLeft,
   ChevronRight,
   CircleAlert,
+  BookmarkPlus,
+  LayoutTemplate,
   Presentation,
   Printer,
   RefreshCw,
@@ -44,6 +46,8 @@ import { meQueryOptions } from '#/lib/auth'
 import { OfflineNote } from '#/components/offline-note'
 import { CopyDayDialog } from '#/components/lesson-plans/copy-day-dialog'
 import { PlanEditor } from '#/components/lesson-plans/plan-editor'
+import { useDayTarget } from '#/components/lesson-plans/plan-target'
+import { TemplatePickerDialog } from '#/components/lesson-plans/template-picker-dialog'
 import { PrintDay } from '#/components/lesson-plans/print-day'
 import { PrintDialog } from '#/components/lesson-plans/print-dialog'
 import { ProgressBar } from '#/components/lesson-plans/progress-bar'
@@ -82,7 +86,9 @@ function DayPlan({ date }: { date: string }) {
   const editable = usePermission('lesson_plans') === 'edit'
   const { data: me } = useQuery(meQueryOptions)
   const canShare = canShareWithSub(me)
+  const target = useDayTarget(date)
   const [copyOpen, setCopyOpen] = useState(false)
+  const [templateOpen, setTemplateOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
   const [printOpen, setPrintOpen] = useState(false)
   // The sub link to print as a QR code, for this one printout only.
@@ -221,6 +227,35 @@ function DayPlan({ date }: { date: string }) {
           </div>
         )}
 
+        {/* Templates need the editor: online, and allowed to edit. */}
+        {sections.length > 0 && online && editable && (
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                flushDrafts()
+                setTemplateOpen(true)
+              }}
+              className="h-11 rounded-lg border-2 border-border bg-card text-base font-bold"
+            >
+              <LayoutTemplate className="size-5" />
+              Use a template
+            </Button>
+            <Link
+              to="/lesson-plans/templates/new"
+              search={{ from: date }}
+              onClick={flushDrafts}
+              className={cn(
+                buttonVariants({ variant: 'outline' }),
+                'h-11 rounded-lg border-2 border-border bg-card text-base font-bold',
+              )}
+            >
+              <BookmarkPlus className="size-5" />
+              Save as template
+            </Link>
+          </div>
+        )}
+
         {total > 0 && (
           <ProgressBar
             done={done}
@@ -233,7 +268,9 @@ function DayPlan({ date }: { date: string }) {
           online && editable ? (
             <PlanEditor
               day={day.data}
+              target={target}
               onCopyFromDay={() => setCopyOpen(true)}
+              onStartWithTemplate={() => setTemplateOpen(true)}
             />
           ) : sections.length > 0 ? (
             <>
@@ -305,6 +342,13 @@ function DayPlan({ date }: { date: string }) {
       )}
       {editable && (
         <CopyDayDialog open={copyOpen} onOpenChange={setCopyOpen} date={date} />
+      )}
+      {editable && (
+        <TemplatePickerDialog
+          open={templateOpen}
+          onOpenChange={setTemplateOpen}
+          date={date}
+        />
       )}
       {canShare && (
         <ShareDayDialog
