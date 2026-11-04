@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import {
   DndContext,
   KeyboardSensor,
@@ -31,6 +32,7 @@ import {
   addLineField,
   focusField,
   useAddBox,
+  useAutoGrow,
 } from '#/components/lesson-plans/editor-text'
 import {
   PlanTargetProvider,
@@ -170,8 +172,44 @@ function Sections({
     }
   }
 
+  // Where a new subject is being named: above the subject with id `before`,
+  // or at the end (null). `made` is the subject Enter just made; the card
+  // stays until it's on screen, so the cursor goes straight to its first
+  // line and a phone keeps its keyboard up.
+  const [adding, setAdding] = useState<{
+    before: string | null
+    made?: string
+  } | null>(null)
+  if (adding?.made && day.sections.some((s) => s.id === adding.made)) {
+    setAdding(null)
+  }
+
+  if (day.sections.length === 0) {
+    return (
+      <EmptyPlanCard
+        onCopyFromDay={onCopyFromDay}
+        onStartWithTemplate={onStartWithTemplate}
+      />
+    )
+  }
+
+  const slot = (before: string | null, name?: string) => (
+    <SubjectSlot
+      before={before}
+      name={name}
+      open={adding?.before === before}
+      // Out of the way while subjects are dragged.
+      hidden={dragging === 'section'}
+      onOpen={() => setAdding({ before })}
+      onMade={(id) => setAdding({ before, made: id })}
+      // Only if it's still this one: a card closing as another opens
+      // mustn't close that one.
+      onClose={() => setAdding((a) => (a?.before === before ? null : a))}
+    />
+  )
+
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col">
       <DndContext
         sensors={sensors}
         collisionDetection={sameKind}
@@ -185,89 +223,247 @@ function Sections({
           strategy={verticalListSortingStrategy}
         >
           {day.sections.map((section, index) => (
-            <EditorSection
-              key={section.id}
-              section={section}
-              index={index}
-              count={day.sections.length}
-              // Short sections are easier to drag past each other.
-              collapsed={dragging === 'section'}
-              onMove={moveSection}
-            />
+            <Fragment key={section.id}>
+              {slot(section.id, section.title.trim() || 'Untitled section')}
+              <EditorSection
+                section={section}
+                index={index}
+                count={day.sections.length}
+                // Short sections are easier to drag past each other.
+                collapsed={dragging === 'section'}
+                onMove={moveSection}
+              />
+            </Fragment>
           ))}
         </SortableContext>
       </DndContext>
-      <AddSectionInput
-        first={day.sections.length === 0}
-        onCopyFromDay={onCopyFromDay}
-        onStartWithTemplate={onStartWithTemplate}
-      />
+      {slot(null)}
     </div>
   )
 }
 
 /**
- * "Add a section…" at the end of the day. Enter adds the section and moves
- * on to its first line. On an empty day it's a card that explains where to
- * start, with the choice to start from a template or copy another day's plan
- * instead.
+ * Makes a subject named text above the subject with id `before` (or at the
+ * end, if that's null or gone). Returns its id, or undefined if it wasn't
+ * made (nothing loaded, or a template is full).
  */
-function AddSectionInput({
-  first,
+function addSubject(target: PlanTarget, text: string, before: string | null) {
+  const sections = target.sections()
+  if (!sections) return undefined
+  const at = before === null ? -1 : sections.findIndex((s) => s.id === before)
+  const id = uuidv7()
+  target.run({
+    kind: 'section-add',
+    date: target.date,
+    id,
+    title: text.replace(/\s*\n\s*/g, ' ').slice(0, MAX_TITLE_LENGTH),
+    start_time: null,
+    end_time: null,
+    position: at < 0 ? sections.length : at,
+  })
+  return target.section(id) ? id : undefined
+}
+
+/**
+ * A place a subject can go: above one, or at the end. Closed, it's a thin
+ * row, a + between two lines, that opens on a tap. Open, it's a card for the
+ * new subject's name, made on Enter (or on leaving it with a name typed).
+ */
+function SubjectSlot({
+  before,
+  name,
+  open,
+  hidden,
+  onOpen,
+  onMade,
+  onClose,
+}: {
+  before: string | null
+  /** The subject it's above, for screen readers. */
+  name?: string
+  open: boolean
+  hidden: boolean
+  onOpen: () => void
+  onMade: (id: string) => void
+  onClose: () => void
+}) {
+  const button = useRef<HTMLButtonElement>(null)
+
+  if (open) {
+    return (
+      <NewSubjectCard
+        before={before}
+        onMade={onMade}
+        onClose={onClose}
+        onCancel={() => {
+          // Back to the row, for someone using the keyboard.
+          flushSync(onClose)
+          button.current?.focus()
+        }}
+      />
+    )
+  }
+
+  // On hover (or keyboard focus) it turns the success color and grows a
+  // little. Scaled, not resized, so nothing around it moves.
+  const line = (
+    <span
+      aria-hidden
+      className="h-0.5 flex-1 rounded-full bg-border transition-[background-color,scale] duration-150 group-hover:scale-y-150 group-hover:bg-primary group-focus-visible:scale-y-150 group-focus-visible:bg-primary"
+    />
+  )
+  return (
+    <button
+      ref={button}
+      type="button"
+      // Pressing it doesn't take the focus, so a card open elsewhere stays
+      // (and nothing jumps) until the tap lands, and a phone's keyboard
+      // stays up.
+      onPointerDown={(e) => e.preventDefault()}
+      onClick={() => {
+        // A name typed in a card open elsewhere is added, not lost.
+        flushDrafts()
+        // Rendered and focused within the tap: iOS only brings up the
+        // keyboard for a field focused during the tap itself.
+        flushSync(onOpen)
+      }}
+      aria-label={
+        name ? `Add a subject before “${name}”` : 'Add a subject at the end'
+      }
+      title="Add a subject here"
+      className={cn(
+        'group flex h-8 w-full shrink-0 items-center gap-2 rounded-lg px-1 outline-none focus-visible:ring-4 focus-visible:ring-ring',
+        hidden && 'pointer-events-none invisible',
+      )}
+    >
+      {line}
+      <Plus
+        strokeWidth={2.5}
+        className="size-6 shrink-0 text-border transition-[color,scale] duration-150 group-hover:scale-125 group-hover:text-primary group-focus-visible:scale-125 group-focus-visible:text-primary"
+      />
+      {line}
+    </button>
+  )
+}
+
+/** The new subject's card, open in its slot, ready to type its name. */
+function NewSubjectCard({
+  before,
+  onMade,
+  onClose,
+  onCancel,
+}: {
+  before: string | null
+  onMade: (id: string) => void
+  onClose: () => void
+  onCancel: () => void
+}) {
+  const target = usePlanTarget()
+  const card = useRef<HTMLDivElement>(null)
+  const ref = useRef<HTMLTextAreaElement>(null)
+  const box = useAddBox({
+    id: `insert-section:${target.date}`,
+    onAdd: (text) => addSubject(target, text, before),
+  })
+  useAutoGrow(ref, box.value)
+  useLayoutEffect(() => {
+    // Opened in a flushSync from the tap, so this is still within it.
+    ref.current?.focus({ preventScroll: true })
+    // All of the card in view, clear of the bottom bar (scroll-mb).
+    const frame = requestAnimationFrame(() =>
+      card.current?.scrollIntoView({ block: 'nearest' }),
+    )
+    return () => cancelAnimationFrame(frame)
+  }, [])
+
+  return (
+    <div
+      ref={card}
+      className="scroll-mb-[calc(6rem+env(safe-area-inset-bottom))] py-2"
+    >
+      <div className="flex items-start gap-1 rounded-xl border-2 border-dashed border-border bg-card p-1.5 shadow-md">
+        <span
+          aria-hidden
+          className="mt-0.5 flex size-10 shrink-0 items-center justify-center text-muted-foreground"
+        >
+          <Plus className="size-5" />
+        </span>
+        <textarea
+          ref={ref}
+          rows={1}
+          value={box.value}
+          maxLength={MAX_TITLE_LENGTH}
+          aria-label="New subject’s name"
+          placeholder="Name the subject, like “Math”"
+          enterKeyHint="next"
+          onChange={(e) => box.set(e.target.value.replace(/\n/g, ' '))}
+          onKeyDown={(e) => {
+            if (e.nativeEvent.isComposing || e.keyCode === 229) return
+            if (e.key === 'Escape') {
+              e.preventDefault()
+              box.set('')
+              onCancel()
+              return
+            }
+            if (e.key !== 'Enter') return
+            e.preventDefault()
+            const id = box.commit()
+            if (!id) {
+              onClose()
+              return
+            }
+            focusField(addLineField(id), 0)
+            onMade(id)
+          }}
+          onBlur={() => {
+            box.commit()
+            onClose()
+          }}
+          className="field-sizing-content min-h-11 min-w-0 flex-1 resize-none rounded-md bg-transparent px-2 py-2 text-lg leading-snug font-bold outline-none placeholder:font-medium placeholder:text-muted-foreground/70 focus-visible:bg-muted/60"
+        />
+      </div>
+    </div>
+  )
+}
+
+/**
+ * A plan with no subjects yet: where to start. Type the first subject (Enter
+ * adds it and moves on to its first line), or start from a template or
+ * another day's plan instead.
+ */
+function EmptyPlanCard({
   onCopyFromDay,
   onStartWithTemplate,
 }: {
-  first: boolean
   onCopyFromDay?: () => void
   onStartWithTemplate?: () => void
 }) {
   const target = usePlanTarget()
-  const { date } = target
   const box = useAddBox({
-    id: `add-section:${date}`,
-    onAdd: (text) => {
-      const sections = target.sections()
-      if (!sections) return undefined
-      const id = uuidv7()
-      target.run({
-        kind: 'section-add',
-        date,
-        id,
-        title: text.replace(/\s*\n\s*/g, ' ').slice(0, MAX_TITLE_LENGTH),
-        start_time: null,
-        end_time: null,
-        position: sections.length,
-      })
-      return id
-    },
+    id: `add-section:${target.date}`,
+    onAdd: (text) => addSubject(target, text, null),
   })
 
   return (
-    <div
-      className={cn(
-        'flex flex-col gap-2 rounded-xl border-2 border-dashed border-border p-3',
-        first && 'border-solid bg-card shadow-md',
+    <div className="flex flex-col gap-2 rounded-xl border-2 border-border bg-card p-3 shadow-md">
+      {target.kind === 'template' ? (
+        <div className="flex flex-col gap-1 px-1">
+          <h2 className="text-lg font-bold">Add your subjects</h2>
+          <p className="text-sm text-muted-foreground">
+            Add the subjects of a usual day, like “Morning meeting” or “Math”,
+            with their times and the lines you always do. Add as much or as
+            little as you like.
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-1 px-1">
+          <h2 className="text-lg font-bold">Nothing planned yet</h2>
+          <p className="text-sm text-muted-foreground">
+            Start with a section, like “Period 1”, “Morning meeting” or “Math”,
+            then add lines to check off under it.
+          </p>
+        </div>
       )}
-    >
-      {first &&
-        (target.kind === 'template' ? (
-          <div className="flex flex-col gap-1 px-1">
-            <h2 className="text-lg font-bold">Add your subjects</h2>
-            <p className="text-sm text-muted-foreground">
-              Add the subjects of a usual day, like “Morning meeting” or “Math”,
-              with their times and the lines you always do. Add as much or as
-              little as you like.
-            </p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-1 px-1">
-            <h2 className="text-lg font-bold">Nothing planned yet</h2>
-            <p className="text-sm text-muted-foreground">
-              Start with a section, like “Period 1”, “Morning meeting” or
-              “Math”, then add lines to check off under it.
-            </p>
-          </div>
-        ))}
       <div className="flex items-center gap-2">
         <Plus
           aria-hidden
@@ -288,13 +484,10 @@ function AddSectionInput({
             if (id) focusField(addLineField(id), 0)
           }}
           onBlur={() => box.commit()}
-          className={cn(
-            'field-sizing-content min-h-10 min-w-0 flex-1 resize-none rounded-md bg-transparent px-2 py-2 text-lg leading-snug font-bold outline-none placeholder:font-medium placeholder:text-muted-foreground focus-visible:bg-muted/60',
-            first && 'border-2 border-border bg-background',
-          )}
+          className="field-sizing-content min-h-10 min-w-0 flex-1 resize-none rounded-md border-2 border-border bg-background px-2 py-2 text-lg leading-snug font-bold outline-none placeholder:font-medium placeholder:text-muted-foreground focus-visible:bg-muted/60"
         />
       </div>
-      {first && onStartWithTemplate && (
+      {onStartWithTemplate && (
         <Button
           variant="outline"
           onClick={onStartWithTemplate}
@@ -304,7 +497,7 @@ function AddSectionInput({
           Start with a template
         </Button>
       )}
-      {first && onCopyFromDay && (
+      {onCopyFromDay && (
         <Button
           variant="outline"
           onClick={onCopyFromDay}
