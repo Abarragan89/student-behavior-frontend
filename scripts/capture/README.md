@@ -50,6 +50,26 @@ npm run capture -- --scene hero --headed    # watch the browser
 Scenes: `stills`, `hero`, `classes`, `editor`, `sub`, `family`,
 `teacher-conference`, and `smoke` (a quick check that sign-in works).
 
+## The teacher guide (PDF)
+
+```sh
+npm run capture -- --scene guide
+```
+
+Makes `scripts/capture/.out/guide/TeachForFree-Teacher-Guide.pdf`: a
+12-page quick-start for teachers (behavior marks, lesson plans, parent
+conferences) with numbered arrows on laptop-sized screenshots of the real
+app. It only runs when asked for, and `--publish` doesn't copy it to the
+site.
+
+- The words and the clicks for each picture live together in
+  `scenes/guide.ts`. Arrows and page layout are in `lib/guide.ts` and
+  `lib/guide.css`.
+- It fails rather than make a bad page: when an arrow's target isn't in its
+  picture, or a page's content doesn't fit on the page.
+- Re-run it when a screen in the guide changes. Open
+  `.out/guide/guide.html` in a browser to check the layout quickly.
+
 Tips:
 
 - Start swipes away from buttons. A short drag reads as a tap (`scrollBy`

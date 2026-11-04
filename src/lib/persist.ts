@@ -151,7 +151,9 @@ function queuePersistOptions(
         const key = mutation.options.mutationKey
         return (
           (key?.[0] === 'marks' ||
-            (key?.[0] === 'lesson-plans' && key[1] === 'done')) &&
+            // Checkmarks on lines and whole sections: ids and true/false.
+            (key?.[0] === 'lesson-plans' &&
+              (key[1] === 'done' || key[1] === 'section-done'))) &&
           mutation.state.status === 'pending'
         )
       },

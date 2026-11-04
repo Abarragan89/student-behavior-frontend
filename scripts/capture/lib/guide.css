@@ -1,0 +1,445 @@
+/* The teacher guide's pages (lib/guide.ts). Colors are the app's own
+   (src/styles.css); the callouts use a magenta that the app doesn't, so they
+   never blend into a button. */
+
+:root {
+  --ink: #111;
+  --muted: #45454f;
+  --cream: oklch(0.9789 0.0082 121.6272);
+  --primary: oklch(0.5106 0.2301 276.9656);
+  --teal: oklch(0.7038 0.123 182.5025);
+  --teal-ink: oklch(0.48 0.1 185);
+  --amber: oklch(0.7686 0.1647 70.0804);
+  --amber-ink: oklch(0.55 0.14 60);
+  --callout: oklch(0.6 0.25 354);
+  --section: var(--ink);
+  --section-bg: var(--ink);
+}
+
+@page {
+  size: letter;
+  margin: 0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: #fff;
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.45;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* ---------- Pages ---------- */
+
+.page {
+  position: relative;
+  width: 8.5in;
+  height: 11in;
+  padding: 46px 56px 30px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  break-after: page;
+  background: #fff;
+}
+
+.page::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 12px;
+  background: var(--section-bg);
+}
+
+.page[data-section='behavior'] {
+  --section: var(--primary);
+  --section-bg: var(--primary);
+}
+.page[data-section='plans'] {
+  --section: var(--teal-ink);
+  --section-bg: var(--teal);
+}
+.page[data-section='conferences'] {
+  --section: var(--amber-ink);
+  --section-bg: var(--amber);
+}
+
+.page-head {
+  margin-bottom: 18px;
+}
+
+.kicker {
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--section);
+}
+
+h1 {
+  margin: 4px 0 0;
+  font-size: 28px;
+  line-height: 1.15;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.intro {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: var(--muted);
+  max-width: 600px;
+}
+
+h2 {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 750;
+}
+
+p {
+  margin: 0 0 8px;
+}
+
+.page-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.page-foot {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1.5px solid var(--ink);
+  font-family: 'Space Mono', monospace;
+  font-size: 9.5px;
+  color: var(--muted);
+}
+
+/* ---------- Layout ---------- */
+
+.row {
+  display: grid;
+  gap: 22px;
+  align-items: start;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ---------- Screenshots ---------- */
+
+.fig {
+  position: relative;
+  margin: 0;
+}
+
+/* The callouts' layer: exactly over the picture, but free to spill into
+   the figure's gutter. */
+.overlay {
+  position: absolute;
+}
+.overlay svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.frame {
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+/* No blurred shadows: Chrome's PDF turns them into grey boxes. */
+.frame-paper {
+  border: 1px solid #b9b9c0;
+  border-radius: 3px;
+  box-shadow: 3px 3px 0 rgb(0 0 0 / 0.12);
+}
+
+.frame-phone {
+  border: 0;
+  border-radius: 34px;
+  padding: 10px;
+  background: var(--ink);
+  box-shadow: 3px 3px 0 rgb(0 0 0 / 0.25);
+}
+.frame-phone .shot {
+  border-radius: 25px;
+  overflow: hidden;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 25px;
+  padding: 0 10px;
+  border-bottom: 2px solid var(--ink);
+  background: var(--cream);
+}
+.bar i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink);
+  background: #fff;
+}
+.bar .url {
+  margin-left: 10px;
+  flex: 1;
+  height: 16px;
+  padding: 0 8px;
+  border: 1.5px solid var(--ink);
+  border-radius: 8px;
+  background: #fff;
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  line-height: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shot {
+  position: relative;
+  line-height: 0;
+}
+.shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+figcaption {
+  margin-top: 9px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* The callouts (see overlay() in guide.ts). */
+.co-halo {
+  fill: none;
+  stroke: #fff;
+  stroke-linecap: round;
+}
+polygon.co-halo {
+  fill: #fff;
+}
+.co-line {
+  fill: none;
+  stroke: var(--callout);
+  stroke-linecap: round;
+}
+.co-head {
+  fill: var(--callout);
+}
+.co-badge {
+  fill: var(--callout);
+  stroke: #fff;
+}
+.co-num {
+  fill: #fff;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 800;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+.co-dim {
+  fill: rgb(20 16 40 / 0.3);
+}
+
+/* ---------- Text parts ---------- */
+
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.steps li {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 10px;
+  align-items: start;
+}
+.steps li > div {
+  padding-top: 2px;
+}
+
+.badge {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--callout);
+  color: #fff;
+  font-weight: 800;
+  font-size: 12.5px;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1.5px var(--callout);
+}
+
+.ui {
+  display: inline-block;
+  padding: 0 6px;
+  border: 1.5px solid var(--ink);
+  border-radius: 6px;
+  background: var(--cream);
+  font-weight: 700;
+  font-size: 0.92em;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.tip {
+  padding: 11px 15px 12px;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  background: var(--cream);
+}
+.tip-label {
+  display: block;
+  margin-bottom: 3px;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--section);
+}
+
+/* ---------- Cover ---------- */
+
+.cover {
+  padding: 56px 56px 40px;
+  background: var(--cream);
+}
+.cover::before {
+  height: 16px;
+  background: linear-gradient(
+    90deg,
+    var(--primary) 0 33.3%,
+    var(--teal) 33.3% 66.6%,
+    var(--amber) 66.6%
+  );
+}
+.cover .logo {
+  height: 92px;
+  width: auto;
+  align-self: flex-start;
+}
+.cover h1 {
+  margin-top: 26px;
+  font-size: 46px;
+  line-height: 1.05;
+}
+.cover .intro {
+  font-size: 16px;
+  max-width: 560px;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 28px;
+}
+.tile {
+  padding: 16px 16px 14px;
+  border: 2px solid var(--ink);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.tile .icon-wrap {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  color: #fff;
+}
+.tile h2 {
+  margin: 12px 0 4px;
+  font-size: 16px;
+}
+.tile p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.tile .pages {
+  margin-top: 10px;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 22px;
+  font-size: 12.5px;
+}
+
+/* ---------- Good to know ---------- */
+
+.cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.card {
+  display: grid;
+  grid-template-columns: 38px 1fr;
+  gap: 12px;
+  padding: 13px 15px;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  background: #fff;
+}
+.card .icon-wrap {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--cream);
+  border: 1.5px solid var(--ink);
+}
+.card h2 {
+  margin: 0 0 3px;
+  font-size: 14px;
+}
+.card p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}

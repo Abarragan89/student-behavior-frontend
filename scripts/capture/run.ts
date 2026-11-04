@@ -6,6 +6,7 @@
 //   npm run capture -- --keep-up         leave the demo backend running afterwards
 //   npm run capture -- --reuse           use a backend left running by --keep-up
 //   npm run capture -- --headed          watch the phone browser
+//   npm run capture -- --scene guide     the teacher guide PDF (.out/guide/)
 //
 // Needs Docker, ffmpeg and the Go backend repo next to this one (or set
 // BACKEND_DIR). See scripts/capture/README.md.

@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { Check, Maximize, Minimize } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { clockMinutes, formatClockRange } from '#/lib/calendar'
-import { isBlank, progress } from '#/lib/lesson-plans'
+import { isSectionDone, linesOf, progress } from '#/lib/lesson-plans'
 import type { PlanDay, PlanItem, PlanSection } from '#/lib/lesson-plans'
 import { isStandalone } from '#/lib/pwa-install'
 import { ConnectionStatus } from '#/components/connection-status'
@@ -32,6 +32,7 @@ export function PresenterView({
   isToday,
   heading,
   onCheck,
+  onCheckSection,
   exit,
   emptyAction,
   classView,
@@ -45,6 +46,11 @@ export function PresenterView({
    * checked (a co-teacher who can only view the plan).
    */
   onCheck?: (item: PlanItem) => void
+  /**
+   * A section's own box was tapped: check it off (with all its lines), or
+   * uncheck it. Left out, like onCheck.
+   */
+  onCheckSection?: (section: PlanSection) => void
   /** Top left, e.g. the teacher's close button. */
   exit?: ReactNode
   /** Under "Nothing planned for this day.", e.g. a link to plan it. */
@@ -71,7 +77,7 @@ export function PresenterView({
     arrived.current = true
     const start =
       (isToday && day.sections.find((s) => isDuring(s, minutesNow()))) ||
-      day.sections.find((s) => progress([s]).done < progress([s]).total)
+      day.sections.find((s) => !isSectionDone(s))
     if (start && start !== day.sections[0]) {
       const jump = () =>
         document
@@ -119,7 +125,7 @@ export function PresenterView({
           </div>
           <div
             role="progressbar"
-            aria-label="Lines checked off"
+            aria-label="Checked off"
             aria-valuemin={0}
             aria-valuemax={total}
             aria-valuenow={done}
@@ -148,6 +154,7 @@ export function PresenterView({
                 section={section}
                 isNow={section === current}
                 onCheck={onCheck}
+                onCheckSection={onCheckSection}
               />
             ))}
           </main>
@@ -164,20 +171,27 @@ function PresenterSection({
   section,
   isNow,
   onCheck,
+  onCheckSection,
 }: {
   section: PlanSection
   isNow: boolean
   onCheck?: (item: PlanItem) => void
+  onCheckSection?: (section: PlanSection) => void
 }) {
-  const lines = section.items.filter((i) => !isBlank(i))
+  const lines = linesOf(section)
   const { done, total } = progress([section])
-  const complete = total > 0 && done === total
+  const complete = isSectionDone(section)
   const time = formatClockRange(section.start_time, section.end_time)
+  const name = section.title.trim() || 'Untitled section'
+  // With no lines, the whole header is the box: there's nothing else to tap.
+  // With lines, only the box, so a stray tap on the title can't check them
+  // all.
+  const wholeHeader = lines.length === 0 && !!onCheckSection
 
   return (
     <section
       id={sectionId(section.id)}
-      aria-label={section.title.trim() || 'Untitled section'}
+      aria-label={name}
       className={cn(
         // Lands just under the top bar when scrolled to.
         'scroll-mt-[calc(4.5rem+env(safe-area-inset-top))] break-inside-avoid border-b-2 border-border',
@@ -186,10 +200,35 @@ function PresenterSection({
     >
       <header
         className={cn(
-          'flex items-start gap-3 px-4 pt-4 pb-2',
+          'relative flex items-center gap-3 px-4 pt-4',
+          lines.length > 0 ? 'pb-2' : 'pb-4',
           isNow && 'bg-primary/10',
+          wholeHeader && 'hover:bg-muted/50 active:bg-muted',
         )}
       >
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={complete}
+          aria-label={`${name} (whole subject)`}
+          onClick={onCheckSection && (() => onCheckSection(section))}
+          disabled={!onCheckSection}
+          className={cn(
+            // 44px to tap; the box inside lines up with the lines' boxes.
+            '-ml-1.5 flex size-11 shrink-0 items-center justify-center rounded-lg outline-none select-none focus-visible:ring-4 focus-visible:ring-ring',
+            wholeHeader && 'after:absolute after:inset-0',
+          )}
+        >
+          <span
+            aria-hidden
+            className={cn(
+              'flex size-8 items-center justify-center rounded-md border-2 border-border transition-colors motion-reduce:transition-none',
+              complete ? 'bg-chart-5' : 'bg-card',
+            )}
+          >
+            {complete && <Check className="size-5" strokeWidth={3} />}
+          </span>
+        </button>
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           {(time || isNow) && (
             <p className="flex items-center gap-2 text-base font-bold text-muted-foreground tabular-nums">
@@ -207,17 +246,16 @@ function PresenterSection({
               complete && 'text-muted-foreground',
             )}
           >
-            {section.title.trim() || 'Untitled section'}
+            {name}
           </h2>
         </div>
-        {total > 0 && (
+        {lines.length > 0 && (
           <span
             className={cn(
-              'mt-0.5 flex h-8 shrink-0 items-center gap-1 rounded-full border-2 border-border px-2.5 text-sm font-bold tabular-nums',
+              'flex h-8 shrink-0 items-center rounded-full border-2 border-border px-2.5 text-sm font-bold tabular-nums',
               complete ? 'bg-chart-5' : 'bg-card',
             )}
           >
-            {complete && <Check className="size-4" strokeWidth={3} />}
             <span aria-hidden>
               {done}/{total}
             </span>
@@ -228,11 +266,7 @@ function PresenterSection({
         )}
       </header>
 
-      {lines.length === 0 ? (
-        <p className="px-4 pb-4 text-muted-foreground">
-          No lines to check off.
-        </p>
-      ) : (
+      {lines.length > 0 && (
         <ul className="pb-2">
           {lines.map((item) => (
             <li key={item.id}>

@@ -8,8 +8,8 @@ import {
   timeoutSignal,
 } from './api'
 import type { Student } from './auth'
-import { applyOp } from './lesson-plans'
-import type { Op, PlanDay, PlanItem } from './lesson-plans'
+import { applyOp, isSectionDone } from './lesson-plans'
+import type { Op, PlanDay, PlanItem, PlanSection } from './lesson-plans'
 import type { MarkSource } from './mark-source'
 import { LIVE_REFRESH_MS, SHARED_STALE_MS } from './freshness'
 import { groupName, withQueuedGroupMarks } from './groups'
@@ -332,14 +332,11 @@ export function registerSubMutations(queryClient: QueryClient) {
         { note },
       ),
   })
-  queryClient.setMutationDefaults([...SUB_PLAN_KEY, 'done'], {
+  // Checkmarks on lines and on whole sections share one ordered scope.
+  const checks = {
     scope: { id: 'sub-plan' },
     retry: shouldRetry,
     retryDelay,
-    mutationFn: (op: Extract<Op, { kind: 'done' }>) =>
-      subSend('PUT', `/lesson-plan-items/${encodeURIComponent(op.id)}/done`, {
-        done: op.done,
-      }),
     onError: (error: unknown) => {
       console.error('Saving a checkmark failed:', error)
       void queryClient.invalidateQueries({
@@ -350,6 +347,22 @@ export function registerSubMutations(queryClient: QueryClient) {
         description: 'The plan shows what’s saved.',
       })
     },
+  }
+  queryClient.setMutationDefaults([...SUB_PLAN_KEY, 'done'], {
+    ...checks,
+    mutationFn: (op: Extract<Op, { kind: 'done' }>) =>
+      subSend('PUT', `/lesson-plan-items/${encodeURIComponent(op.id)}/done`, {
+        done: op.done,
+      }),
+  })
+  queryClient.setMutationDefaults([...SUB_PLAN_KEY, 'section-done'], {
+    ...checks,
+    mutationFn: (op: Extract<Op, { kind: 'section-done' }>) =>
+      subSend(
+        'PUT',
+        `/lesson-plan-sections/${encodeURIComponent(op.id)}/done`,
+        { done: op.done },
+      ),
   })
 
   // Once the marks are all sent, show the server's counts (who a
@@ -378,6 +391,24 @@ export function checkSubItem(
   void queryClient.cancelQueries({ queryKey, exact: true })
   queryClient.setQueryData(queryKey, (day) => (day ? applyOp(day, op) : day))
   enqueue(queryClient, [...SUB_PLAN_KEY, 'done'], op)
+}
+
+/** Checks a whole section off (its lines too), or unchecks it, like a line. */
+export function checkSubSection(
+  queryClient: QueryClient,
+  date: string,
+  section: PlanSection,
+) {
+  const op: Op = {
+    kind: 'section-done',
+    date,
+    id: section.id,
+    done: !isSectionDone(section),
+  }
+  const { queryKey } = subDayQueryOptions
+  void queryClient.cancelQueries({ queryKey, exact: true })
+  queryClient.setQueryData(queryKey, (day) => (day ? applyOp(day, op) : day))
+  enqueue(queryClient, [...SUB_PLAN_KEY, 'section-done'], op)
 }
 
 function pendingChecks(queryClient: QueryClient) {

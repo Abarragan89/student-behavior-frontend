@@ -35,6 +35,11 @@ export type PlanSection = {
   /** "08:15", or null. */
   start_time: string | null
   end_time: string | null
+  /**
+   * Checked off as a whole. Decides only for a section with no lines (see
+   * isSectionDone). Days saved on a device before it existed don't have it.
+   */
+  done?: boolean
   items: Array<PlanItem>
 }
 
@@ -101,9 +106,11 @@ export type Op =
       sectionId: string
       ids: Array<string>
     }
-  // Checking a line off. Ids and true/false only, so it's the one change
-  // saved on the device while offline (see persist.ts).
+  // Checking a line off, or a whole section (its lines too). Ids and
+  // true/false only, so they're the changes saved on the device while offline
+  // (see persist.ts).
   | { kind: 'done'; date: string; id: string; done: boolean }
+  | { kind: 'section-done'; date: string; id: string; done: boolean }
 
 export type OpKind = Op['kind']
 
@@ -117,6 +124,7 @@ export const OP_KINDS: Array<OpKind> = [
   'item-delete',
   'item-order',
   'done',
+  'section-done',
 ]
 
 /** The mutation key every queued lesson plan change shares. */
@@ -148,6 +156,7 @@ export function applyOp(day: PlanDay, op: Op): PlanDay {
         title: op.title,
         start_time: op.start_time,
         end_time: op.end_time,
+        done: false,
         items: [],
       }
       return { ...day, sections: insertAt(day.sections, section, op.position) }
@@ -207,6 +216,21 @@ export function applyOp(day: PlanDay, op: Op): PlanDay {
       )
     case 'done':
       return mapItem(op.id, (i) => ({ ...i, done: op.done }))
+    case 'section-done':
+      // As the server does it: checking leaves empty lines unchecked, so
+      // what's typed into one later doesn't start crossed off; clearing
+      // clears every line.
+      return mapSections((s) =>
+        s.id === op.id
+          ? {
+              ...s,
+              done: op.done,
+              items: s.items.map((i) =>
+                op.done && i.text === '' ? i : { ...i, done: op.done },
+              ),
+            }
+          : s,
+      )
   }
 }
 
@@ -314,16 +338,37 @@ export function isBlank(item: PlanItem) {
   return item.text.trim() === ''
 }
 
-/** Lines checked off and lines in all, across a day or a section. */
+/** A section's lines that show in the checklist (not blank). */
+export function linesOf(section: PlanSection) {
+  return section.items.filter((i) => !isBlank(i))
+}
+
+/**
+ * Whether a section is done: all its lines are checked, or, with no lines
+ * ("Lunch duty"), the section itself is. The server's calendar counts use
+ * the same rule.
+ */
+export function isSectionDone(section: PlanSection) {
+  const lines = linesOf(section)
+  return lines.length > 0 ? lines.every((i) => i.done) : section.done === true
+}
+
+/**
+ * Things checked off and things in all, across a day or a section: each
+ * line, and each section with no lines as one thing itself.
+ */
 export function progress(sections: Array<PlanSection>) {
   let done = 0
   let total = 0
   for (const s of sections) {
-    for (const i of s.items) {
-      if (isBlank(i)) continue
+    const lines = linesOf(s)
+    if (lines.length === 0) {
       total++
-      if (i.done) done++
+      if (s.done === true) done++
+      continue
     }
+    total += lines.length
+    done += lines.filter((i) => i.done).length
   }
   return { done, total }
 }
@@ -408,6 +453,8 @@ function send(op: Op, o: ApiOptions) {
       )
     case 'done':
       return apiPut(`/lesson-plan-items/${op.id}/done`, { done: op.done }, o)
+    case 'section-done':
+      return apiPut(`/lesson-plan-sections/${op.id}/done`, { done: op.done }, o)
   }
 }
 

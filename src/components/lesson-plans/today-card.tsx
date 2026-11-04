@@ -12,7 +12,11 @@ import { Spinner } from '@/components/ui/spinner'
 import { cn } from '@/lib/utils'
 import { formatClockRange } from '#/lib/calendar'
 import { formatLongDate } from '#/lib/day'
-import { lessonPlanDayQueryOptions, progress } from '#/lib/lesson-plans'
+import {
+  isSectionDone,
+  lessonPlanDayQueryOptions,
+  progress,
+} from '#/lib/lesson-plans'
 import { ProgressBar } from '#/components/lesson-plans/progress-bar'
 import { usePermission } from '#/lib/workspace'
 
@@ -26,9 +30,8 @@ export function TodayCard({ today }: { today: string }) {
   const editable = usePermission('lesson_plans') === 'edit'
   const sections = day.data?.sections ?? []
   const { done, total } = progress(sections)
-  const upNext = sections.filter(
-    (s) => s.items.length === 0 || s.items.some((i) => !i.done),
-  )
+  // What isn't done yet. A section with no lines leaves once it's checked.
+  const upNext = sections.filter((s) => !isSectionDone(s))
 
   return (
     <section

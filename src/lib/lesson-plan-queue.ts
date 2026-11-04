@@ -60,7 +60,11 @@ export function registerLessonPlanMutations(queryClient: QueryClient) {
 // saved first, so the queue keeps the order the teacher did things in.
 const STRUCTURAL = new Set<OpKind>(
   OP_KINDS.filter(
-    (k) => k !== 'item-edit' && k !== 'section-edit' && k !== 'done',
+    (k) =>
+      k !== 'item-edit' &&
+      k !== 'section-edit' &&
+      k !== 'done' &&
+      k !== 'section-done',
   ),
 )
 
@@ -131,7 +135,7 @@ function onOpFailed(queryClient: QueryClient, error: unknown, op: Op) {
   })
   const status = error instanceof ApiError ? error.status : undefined
   const title =
-    op.kind === 'done'
+    op.kind === 'done' || op.kind === 'section-done'
       ? 'Couldn’t save a checkmark'
       : op.kind === 'section-add'
         ? 'Couldn’t add the section'
@@ -166,7 +170,7 @@ export function watchLessonPlanQueue(
     const key = event.mutation?.options.mutationKey
     if (key?.[0] !== LESSON_PLAN_MUTATION_KEY[0]) return
     // Only checkmarks are saved (persist.ts), so only they need a save.
-    if (key[1] === 'done') persist?.()
+    if (key[1] === 'done' || key[1] === 'section-done') persist?.()
 
     if (
       event.type === 'updated' &&

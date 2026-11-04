@@ -1,5 +1,5 @@
-// Browsers for the captures: a phone (393×793 CSS px, drawn at 2×) and a
-// paper-width desktop for print layouts.
+// Browsers for the captures: a phone (393×793 CSS px, drawn at 2×), a
+// paper-width desktop for print layouts, and a laptop for the user guide.
 import { chromium } from 'playwright'
 import type { Browser, BrowserContext, CDPSession, Page } from 'playwright'
 import { API_URL } from './env.ts'
@@ -193,19 +193,47 @@ export async function paper(
   clock: DemoClock,
   token?: string,
 ) {
-  const context = await browser.newContext({
+  return mousePage(browser, clock, {
     viewport: { width: 725, height: 1000 },
+    token,
+  })
+}
+
+/** A laptop screen, wide enough for the app's top bar (md, 768px+). */
+export const DESKTOP = { width: 1120, height: 760 }
+
+/** A laptop-sized page at 2×, for the user guide's screenshots. */
+export async function desktop(
+  browser: Browser,
+  clock: DemoClock,
+  opts: { token?: string; demoTime?: boolean } = {},
+) {
+  return mousePage(browser, clock, { viewport: DESKTOP, ...opts })
+}
+
+/** A non-touch page at 2×, signed in when given a token. */
+async function mousePage(
+  browser: Browser,
+  clock: DemoClock,
+  opts: {
+    viewport: { width: number; height: number }
+    token?: string
+    demoTime?: boolean
+  },
+) {
+  const context = await browser.newContext({
+    viewport: opts.viewport,
     deviceScaleFactor: 2,
     locale: 'en-US',
     timezoneId: clock.timeZone,
     colorScheme: 'light',
     serviceWorkers: 'block',
   })
-  if (token) {
+  if (opts.token) {
     await context.addCookies([
       {
         name: 'access_token',
-        value: token,
+        value: opts.token,
         url: API_URL,
         httpOnly: true,
         sameSite: 'Lax',
@@ -213,11 +241,10 @@ export async function paper(
       },
     ])
   }
-  const demoStart = zonedInstant(
-    clock.timeZone,
-    clock.today,
-    clock.demoMinutes,
-  ).getTime()
+  const demoStart =
+    opts.demoTime === false
+      ? null
+      : zonedInstant(clock.timeZone, clock.today, clock.demoMinutes).getTime()
   await context.addInitScript(pageSetup, { demoStart })
   const page = await context.newPage()
   page.on('pageerror', (e) => console.warn('  page error:', e.message))

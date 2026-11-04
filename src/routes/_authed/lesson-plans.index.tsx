@@ -47,6 +47,7 @@ function LessonPlansPage() {
     <main className="mx-auto flex w-full max-w-3xl min-w-0 flex-1 flex-col gap-6 px-4 py-6 sm:py-8">
       <header className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Lesson Plans</h1>
+      </header>
         {editable && (
           <Link
             to="/lesson-plans/templates"
@@ -56,10 +57,9 @@ function LessonPlansPage() {
             )}
           >
             <LayoutTemplate className="size-5" />
-            Templates
+            My Templates
           </Link>
         )}
-      </header>
       <TodayCard today={today} />
       <MonthCalendar
         month={month}
