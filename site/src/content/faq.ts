@@ -23,7 +23,7 @@ export const FAQ_GROUPS: Array<FaqGroup> = [
         id: 'is-it-free',
         question: 'Is TeachForFree really free?',
         answer: [
-          'Yes, and it will stay free. There’s no trial, no paid plan and no ads, and everything TeachForFree does today will always be free. It’s a personal project by one developer, made so classroom tools don’t come out of a teacher’s paycheck.',
+          'Yes. Every feature is free, with no trial and no credit card. Classroom tools shouldn’t come out of a teacher’s paycheck, and what’s free stays free.',
         ],
       },
       {
@@ -31,6 +31,14 @@ export const FAQ_GROUPS: Array<FaqGroup> = [
         question: 'Who is TeachForFree for?',
         answer: [
           'K–12 teachers who want a quick way to track behavior and keep simple daily lesson plans, mostly from their phone. Substitutes can use a link you share with them. Students never sign in or have accounts.',
+        ],
+      },
+      {
+        id: 'co-teachers',
+        question: 'Can I share my class with a co-teacher?',
+        answer: [
+          'Yes. Tap +, then Add co-teacher, and choose what they can do with your classes, lesson plans and conferences: no access, view only, or edit. You get a link and QR code to send them. It works once and expires after 7 days.',
+          'Your co-teacher signs in with their own Google account. Sharing covers all of your classes, not just one. You can change what they can do, or remove them, on your Account page at any time, and changes take effect right away.',
         ],
       },
       {
@@ -258,8 +266,9 @@ export const FAQ_GROUPS: Array<FaqGroup> = [
         id: 'school-version',
         question: 'Is there a version for a whole school or district?',
         answer: [
-          'Not right now. Each teacher has their own free account, and classes can’t be shared between teachers. A substitute link is the way to share a day.',
+          'Not right now. Each teacher has their own free account. To work with another teacher, add them as a co-teacher to share your classes, lesson plans and conferences. A substitute link is the way to share a single day.',
         ],
+        link: { href: '/faq#co-teachers', label: 'Sharing with a co-teacher' },
       },
     ],
   },

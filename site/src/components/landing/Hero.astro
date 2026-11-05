@@ -15,7 +15,7 @@ import { loginUrl } from '../../site'
 >
   <div>
     <Eyebrow
-      label="Free forever · For teachers"
+      label="Free for teachers"
       className="bg-secondary text-foreground"
     />
     <h1
@@ -33,7 +33,7 @@ import { loginUrl } from '../../site'
     </p>
     <div class="mt-8 flex flex-col gap-3 sm:flex-row">
       <ButtonLink href={loginUrl} rel="nofollow">
-        Sign in with Google — free forever
+        Sign in with Google — it’s free
       </ButtonLink>
       <InstallApp client:only="react" placement="hero">
         <!-- Holds the button's place on phones until it appears. -->
@@ -54,7 +54,7 @@ import { loginUrl } from '../../site'
       aria-label="What it costs"
     >
       {
-        ['No trial', 'No paid plan', 'No ads'].map((item) => (
+        ['No trial', 'No credit card', 'Every feature free'].map((item) => (
           <li class="flex items-center gap-1.5">
             <span class="grid size-5 place-items-center rounded-full border-2 border-border bg-chart-5">
               <Check className="size-3" strokeWidth={3.5} aria-hidden />
