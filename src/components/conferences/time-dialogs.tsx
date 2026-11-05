@@ -18,6 +18,7 @@ import {
   formatSlotRange,
   latestSlot,
   previewTimes,
+  usualMinutes,
 } from '#/lib/conferences'
 import type { Conference, ConferenceSlot } from '#/lib/conferences'
 import { timeZoneLabel } from '#/lib/day'
@@ -81,8 +82,12 @@ function AddTimesForm({
   )
   const [start, setStart] = useState('15:00')
   const [end, setEnd] = useState('18:00')
-  const [minutes, setMinutes] = useState(15)
-  const [custom, setCustom] = useState(false)
+  // The length the teacher already uses, so a second day matches the first.
+  const [minutes, setMinutes] = useState(() => {
+    const usual = usualMinutes(conference.slots)
+    return usual !== null && usual >= 5 && usual <= 120 ? usual : 15
+  })
+  const [custom, setCustom] = useState(() => !LENGTHS.includes(minutes))
   const preview = previewTimes(start, end, minutes)
 
   const add = useMutation({
@@ -96,12 +101,15 @@ function AddTimesForm({
         })
         return
       }
-      toast.success(`Added ${added} ${added === 1 ? 'time' : 'times'}`, {
-        description:
-          skipped > 0
-            ? `${skipped} overlapped times you already have, so ${skipped === 1 ? 'it was' : 'they were'} skipped.`
-            : undefined,
-      })
+      toast.success(
+        `Added ${added} ${added === 1 ? 'time' : 'times'}, ${minutes} minutes ${added === 1 ? 'long' : 'each'}`,
+        {
+          description:
+            skipped > 0
+              ? `${skipped} overlapped times you already have, so ${skipped === 1 ? 'it was' : 'they were'} skipped.`
+              : undefined,
+        },
+      )
     },
     onError: (error) => {
       console.error('Adding times failed:', error)

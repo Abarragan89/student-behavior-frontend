@@ -10,8 +10,9 @@ import type { Conference } from '#/lib/conferences'
 /**
  * The teacher's schedule on paper: each day on its own page, its times in
  * order with who has each, a circle to tick by hand (or how the meeting
- * went, once it's over), and room for notes. On the page all the time but
- * only shown when printing (`print:block`), so a plain Ctrl+P prints it too.
+ * went, once it's over), and the teacher's note on each, with room to
+ * write. On the page all the time but only shown when printing
+ * (`print:block`), so a plain Ctrl+P prints it too.
  * Dark ink on white, borders instead of fills, sizes for paper.
  */
 export function PrintSchedule({
@@ -121,7 +122,10 @@ export function PrintSchedule({
                           />
                         ) : null}
                       </td>
-                      <td />
+                      {/* The teacher's note, with room left to write. */}
+                      <td className="py-[1.5mm] text-[10pt] leading-snug wrap-break-word">
+                        {student?.note}
+                      </td>
                     </tr>
                   )
                 })}

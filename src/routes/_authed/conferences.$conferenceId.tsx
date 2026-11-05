@@ -53,6 +53,7 @@ import { useNow } from '#/hooks/useNow'
 import { usePrintTitle } from '#/hooks/usePrintTitle'
 import { OfflineNote } from '#/components/offline-note'
 import { FamilyChanges } from '#/components/conferences/family-changes'
+import { ConferenceNoteDialog } from '#/components/conferences/note-dialog'
 import {
   StudentPickerDialog,
   TimePickerDialog,
@@ -175,20 +176,23 @@ function ConferenceEditor({
   const [pickFor, setPickFor] = useState<ConferenceSlot | null>(null)
   const [editing, setEditing] = useState<ConferenceSlot | null>(null)
   const [timeFor, setTimeFor] = useState<ConferenceStudent | null>(null)
+  // Whose meeting note is open. Kept here, not in the time's row: it stays
+  // open if their family moves meanwhile (the note goes with them).
+  const [noteFor, setNoteFor] = useState<ConferenceStudent | null>(null)
   // Families' changes that came in with the last Refresh.
   const [fresh, setFresh] = useState<ReadonlySet<string>>(new Set())
 
-  // What's on paper. Notices when they're being printed: they hold every
-  // family's code, so they're kept only for the print and dropped as soon as
-  // it's done. Otherwise the schedule, for every day unless one was picked,
-  // so a plain Ctrl+P prints the schedule too.
+  // What's on paper. Notices while they're being printed: they hold every
+  // family's code, so they're kept only for printing, and dropped when the
+  // teacher taps Done or leaves the page. Not on afterprint: some browsers
+  // send it before they've printed the page (Chrome's system dialog, phones),
+  // and a retry with Ctrl+P or the share sheet should still get the notices.
+  // Otherwise the schedule, for every day unless one was picked, so a plain
+  // Ctrl+P prints the schedule too.
   const [notices, setNotices] = useState<Array<ConferenceNotice> | null>(null)
   const [scheduleDay, setScheduleDay] = useState<string | null>(null)
   useEffect(() => {
-    const done = () => {
-      setNotices(null)
-      setScheduleDay(null)
-    }
+    const done = () => setScheduleDay(null)
     window.addEventListener('afterprint', done)
     return () => window.removeEventListener('afterprint', done)
   }, [])
@@ -202,7 +206,10 @@ function ConferenceEditor({
     window.print()
   }
   function printSchedule(day: string | null) {
-    flushSync(() => setScheduleDay(day))
+    flushSync(() => {
+      setNotices(null)
+      setScheduleDay(day)
+    })
     window.print()
   }
   const dayLabel = (() => {
@@ -249,6 +256,14 @@ function ConferenceEditor({
     <>
       <main className="mx-auto flex w-full max-w-3xl min-w-0 flex-1 flex-col gap-5 px-4 py-6 sm:py-8 print:hidden">
         <BackLink />
+
+        {notices && (
+          <NoticesLoaded
+            count={notices.length}
+            onPrint={() => window.print()}
+            onDone={() => setNotices(null)}
+          />
+        )}
 
         <header className="flex items-start gap-3">
           <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -376,6 +391,7 @@ function ConferenceEditor({
             now={now}
             onPickStudent={setPickFor}
             onEditTime={setEditing}
+            onNote={setNoteFor}
             onPrintDay={printSchedule}
           />
         ) : (
@@ -447,7 +463,58 @@ function ConferenceEditor({
         student={timeFor}
         onClose={() => setTimeFor(null)}
       />
+      <ConferenceNoteDialog
+        conference={conference}
+        student={noteFor}
+        onClose={() => setNoteFor(null)}
+      />
     </>
+  )
+}
+
+/**
+ * Shown after printing notices, while they're still on paper: a print that
+ * didn't go through can be tried again (Ctrl+P works too), and Done drops
+ * the families' codes from the page.
+ */
+function NoticesLoaded({
+  count,
+  onPrint,
+  onDone,
+}: {
+  count: number
+  onPrint: () => void
+  onDone: () => void
+}) {
+  return (
+    <section
+      role="status"
+      className="flex flex-col gap-3 rounded-xl border-2 border-primary bg-primary/10 p-4 sm:flex-row sm:items-center"
+    >
+      <p className="flex flex-1 items-start gap-2 font-medium">
+        <QrCode aria-hidden className="mt-0.5 size-5 shrink-0" />
+        <span>
+          {count} {count === 1 ? 'notice is' : 'notices are'} ready to print.
+          Didn’t print? Try again. Tap Done when you have them.
+        </span>
+      </p>
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          onClick={onPrint}
+          className="h-11 flex-1 rounded-lg border-2 border-border bg-card font-bold sm:flex-none"
+        >
+          <Printer className="size-5" />
+          Print again
+        </Button>
+        <Button
+          onClick={onDone}
+          className="h-11 flex-1 rounded-lg border-2 border-border font-bold sm:flex-none sm:px-5"
+        >
+          Done
+        </Button>
+      </div>
+    </section>
   )
 }
 
