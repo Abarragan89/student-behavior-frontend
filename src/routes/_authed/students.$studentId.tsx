@@ -667,8 +667,8 @@ function Stat({
 
 /**
  * Every mark in words, earliest first: the chart's table view. Each has a
- * trash can to delete it (it asks first). A negative mark's note shows on a
- * second line, under its name, and its note button adds or edits it.
+ * trash can to delete it (it asks first). A mark's note shows on a second
+ * line, under its name, and its note button adds or edits it.
  */
 function MarkList({
   marks,
@@ -691,6 +691,8 @@ function MarkList({
   const sorted = [...marks].sort((a, b) =>
     markTime(a).localeCompare(markTime(b)),
   )
+
+  console.log('sorted', sorted)
   return (
     <ol className="flex flex-col divide-y divide-foreground/10">
       {sorted.map((mark) => {
@@ -726,27 +728,22 @@ function MarkList({
                   </span>
                 )}
               </span>
-              {/* Notes are for negative marks. A positive one keeps the space,
-              so the columns line up. */}
-              {!readOnly &&
-                (mark.is_positive ? (
-                  <span aria-hidden className="-my-1.5 -mr-2 size-9 shrink-0" />
-                ) : (
-                  <Button
-                    variant="ghost"
-                    size="icon-lg"
-                    aria-label={`${mark.note ? 'Edit the note on' : 'Add a note to'} “${mark.name}” at ${time}`}
-                    disabled={!onEditNote}
-                    onClick={() => onEditNote?.(mark)}
-                    className="-my-1.5 -mr-2 rounded-lg text-muted-foreground"
-                  >
-                    {mark.note ? (
-                      <MessageSquareText className="size-4" />
-                    ) : (
-                      <MessageSquarePlus className="size-4" />
-                    )}
-                  </Button>
-                ))}
+              {!readOnly && (
+                <Button
+                  variant="ghost"
+                  size="icon-lg"
+                  aria-label={`${mark.note ? 'Edit the note on' : 'Add a note to'} “${mark.name}” at ${time}`}
+                  disabled={!onEditNote}
+                  onClick={() => onEditNote?.(mark)}
+                  className="-my-1.5 -mr-2 rounded-lg text-muted-foreground"
+                >
+                  {mark.note ? (
+                    <MessageSquareText className="size-4" />
+                  ) : (
+                    <MessageSquarePlus className="size-4" />
+                  )}
+                </Button>
+              )}
               {/* Small and quiet, but a 36px target. The negative margins keep
               the row as tall as before. */}
               {!readOnly && (
