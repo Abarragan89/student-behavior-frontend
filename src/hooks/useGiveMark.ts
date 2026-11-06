@@ -98,11 +98,11 @@ export function useGiveMark(classroomId: string) {
     }
 
     const online = onlineManager.isOnline()
-    // One student's negative mark can get a note saying what happened. It
+    // A mark for one student can get a note, positive or negative. It
     // needs a connection (notes are never saved on the device), so offline
     // it's added later from the student's page.
     const student = target.kind === 'student' ? target.student : null
-    const canAddNote = student && !markType.is_positive && online
+    const canAddNote = student && online
     // Space now, as the queued mark records it, in case the teacher switches
     // spaces before tapping Add note.
     const space = currentSpace()
