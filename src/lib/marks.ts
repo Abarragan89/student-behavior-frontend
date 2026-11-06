@@ -31,8 +31,8 @@ export type Mark = {
   // Given by a substitute, through a link the teacher shared. Missing from
   // servers older than substitute links.
   from_sub?: boolean
-  // What the teacher (or sub) wrote about it, "" for nothing. Offered for
-  // negative marks only. Missing from servers older than notes.
+  // What the teacher (or sub) wrote about it, "" for nothing. Any mark can
+  // have one. Missing from servers older than notes.
   note?: string
 }
 

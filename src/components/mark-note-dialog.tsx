@@ -121,7 +121,7 @@ function MarkNoteDialog({
           readOnly={saving}
           maxLength={MAX_MARK_NOTE_LENGTH}
           enterKeyHint="done"
-          placeholder="What happened?"
+          placeholder="Add a detail..."
           aria-describedby={hintId}
           aria-invalid={error ? true : undefined}
           className="min-h-20 rounded-lg border-2 border-border bg-card px-3 py-2.5 text-base placeholder:text-muted-foreground/70"
