@@ -6,6 +6,7 @@ import {
   Clock,
   EllipsisVertical,
   KeyRound,
+  MessageSquareText,
   Plus,
   Printer,
   Trash2,
@@ -58,14 +59,15 @@ import { useCanSave } from '#/lib/workspace'
 import { useSaveConference } from './use-save'
 
 /**
- * The conference's times by day, each with who has it and a round checkbox
- * to check the meeting off.
+ * The conference's times by day, each with who has it, a round checkbox to
+ * check the meeting off, and the note icon when the teacher wrote one.
  */
 export function SlotList({
   conference,
   now,
   onPickStudent,
   onEditTime,
+  onNote,
   onPrintDay,
 }: {
   conference: Conference
@@ -73,6 +75,8 @@ export function SlotList({
   now: number
   onPickStudent: (slot: ConferenceSlot) => void
   onEditTime: (slot: ConferenceSlot) => void
+  /** Opens the note on the student's meeting. */
+  onNote: (student: ConferenceStudent) => void
   /** Prints the schedule for day ("2026-11-12"). */
   onPrintDay: (day: string) => void
 }) {
@@ -123,6 +127,7 @@ export function SlotList({
                   }
                   onPickStudent={() => onPickStudent(slot)}
                   onEditTime={() => onEditTime(slot)}
+                  onNote={onNote}
                 />
               )
             })}
@@ -228,6 +233,7 @@ function SlotRow({
   picked,
   onPickStudent,
   onEditTime,
+  onNote,
 }: {
   conference: Conference
   slot: ConferenceSlot
@@ -236,6 +242,7 @@ function SlotRow({
   picked: boolean
   onPickStudent: () => void
   onEditTime: () => void
+  onNote: (student: ConferenceStudent) => void
 }) {
   const queryClient = useQueryClient()
   // Online, and allowed: a co-teacher may only view conferences.
@@ -356,6 +363,20 @@ function SlotRow({
         )}
       </button>
 
+      {/* Beside the name, not in its button: a button can't hold another.
+          Open to view-only co-teachers too, so they can read it. */}
+      {student?.note && (
+        <button
+          type="button"
+          onClick={() => onNote(student)}
+          aria-label={`Note for ${fullName(student)}`}
+          title={student.note}
+          className="flex size-10 shrink-0 items-center justify-center rounded-lg text-primary outline-none hover:bg-muted focus-visible:ring-4 focus-visible:ring-ring"
+        >
+          <MessageSquareText className="size-5" />
+        </button>
+      )}
+
       <DropdownMenu>
         <DropdownMenuTrigger
           aria-label={`More for ${time}`}
@@ -377,6 +398,13 @@ function SlotRow({
           </DropdownMenuItem>
           {student && (
             <>
+              <DropdownMenuItem
+                className="h-10 rounded-md font-bold"
+                onClick={() => onNote(student)}
+              >
+                <MessageSquareText />
+                Note
+              </DropdownMenuItem>
               <DropdownMenuItem
                 className="h-10 rounded-md font-bold"
                 onClick={() =>

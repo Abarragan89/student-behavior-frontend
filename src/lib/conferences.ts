@@ -31,6 +31,11 @@ export type ConferenceStudent = {
   last_name: string
   /** False for someone who has a time but has left the conference's classes. */
   in_classes: boolean
+  /**
+   * The teacher's note on their meeting ("Virtual"), "" for none. It stays
+   * with the student whichever time they have. Families never see it.
+   */
+  note: string
 }
 
 export type ConferenceSlot = {
@@ -103,6 +108,9 @@ export type ConferenceNotice = {
 
 /** Families stop changing their time this close to it. */
 export const CUTOFF_HOURS = 24
+
+/** The longest note on a meeting, as for mark notes. */
+export const MAX_CONFERENCE_NOTE_LENGTH = 280
 
 // ---------- Talking to the server ----------
 
@@ -287,6 +295,18 @@ export function markCompleted(
 }
 
 /**
+ * Saves the teacher's note on a student's meeting; "" removes it. It's kept
+ * with the student, not the time, so it moves when they do.
+ */
+export function saveNote(id: string, studentId: string, note: string) {
+  return send<Conference>(
+    'PUT',
+    `/conferences/${id}/students/${studentId}/note`,
+    { note },
+  )
+}
+
+/**
  * Deletes every time on day ("2026-11-12" in the conference's time zone).
  * version is the conference's version the page showed: if a family moved
  * meanwhile, nothing is deleted (ConferenceConflict 'stale').
@@ -415,6 +435,27 @@ export function previewTimes(start: string, end: string, minutes: number) {
     count,
     lastEnd: `${pad(Math.floor(lastEnd / 60))}:${pad(lastEnd % 60)}`,
   }
+}
+
+/**
+ * How long this conference's meetings usually are, in minutes: the most
+ * common length (the latest one on a tie), so "Add times" starts there.
+ * null with no times yet.
+ */
+export function usualMinutes(
+  slots: Array<{ starts_at: string; ends_at: string }>,
+) {
+  const counts = new Map<number, number>()
+  let best: number | null = null
+  for (const s of slots) {
+    const m = Math.round(
+      (Date.parse(s.ends_at) - Date.parse(s.starts_at)) / 60_000,
+    )
+    const n = (counts.get(m) ?? 0) + 1
+    counts.set(m, n)
+    if (best === null || n >= (counts.get(best) ?? 0)) best = m
+  }
+  return best
 }
 
 /** What the teacher should know about a student's notice. */
