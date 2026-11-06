@@ -17,6 +17,7 @@ import { ClassroomConnection } from '#/components/classroom-connection'
 import { CoteachersSection } from '#/components/coteachers/coteachers-section'
 import { CoteachingSection } from '#/components/coteachers/coteaching-section'
 import { NotificationsSection } from '#/components/notifications/notifications-section'
+import { SchoolCard } from '#/components/school/school-card'
 import { useSwitchSpace } from '#/lib/workspace'
 import { SignOutDialog } from '#/components/sign-out-dialog'
 import { TeacherAvatar } from '#/components/teacher-avatar'
@@ -77,6 +78,9 @@ function AccountPage() {
 
       {/* This device's reminders: always yours, in any classroom. */}
       <NotificationsSection />
+
+      {/* Your school: also always yours. */}
+      <SchoolCard me={me} />
 
       {owner ? (
         <Card className="gap-3 rounded-lg border-2 border-border shadow-md ring-0 [--card-spacing:--spacing(6)]">

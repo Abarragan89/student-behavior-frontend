@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react'
-import type { ReactNode } from 'react'
 import { Link, createFileRoute, redirect } from '@tanstack/react-router'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -11,19 +10,19 @@ import {
   UsersRound,
 } from 'lucide-react'
 import { Button, buttonVariants } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Spinner } from '@/components/ui/spinner'
+import { CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
-import { GoogleIcon } from '#/components/GoogleIcon'
-import { Wordmark } from '#/components/Wordmark'
+import {
+  LinkPage,
+  LinkPageHeader,
+  Loading,
+  NotYou,
+  Problem,
+  ProblemText,
+  SignInWithGoogle,
+} from '#/components/link-page'
 import { ApiError, inviteLoginUrl } from '#/lib/api'
-import { meQueryOptions, useLogout } from '#/lib/auth'
+import { meQueryOptions } from '#/lib/auth'
 import { FEATURES, levelOf } from '#/lib/coteachers'
 import type { Permissions } from '#/lib/coteachers'
 import {
@@ -52,34 +51,31 @@ export const Route = createFileRoute('/invite')({
       throw redirect({ to: '/invite', replace: true })
     }
   },
+  // Read on every visit, so a second link opened in the same tab (only the
+  // # changes, so the page isn't reloaded) shows that invite, not the last.
+  loader: () => pendingInvite(),
   component: InvitePage,
 })
 
-const googleButtonClass = cn(
-  buttonVariants({ variant: 'outline' }),
-  'h-12 w-full gap-3 rounded-lg border-2 border-border bg-card text-base font-bold text-card-foreground shadow-md',
-)
-
 function InvitePage() {
-  const saved = pendingInvite()
+  const saved = Route.useLoaderData()
 
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center gap-8 bg-background px-4 py-12 text-foreground">
-      <a href="/" aria-label="TeachForFree home">
-        <Wordmark className="h-24" />
-      </a>
-      <Card className="w-full max-w-sm rounded-lg border-2 border-border shadow-md ring-0 [--card-spacing:--spacing(6)]">
-        {saved ? (
-          <Invite code={saved.code} autoAccept={saved.autoAccept} />
-        ) : (
-          <Problem
-            icon={UserRoundX}
-            title="This invite link is incomplete"
-            text="Ask the teacher who invited you to send the link again, or scan their QR code."
-          />
-        )}
-      </Card>
-    </main>
+    <LinkPage>
+      {saved ? (
+        <Invite
+          key={saved.code}
+          code={saved.code}
+          autoAccept={saved.autoAccept}
+        />
+      ) : (
+        <Problem
+          icon={UserRoundX}
+          title="This invite link is incomplete"
+          text="Ask the teacher who invited you to send the link again, or scan their QR code."
+        />
+      )}
+    </LinkPage>
   )
 }
 
@@ -125,21 +121,13 @@ function Invite({ code, autoAccept }: { code: string; autoAccept: boolean }) {
   const signedIn = me.data ?? null
   return (
     <>
-      <CardHeader className="gap-2 text-center">
-        <span
-          aria-hidden
-          className="mx-auto grid size-14 place-items-center rounded-lg border-2 border-border bg-secondary"
-        >
-          <UsersRound className="size-7" />
-        </span>
-        <CardTitle className="text-2xl font-bold">
-          {invite.owner_name} invited you to co-teach
-        </CardTitle>
-        <CardDescription className="text-base">
-          You’ll be able to open their classroom on TeachForFree, alongside your
-          own classes.
-        </CardDescription>
-      </CardHeader>
+      <LinkPageHeader
+        icon={UsersRound}
+        title={`${invite.owner_name} invited you to co-teach`}
+      >
+        You’ll be able to open their classroom on TeachForFree, alongside your
+        own classes.
+      </LinkPageHeader>
       <CardContent className="flex flex-col gap-5">
         <WhatYouGet permissions={invite.permissions} />
         {signedIn ? (
@@ -150,46 +138,10 @@ function Invite({ code, autoAccept }: { code: string; autoAccept: boolean }) {
             auto={autoAccept}
           />
         ) : (
-          <SignIn />
+          <SignInWithGoogle href={inviteLoginUrl} onClick={acceptAfterSignIn} />
         )}
       </CardContent>
     </>
-  )
-}
-
-/** Signed out: the usual Google button, which comes back here. */
-function SignIn() {
-  const online = useOnline()
-  return (
-    <div className="flex flex-col gap-3">
-      {online ? (
-        <a
-          href={inviteLoginUrl}
-          onClick={acceptAfterSignIn}
-          className={googleButtonClass}
-        >
-          <GoogleIcon />
-          Continue with Google
-        </a>
-      ) : (
-        <>
-          <Button variant="outline" disabled className={googleButtonClass}>
-            <GoogleIcon />
-            Continue with Google
-          </Button>
-          <p
-            role="status"
-            className="text-center text-sm text-muted-foreground"
-          >
-            You’re offline. Connect to the internet to sign in.
-          </p>
-        </>
-      )}
-      <p className="text-center text-sm text-muted-foreground">
-        Use your school Google account. New to TeachForFree? Signing in creates
-        your free account.
-      </p>
-    </div>
   )
 }
 
@@ -209,7 +161,6 @@ function Accept({
   auto: boolean
 }) {
   const online = useOnline()
-  const logout = useLogout()
   const { switchTo } = useSwitchSpace()
   const accept = useMutation({
     mutationFn: () => acceptInvite(code),
@@ -291,18 +242,7 @@ function Accept({
       >
         Accept as {email}
       </Button>
-      <p className="text-center text-sm text-muted-foreground">
-        Not you?{' '}
-        <button
-          type="button"
-          // The invite stays in this tab: signing in again comes back here.
-          onClick={() => void logout()}
-          className="font-bold underline underline-offset-2"
-        >
-          Sign out
-        </button>{' '}
-        and use another Google account.
-      </p>
+      <NotYou />
     </div>
   )
 }
@@ -354,70 +294,5 @@ function Finished({ invite }: { invite: InvitePreview }) {
         ) : undefined
       }
     />
-  )
-}
-
-function Loading({ text }: { text: string }) {
-  return (
-    <CardContent>
-      <p
-        role="status"
-        className="flex items-center justify-center gap-2 py-8 font-medium text-muted-foreground"
-      >
-        <Spinner aria-hidden className="size-5" />
-        {text}
-      </p>
-    </CardContent>
-  )
-}
-
-function Problem({
-  icon: Icon,
-  title,
-  text,
-  action,
-}: {
-  icon: typeof CircleAlert
-  title: string
-  text: string
-  action?: ReactNode
-}) {
-  return (
-    <>
-      <CardHeader className="gap-2 text-center">
-        <span
-          aria-hidden
-          className="mx-auto grid size-14 place-items-center rounded-lg border-2 border-border bg-secondary"
-        >
-          <Icon className="size-7" />
-        </span>
-        <CardTitle className="text-xl font-bold">{title}</CardTitle>
-        <CardDescription className="text-base">{text}</CardDescription>
-      </CardHeader>
-      {action && (
-        <CardContent className="flex justify-center">{action}</CardContent>
-      )}
-    </>
-  )
-}
-
-function ProblemText({
-  title,
-  text,
-  action,
-}: {
-  title: string
-  text: string
-  action?: ReactNode
-}) {
-  return (
-    <div role="alert" className="flex flex-col gap-3 text-center">
-      <p className="flex items-center justify-center gap-2 font-bold">
-        <CircleAlert className="size-5 shrink-0 text-destructive" />
-        {title}
-      </p>
-      <p className="text-sm text-muted-foreground">{text}</p>
-      {action}
-    </div>
   )
 }

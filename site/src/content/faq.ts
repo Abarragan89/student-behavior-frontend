@@ -262,11 +262,49 @@ export const FAQ_GROUPS: Array<FaqGroup> = [
           label: 'How deleting works',
         },
       },
+    ],
+  },
+  {
+    title: 'Schools',
+    items: [
       {
         id: 'school-version',
         question: 'Is there a version for a whole school or district?',
         answer: [
-          'Not right now. Each teacher has their own free account. To work with another teacher, add them as a co-teacher to share your classes, lesson plans and conferences. A substitute link is the way to share a single day.',
+          'Yes, for a school. An administrator names the school, signs in with Google, and gets one join link and QR code to send the staff. Teachers join with their own Google accounts and keep their own classes, lesson plans and conferences.',
+          'Today a school account is your staff list and the join link. Staff events, schedules, meeting slots with teachers and custom progress reports are coming. There isn’t a district version yet.',
+        ],
+        link: { href: '/for-schools', label: 'TeachForFree for schools' },
+      },
+      {
+        id: 'school-join',
+        question: 'How do teachers join a school?',
+        answer: [
+          'They open the join link (or scan its QR code) and sign in with Google. Someone already using TeachForFree signs in with the same account, and their classes stay theirs. Someone new gets a free account as they sign in.',
+          'A teacher is in one school at a time, and can leave from their School page.',
+        ],
+      },
+      {
+        id: 'school-admin',
+        question: 'What can a school administrator do today?',
+        answer: [
+          'Send the join link, see who has joined, and remove someone who left. The link works for 7, 30 or 90 days and up to the number of teachers you choose. You can make a new link or turn it off anytime.',
+          'An administrator sees each teacher’s name and email. Teachers’ students, marks and lesson plans stay private to them.',
+        ],
+      },
+      {
+        id: 'school-cost',
+        question: 'What does a school account cost?',
+        answer: [
+          'Founding schools are free through June 2027, with no credit card. Pricing for school accounts will be announced before then.',
+          'Teachers stay free either way. Everything a teacher uses today stays free.',
+        ],
+      },
+      {
+        id: 'co-teacher-or-school',
+        question: 'Should I add a co-teacher or start a school?',
+        answer: [
+          'A co-teacher shares one teacher’s classroom: their classes, lesson plans and conferences. A school brings the whole staff together, and each teacher keeps their own classroom.',
         ],
         link: { href: '/faq#co-teachers', label: 'Sharing with a co-teacher' },
       },

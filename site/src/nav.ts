@@ -36,6 +36,17 @@ export const FEATURE_PAGES: Array<PageLink> = [
   },
 ]
 
+/**
+ * For administrators: starting a school and inviting the staff. Kept out of
+ * FEATURE_PAGES, which are the teacher features (and fill a 4-card row).
+ */
+export const SCHOOLS_PAGE: PageLink = {
+  href: '/for-schools',
+  label: 'For schools',
+  description:
+    'Bring your whole staff on with one join link, and see who’s joined. Teachers stay free.',
+}
+
 export const FAQ_PAGE: PageLink = {
   href: '/faq',
   label: 'FAQ',

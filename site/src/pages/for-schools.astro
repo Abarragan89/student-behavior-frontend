@@ -1,0 +1,164 @@
+---
+// For administrators: start a school and bring the staff in with one link.
+// Only the staff list and the join link exist today; everything else on this
+// page is labelled as coming.
+import {
+  CalendarDays,
+  CalendarRange,
+  ChartColumn,
+  ClipboardList,
+  Clock,
+  UsersRound,
+} from 'lucide-react'
+import BaseLayout from '../layouts/BaseLayout.astro'
+import PageHero from '../components/PageHero.astro'
+import Section from '../components/Section.astro'
+import FaqList from '../components/FaqList.astro'
+import RelatedPages from '../components/RelatedPages.astro'
+import ClosingBand from '../components/landing/ClosingBand.astro'
+import {
+  CheckList,
+  FeatureCards,
+  MoreLink,
+  StepList,
+} from '../components/landing/LandingSections'
+import type { Feature, Step } from '../components/landing/LandingSections'
+import { faqItems } from '../content/faq'
+import { FEATURE_PAGES } from '../nav'
+
+// Relative: the app and the site share one domain. In dev, the site's server
+// sends app URLs on to the app's (astro.config.ts).
+const START = '/school/start'
+
+const steps: Array<Step> = [
+  {
+    title: 'Name your school',
+    text: 'Type your school’s name and about how many teachers you have. That’s all we ask.',
+  },
+  {
+    title: 'Sign in with Google',
+    text: 'You become the school’s administrator. Your own account stays free, like every teacher’s.',
+  },
+  {
+    title: 'Send one link to your staff',
+    text: 'Copy the link, or a ready-made message, and email it from your own account. Or put the QR code on the screen at a staff meeting.',
+  },
+  {
+    title: 'Watch your staff join',
+    text: 'Teachers sign in with Google and show up on your list. Make a new link or turn it off anytime.',
+  },
+]
+
+const today = [
+  'One join link and QR code for your whole staff',
+  'Choose how long it works (7, 30 or 90 days) and how many can join',
+  'See who’s joined, and remove someone who left',
+  'Teachers keep their own free accounts, classes and students',
+]
+
+const coming: Array<Feature> = [
+  {
+    title: 'Staff events',
+    text: 'Coming: meetings, trainings and duty days on one calendar your staff can see.',
+    icon: CalendarDays,
+  },
+  {
+    title: 'Conflict-free schedules',
+    text: 'Coming: schedules for teachers and service providers that never double-book anyone.',
+    icon: CalendarRange,
+  },
+  {
+    title: 'Meeting slots with teachers',
+    text: 'Coming: set your open times, and teachers pick one, the way families pick conference times.',
+    icon: Clock,
+  },
+  {
+    title: 'Custom progress reports',
+    text: 'Coming: your school’s own report layout, filled in from what teachers already track.',
+    icon: ClipboardList,
+  },
+  {
+    title: 'Behavior across the school',
+    text: 'Coming: trends by grade and class, so support goes where it’s needed.',
+    icon: ChartColumn,
+  },
+  {
+    title: 'One place for your staff',
+    text: 'Coming: your school’s events, schedules and meetings in the app teachers already use.',
+    icon: UsersRound,
+  },
+]
+---
+
+<BaseLayout
+  title="TeachForFree for Schools | One Join Link for Your Staff"
+  description="Start your school on TeachForFree: name it, sign in with Google, and send your staff one join link. Free for founding schools through June 2027."
+  path="/for-schools"
+>
+  <PageHero
+    eyebrow="For schools"
+    eyebrowClass="bg-secondary text-foreground"
+    title="One school. One link. Every teacher."
+    lead="Start your school in a minute, then send your staff one link. Teachers join with the free TeachForFree account they already use, or a new one. Founding schools are free through June 2027, with no credit card."
+    primary={{ href: START, label: 'Start your school' }}
+    secondary={{ href: '#how-it-works', label: 'See how it works' }}
+  >
+    <div
+      slot="visual"
+      class="rounded-lg border-2 border-border bg-card p-6 text-card-foreground shadow-md"
+    >
+      <p class="text-lg font-bold">Included today</p>
+      <CheckList className="mt-4" items={today} />
+    </div>
+  </PageHero>
+
+  <Section id="how-it-works" title="How it works" muted>
+    <div class="max-w-2xl">
+      <StepList steps={steps} />
+    </div>
+  </Section>
+
+  <Section
+    eyebrow="Coming"
+    title="What’s coming for schools"
+    intro="A hub for your staff, built into the app your teachers already use for behavior, lesson plans and conferences. Founding schools get these first."
+  >
+    <FeatureCards items={coming} />
+  </Section>
+
+  <Section title="Free for founding schools" muted>
+    <div class="flex max-w-2xl flex-col gap-4 text-lg">
+      <p>
+        Every school that starts now is a founding school: free through June
+        2027, with no credit card. Pricing for school accounts will be announced
+        before then.
+      </p>
+      <p class="text-muted-foreground">
+        Teachers stay free either way. Everything a teacher uses today stays
+        free.
+      </p>
+    </div>
+  </Section>
+
+  <Section title="Questions about schools">
+    <FaqList
+      items={faqItems([
+        'school-version',
+        'school-join',
+        'school-admin',
+        'school-cost',
+        'co-teacher-or-school',
+        'student-data',
+      ])}
+    />
+    <MoreLink href="/faq" label="All questions" />
+  </Section>
+
+  <RelatedPages current="/for-schools" pages={FEATURE_PAGES} />
+  <ClosingBand
+    title="Ready to bring your school on?"
+    text="Start with your school’s name. You’ll be its administrator, and teachers stay free."
+    href={START}
+    label="Start your school"
+  />
+</BaseLayout>

@@ -2,13 +2,16 @@
 // Links to the other feature pages and the FAQ, at the end of a page.
 import { ArrowRight } from 'lucide-react'
 import { FAQ_PAGE, FEATURE_PAGES } from '../nav'
+import type { PageLink } from '../nav'
 
 interface Props {
   /** This page, left out of the list. */
   current: string
+  /** Which pages to offer; the feature pages and the FAQ by default. */
+  pages?: Array<PageLink>
 }
-const { current } = Astro.props
-const pages = [...FEATURE_PAGES, FAQ_PAGE].filter((p) => p.href !== current)
+const { current, pages: offered = [...FEATURE_PAGES, FAQ_PAGE] } = Astro.props
+const pages = offered.filter((p) => p.href !== current)
 ---
 
 <nav aria-label="More from TeachForFree" class="mx-auto max-w-6xl px-4 pb-16 sm:px-6 lg:pb-20">

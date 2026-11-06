@@ -17,7 +17,7 @@ npm run dev        # the app, http://localhost:3000
 npm run dev:site   # the marketing pages, http://localhost:4321
 ```
 
-Open http://localhost:3000. App pages are served there, and anything else (like `/`) is sent to the Astro server on :4321. The homepage's "already signed in?" check needs the API's allowed origin, so try the real flow with `npm run build && npm run preview` (http://localhost:3000).
+Open http://localhost:3000. App pages are served there, and anything else (like `/`) is sent to the Astro server on :4321. Links from a site page into the app (like "Start your school" → `/school/start`) are sent back to :3000, so site links stay relative, as they are in production. The homepage's "already signed in?" check needs the API's allowed origin, so try the real flow with `npm run build && npm run preview` (http://localhost:3000).
 
 `VITE_API_URL` (in `.env`) is required for builds.
 
