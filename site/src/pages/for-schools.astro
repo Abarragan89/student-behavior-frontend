@@ -1,9 +1,9 @@
 ---
 // For administrators: start a school and bring the staff in with one link.
-// Only the staff list and the join link exist today; everything else on this
-// page is labelled as coming.
+// The join link, the dashboard (each day's marks, and any teacher's classes,
+// view only), the staff list and the calendar with event emails exist
+// today; everything else on this page is labelled as coming.
 import {
-  CalendarDays,
   CalendarRange,
   ChartColumn,
   ClipboardList,
@@ -44,12 +44,17 @@ const steps: Array<Step> = [
     text: 'Copy the link, or a ready-made message, and email it from your own account. Or put the QR code on the screen at a staff meeting.',
   },
   {
-    title: 'Watch your staff join',
-    text: 'Teachers sign in with Google and show up on your list. Make a new link or turn it off anytime.',
+    title: 'See your school’s day',
+    text: 'Each teacher who joins gets a card on your dashboard with their marks for the day. Tap one to see their classes, exactly as they do.',
   },
 ]
 
 const today = [
+  'A dashboard of each day’s positive and negative marks, for your school and each teacher',
+  'Open any teacher’s classes and students, view only',
+  'A school calendar of one-time and repeating events. The staff you pick get email invites, changes and reminders',
+  'Bring your events over from Google Calendar: export, import, done',
+  'Bring in your whole staff from Google Admin, and sort them into groups. They don’t need to use TeachForFree',
   'One join link and QR code for your whole staff',
   'Choose how long it works (7, 30 or 90 days) and how many can join',
   'See who’s joined, and remove someone who left',
@@ -57,11 +62,6 @@ const today = [
 ]
 
 const coming: Array<Feature> = [
-  {
-    title: 'Staff events',
-    text: 'Coming: meetings, trainings and duty days on one calendar your staff can see.',
-    icon: CalendarDays,
-  },
   {
     title: 'Conflict-free schedules',
     text: 'Coming: schedules for teachers and service providers that never double-book anyone.',
@@ -78,13 +78,13 @@ const coming: Array<Feature> = [
     icon: ClipboardList,
   },
   {
-    title: 'Behavior across the school',
-    text: 'Coming: trends by grade and class, so support goes where it’s needed.',
+    title: 'Behavior trends',
+    text: 'Coming: trends by grade and class over the weeks, so support goes where it’s needed.',
     icon: ChartColumn,
   },
   {
     title: 'One place for your staff',
-    text: 'Coming: your school’s events, schedules and meetings in the app teachers already use.',
+    text: 'Coming: your school’s calendar, schedules and meetings inside the app, for teachers who use it. Everyone else keeps getting emails.',
     icon: UsersRound,
   },
 ]
@@ -146,6 +146,7 @@ const coming: Array<Feature> = [
         'school-version',
         'school-join',
         'school-admin',
+        'school-reminders',
         'school-cost',
         'co-teacher-or-school',
         'student-data',

@@ -1,12 +1,12 @@
 ---
 title: Privacy Policy
 description: 'How TeachForFree handles teacher and student information: what we collect, how we protect it, Google Classroom data, and how to delete it.'
-updated: 2026-11-04
+updated: 2026-11-06
 ---
 
 ## Who we are
 
-TeachForFree (teachforfree.com) is a free web app for K–12 teachers. You can tap a student to give a positive or negative behavior mark, keep short lesson notes, share a day with a substitute through a link, schedule parent conferences, and, if you want, import class rosters from Google Classroom.
+TeachForFree (teachforfree.com) is a free web app for K–12 teachers. You can tap a student to give a positive or negative behavior mark, keep short lesson notes, share a day with a substitute through a link, schedule parent conferences, and, if you want, import class rosters from Google Classroom. A school's administrator can also keep a staff list and a school calendar that sends staff email reminders.
 
 TeachForFree is a personal project made and run by Anthony Barragan, an independent developer in Ventura, California. It isn't a company. When this policy says "we" or "us," it means Anthony.
 
@@ -66,6 +66,14 @@ When you share a day with a substitute, we store the date, your time zone (so we
 
 When you set up parent conferences, we store the conference's name, the name you sign notices with, the location you type, your time zone, the classes you picked, the conference times, which student has which time, when you printed each student's notice, which meetings you marked as complete, and each change a family makes (which student, from which time, to which time, and when). We don't collect anything about parents: no names, email addresses, or phone numbers. See [Conference sign-ups](#conference-sign-ups) below.
 
+### Schools (optional)
+
+If you start a school, we store its name, about how many teachers it has (if you tell us), who its administrator is, its time zone, and its join link (kept encrypted, so the administrator can copy it again). When a teacher joins, we store that they're in the school and when they joined.
+
+**Staff list.** The administrator can add the school's staff, typed in, pasted, or imported from a Google Admin user list (the file is read on the administrator's device, and only these fields are sent to us): each person's email address, name, and, if the file has them, job title, department, and Google organizational unit. We also store the groups the administrator puts people in, whether each person uses TeachForFree, and whether they stopped the school's reminder emails. People on a staff list don't need a TeachForFree account. Staff lists are for adults on staff; the import leaves out anything that looks like student accounts, and administrators must not add students.
+
+**School calendar.** For each event: its title, location, and notes (encrypted, like lesson plans, because they may name students), its date and times, how it repeats, who's invited, and which reminders to send. We also store the school's breaks; for each reminder email, who it went to, for which event and date, and when it was sent; and, for the few minutes before it goes out, each email about an event being made, changed, or cancelled (encrypted, with who it's for). The administrator can also import events from a calendar file, such as a Google Calendar export. The file is read on their device, and only the events they choose are sent to us, with the calendar app's ID for each one (so importing the same file again doesn't make copies). Guests' email addresses in the file are only used, on the device, to match people already on the staff list; we don't receive or store them.
+
 ### Google Classroom (optional)
 
 See [Google user data](#google-user-data) below.
@@ -120,7 +128,7 @@ So that imports work when you ask for them, Google gives us a long-lived access 
 
 ### Who we share it with
 
-We don't share Google user data with anyone, except the service providers that host TeachForFree (listed under [Who we share information with](#who-we-share-information-with)), or when it's needed for security or required by law.
+We don't share Google user data with anyone, except the service providers that host TeachForFree (listed under [Who we share information with](#who-we-share-information-with)), or when it's needed for security or required by law. One exception you choose: when a school's administrator makes or changes an event, the emails about it show the administrator's name, and replies go to their email address, so staff can answer them.
 
 ### Limited Use
 
@@ -198,6 +206,7 @@ TeachForFree doesn't save student information on the device. While a tab is open
 - whether you closed the "get the app" banner
 - whether you answered the offer to turn on notifications
 - a yes/no note that someone is signed in on this browser (nothing about who), so the homepage can send you straight to your classes
+- for a school's administrator, whether they hid the join link on their dashboard
 
 Marks you give while the connection is down wait in the tab's memory and are sent when it's back. They're lost if you close the tab first.
 
@@ -251,12 +260,15 @@ We share information only with service providers that help us run TeachForFree. 
 - **Cloudflare** delivers the site and protects it from attacks. All traffic between your device and TeachForFree passes through Cloudflare.
 - **Google** provides sign-in, and Google Classroom if you connect it.
 - **Hetzner** runs the server for the app, our database, and the rate-limit counters. Encrypted information stays encrypted there.
+- **Resend** sends school calendar emails: invites, changes, cancellations, and reminders. For each email it gets the person's email address, their first name, the school's name, and the event's title, date, time, location, and notes, and it keeps delivery records under its own policy.
 - **Apple, Google, Mozilla, and Microsoft** deliver notifications to devices that have them turned on, through the push service of that device's browser. Each reminder is encrypted for your device before it leaves our server, so they can't read it. They see only that a message is going to that device.
 
 We may also share information:
 
 - **With the substitute you choose.** Whoever has a substitute link sees what that link opens (see [Substitute links](#substitute-links)).
 - **With the families you give notices to.** Whoever has a conference notice's code sees what that code opens (see [Conference sign-ups](#conference-sign-ups)).
+- **With the staff your school invites to an event.** Each person invited gets emails with the event's title, date, time, location, and notes: when they're invited, when the event changes or is cancelled, and as reminders. Replies go to the administrator who made the change. Anyone can stop a school's event emails with the link at the bottom of one, and turn them back on from the same page.
+- **With your school's administrator, if you join a school.** They see your name and email, and can view, but not change, your classes, students, marks and notes on marks. Your lesson plans and conferences stay private to you.
 - **When the law requires it,** such as a valid subpoena or court order. Where we're allowed to, we'll tell the teacher, and the school for student information, first.
 - **To protect people,** if we believe it's needed to prevent serious harm, or to protect TeachForFree from fraud or abuse.
 - **If TeachForFree changes hands.** Anyone who takes over TeachForFree must keep the promises in this policy for information we already have. If they won't, we'll tell you ahead of time so you can delete your data first.
@@ -288,6 +300,8 @@ We keep your account and everything you've added until you delete it or ask us t
 - **Lesson plan sections and lines** are deleted when you delete them.
 - **A substitute link** can be turned off at any time, and it stops working right away. We keep the record of the link (its date and classes) so marks given through it stay labeled as the substitute's.
 - **A parent conference** can be deleted with all its times, codes, and families' changes, and its codes stop working right away. A single time, or a whole day of times, can be removed, and a student's code replaced, at any time.
+- **A person on a school's staff list** can be removed by the administrator at any time. Their entry, their place in groups and events, and the record of event emails sent to them are deleted.
+- **School events, groups, and breaks** are deleted when the administrator deletes them. Dates of a repeating event that have already passed stay on the calendar as a record; email us if your school needs them removed.
 - **Google Classroom** can be disconnected at any time (see [Disconnecting](#disconnecting)).
 
 ### Automatic cleanup
@@ -296,6 +310,7 @@ We keep your account and everything you've added until you delete it or ask us t
 - The encrypted copy of a substitute link is erased within an hour after its day ends.
 - The encrypted copies of a conference's codes are erased within an hour after its last time.
 - Parent conferences are deleted 30 days after their last time, with every time, code, and family change in them. A conference that never gets a time is deleted after 90 days.
+- Records of which reminder emails a school sent are deleted 2 weeks after the event's date. Emails about an event being made, changed, or cancelled are deleted 3 days after they're queued.
 - Rate-limit counters delete themselves within an hour at most.
 - A device's notification setup is deleted when you turn notifications off or sign out on it, when the device tells us it no longer takes them, and after 30 days without the app being opened on it. Notes of which reminders were sent are deleted after 2 days.
 

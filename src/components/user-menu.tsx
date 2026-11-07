@@ -4,6 +4,7 @@ import {
   Building2,
   Check,
   Download,
+  LayoutDashboard,
   LogOut,
   Moon,
   School,
@@ -57,7 +58,7 @@ export function UserMenu({ me }: { me: Me }) {
   const active = Boolean(
     matchRoute({ to: '/account' }) ||
     matchRoute({ to: '/marks' }) ||
-    matchRoute({ to: '/school' }),
+    matchRoute({ to: '/account/school' }),
   )
 
   return (
@@ -112,8 +113,10 @@ export function UserMenu({ me }: { me: Me }) {
                 className="flex flex-col gap-1"
               >
                 <SpaceButton
-                  label="My classes"
-                  icon={School}
+                  label={
+                    me.school?.role === 'admin' ? 'Dashboard' : 'My classes'
+                  }
+                  icon={me.school?.role === 'admin' ? LayoutDashboard : School}
                   current={current === null}
                   busy={switching === null}
                   onClick={() => {
@@ -155,7 +158,7 @@ export function UserMenu({ me }: { me: Me }) {
               <Button
                 variant="ghost"
                 nativeButton={false}
-                render={<Link to="/school" />}
+                render={<Link to="/account/school" />}
                 onClick={() => setOpen(false)}
                 className="h-10 justify-start rounded-lg font-bold"
               >

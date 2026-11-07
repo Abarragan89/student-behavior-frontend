@@ -3,7 +3,6 @@ import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import {
   ChevronLeft,
-  ChevronRight,
   CircleAlert,
   MessageSquarePlus,
   MessageSquareText,
@@ -23,14 +22,12 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty'
-import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
 import { cn } from '@/lib/utils'
 import { ApiError } from '#/lib/api'
 import { useMe } from '#/lib/auth'
 import { canEdit, mayLoad } from '#/lib/workspace'
 import {
-  addDays,
   formatHourSpan,
   formatLongDate,
   formatTime,
@@ -56,6 +53,7 @@ import {
   studentQueryOptions,
 } from '#/lib/students'
 import type { StudentDetail } from '#/lib/students'
+import { DayPicker } from '#/components/day-picker'
 import { DayTimeline } from '#/components/day-timeline'
 import { RecentDaysChart, recentDaysSummary } from '#/components/recent-days'
 import { DeleteMarkDialog } from '#/components/delete-mark-dialog'
@@ -531,66 +529,6 @@ function StudentDay({
         />
       )}
     </>
-  )
-}
-
-/** Previous day, a date picker, next day (not past today), and Today. */
-function DayPicker({
-  date,
-  today,
-  onChange,
-}: {
-  date: string
-  today: string
-  onChange: (date: string) => void
-}) {
-  const arrowClass = 'size-10 rounded-lg border-2 border-border'
-  return (
-    <div
-      role="group"
-      aria-label="Day"
-      className="flex flex-wrap items-center gap-2"
-    >
-      <Button
-        variant="outline"
-        size="icon"
-        aria-label="Previous day"
-        onClick={() => onChange(addDays(date, -1))}
-        className={arrowClass}
-      >
-        <ChevronLeft className="size-5" />
-      </Button>
-      <Input
-        type="date"
-        aria-label="Pick a day"
-        value={date}
-        max={today}
-        onChange={(e) => {
-          const picked = e.target.value
-          if (isDateString(picked) && picked <= today) onChange(picked)
-        }}
-        className="h-10 w-auto rounded-lg border-2 border-border bg-card px-3 text-base font-bold"
-      />
-      <Button
-        variant="outline"
-        size="icon"
-        aria-label="Next day"
-        disabled={date >= today}
-        onClick={() => onChange(addDays(date, 1))}
-        className={arrowClass}
-      >
-        <ChevronRight className="size-5" />
-      </Button>
-      {date !== today && (
-        <Button
-          variant="link"
-          onClick={() => onChange(today)}
-          className="text-base font-bold"
-        >
-          Today
-        </Button>
-      )}
-    </div>
   )
 }
 

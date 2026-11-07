@@ -33,6 +33,7 @@ const LINK_PAGES = new Set([
   '/invite',
   '/join',
   '/school/start',
+  '/unsubscribe',
 ])
 
 function RootComponent() {

@@ -39,13 +39,13 @@ export function SchoolCard({ me }: { me: Me }) {
         <CardContent>
           {school ? (
             <Link
-              to="/school"
+              to="/account/school"
               className={cn(
                 buttonVariants({ variant: 'outline' }),
                 'h-11 rounded-lg border-2 px-4 font-bold',
               )}
             >
-              {school.role === 'admin' ? 'Manage your school' : 'Open'}
+              View school
               <ArrowRight />
             </Link>
           ) : (

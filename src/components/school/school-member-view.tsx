@@ -34,9 +34,10 @@ export function SchoolMemberView({ detail }: { detail: SchoolDetail }) {
     <>
       <SchoolNameCard detail={detail} />
       <p className="text-sm text-muted-foreground">
-        Your classes, students and marks stay yours.{' '}
         {detail.admin_name || 'Your administrator'} sees your name and email on
-        the staff list.
+        the staff list, and can view your classes, students, marks and notes.
+        They can’t change anything. Your lesson plans and conferences stay
+        private to you.
       </p>
       <SchoolComingCard forAdmin={false} />
       <OfflineNote action="leave your school" />

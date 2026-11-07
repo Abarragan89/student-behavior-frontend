@@ -153,8 +153,11 @@ function RemoveMemberDialog({
           },
       )
       onClose()
+      // Their ring leaves the dashboard too.
+      void queryClient.invalidateQueries({ queryKey: ['school-behavior'] })
       toast.success(`Removed ${m.name}`, {
-        description: 'Their account and classes stay theirs.',
+        description:
+          'Their account and classes stay theirs. You can no longer view their classes.',
       })
     },
     onError: (error) => {
@@ -180,8 +183,9 @@ function RemoveMemberDialog({
             Remove {shown?.name} from {schoolName}?
           </AlertDialogTitle>
           <AlertDialogDescription>
-            They keep their TeachForFree account, classes and students. To add
-            them back, send them a join link.
+            They keep their TeachForFree account, classes and students, and you
+            can no longer view their classes. To add them back, send them a join
+            link.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

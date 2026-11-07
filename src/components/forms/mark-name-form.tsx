@@ -151,7 +151,7 @@ export function MarkNameForm({
                     : 'e.g. Calling out'
               }
               autoComplete="off"
-              className="h-11 rounded-lg border-2 border-border bg-card px-3 text-base placeholder:text-muted-foreground/70"
+              className="h-11 rounded-lg border-2 border-border bg-card px-3 text-base"
             />
             {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
             <FieldDescription>

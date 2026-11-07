@@ -236,6 +236,14 @@ body {
   html {
     @apply font-sans;
   }
+  /* Placeholder text is an example, not an answer, so it's faded to never
+     look typed. This is the one placeholder color for every input and
+     textarea: don't give fields their own. */
+  ::placeholder {
+    color: color-mix(in oklab, var(--muted-foreground) 55%, transparent);
+    /* Firefox fades placeholders on its own as well. */
+    opacity: 1;
+  }
 }
 
 /* The printed report (src/components/student-report.tsx). Its own two colors,

@@ -1,4 +1,5 @@
-import { queryOptions } from '@tanstack/react-query'
+import { useEffect } from 'react'
+import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { QueryClient } from '@tanstack/react-query'
 import {
   ApiError,
@@ -12,11 +13,15 @@ import {
 } from './api'
 import { meQueryOptions } from './auth'
 import type { Me } from './auth'
+import { SHARED_STALE_MS } from './freshness'
+import { timeZone } from './marks'
 
 // Schools: an administrator starts one (/school/start), then sends the staff
-// one join link (/join#<code>). Teachers keep their own accounts; the school
-// is a staff list for now. Every call is the signed-in user's own
-// ({ space: null }), never a co-teacher's owner's.
+// one join link (/join#<code>). Teachers keep their own accounts. The
+// administrator's dashboard (/dashboard) shows each teacher's marks for a day
+// and opens any teacher's classes, view only (workspace.ts). Every call here
+// is the signed-in user's own ({ space: null }), never a co-teacher's
+// owner's.
 
 const API_URL = import.meta.env.VITE_API_URL
 
@@ -32,6 +37,8 @@ export type SchoolInfo = {
   plan: 'pilot'
   /** When the free founding-school pilot ends. */
   pilot_ends_at: string | null
+  /** IANA zone for events at local times; null until first set. */
+  timezone: string | null
 }
 
 export type SchoolInviteStatus = 'open' | 'expired' | 'full' | 'revoked'
@@ -104,6 +111,62 @@ export const schoolQueryOptions = queryOptions({
   staleTime: 0,
 })
 
+export type MarkCounts = { positive: number; negative: number }
+
+/** The administrator's dashboard for one day. */
+export type SchoolBehavior = {
+  date: string
+  timezone: string
+  school: MarkCounts
+  /** Every teacher, by name; zeros for a teacher with no marks. */
+  teachers: Array<MarkCounts & { user_id: string; name: string }>
+}
+
+/**
+ * Each teacher's positive and negative marks on `date` (in this device's time
+ * zone), and the school's total. Administrators only. Never saved on the
+ * device.
+ */
+export function schoolBehaviorQueryOptions(date: string) {
+  return queryOptions({
+    queryKey: ['school-behavior', date],
+    queryFn: () =>
+      apiGet<SchoolBehavior>(
+        `/schools/mine/behavior?${new URLSearchParams({ date, tz: timeZone() })}`,
+        { space: null },
+      ),
+    // Teachers give marks all day on their own devices.
+    staleTime: SHARED_STALE_MS,
+  })
+}
+
+// ---------- The join link on the dashboard ----------
+//
+// The administrator can hide the join-link card on their dashboard; it's
+// always on Account → School. Remembered on this device only: it's a
+// preference, not school data.
+
+function hiddenKey(schoolId: string) {
+  return `tff:school-invite-hidden:${schoolId}`
+}
+
+/** Whether the administrator hid the join link on this device's dashboard. */
+export function inviteHidden(schoolId: string): boolean {
+  try {
+    return localStorage.getItem(hiddenKey(schoolId)) === '1'
+  } catch {
+    return false
+  }
+}
+
+export function hideInvite(schoolId: string) {
+  try {
+    localStorage.setItem(hiddenKey(schoolId), '1')
+  } catch {
+    // Storage off: it shows again next time.
+  }
+}
+
 /** Starts a school with you as its administrator. 409 already_member. */
 export function createSchool(input: {
   name: string
@@ -114,6 +177,36 @@ export function createSchool(input: {
 
 export function renameSchool(name: string) {
   return apiPatch<SchoolInfo>('/schools/mine', { name }, { space: null })
+}
+
+export function setSchoolTimezone(timezone: string) {
+  return apiPatch<SchoolInfo>('/schools/mine', { timezone }, { space: null })
+}
+
+/**
+ * Gives the school this browser's time zone if it has none yet: events and
+ * reminders happen at the school's local times. The administrator's pages
+ * call it; it does nothing once set.
+ */
+export function useEnsureSchoolTimezone() {
+  const queryClient = useQueryClient()
+  const { data } = useQuery(schoolQueryOptions)
+  const needs = data?.role === 'admin' && !data.school.timezone
+  useEffect(() => {
+    if (!needs) return
+    void setSchoolTimezone(timeZone())
+      .then((school) => {
+        queryClient.setQueryData<SchoolDetail | null>(
+          schoolQueryOptions.queryKey,
+          (d) => d && { ...d, school },
+        )
+        // The calendar waits for a time zone.
+        void queryClient.invalidateQueries({ queryKey: ['school-calendar'] })
+      })
+      .catch((error: unknown) => {
+        console.error('Setting the school time zone failed:', error)
+      })
+  }, [needs, queryClient])
 }
 
 export function removeSchoolMember(userId: string) {
@@ -341,7 +434,7 @@ export function staffMessage({
     `1. Open this link: ${url}`,
     '2. Sign in with your school Google account.',
     '',
-    'Already using TeachForFree? Sign in with the same account. Your classes stay yours.',
+    'Already using TeachForFree? Sign in with the same account and keep everything you have. Once you join, I can view your classes, marks and notes, but not change them. Your lesson plans and conferences stay private.',
     '',
     `The link works until ${formatLongDate(expiresAt)}.`,
     '',

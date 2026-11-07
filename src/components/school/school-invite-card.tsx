@@ -1,7 +1,7 @@
 import { useId, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Copy, Link2, Link2Off, Mail, RotateCw } from 'lucide-react'
+import { Copy, Link2, Link2Off, Mail, RotateCw, X } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,6 +15,7 @@ import {
 import { Button } from '@/components/ui/button'
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -43,11 +44,14 @@ export function SchoolInviteCard({
   detail,
   adminName,
   welcome,
+  onDismiss,
 }: {
   detail: SchoolDetail
   adminName: string
   /** Just created: say the school is ready. */
   welcome: boolean
+  /** On the dashboard: an X in the corner to hide the card. */
+  onDismiss?: () => void
 }) {
   const headingId = useId()
   const [newLinkOpen, setNewLinkOpen] = useState(false)
@@ -66,6 +70,19 @@ export function SchoolInviteCard({
               ? 'Send this link to your teachers. They open it, sign in with Google, and join your school.'
               : 'Make a link to send your teachers. They open it, sign in with Google, and join your school.'}
           </CardDescription>
+          {onDismiss && (
+            <CardAction>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onDismiss}
+                aria-label="Hide the join link"
+                className="-mt-1 -mr-2 size-10 rounded-lg"
+              >
+                <X className="size-5" />
+              </Button>
+            </CardAction>
+          )}
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
           {open ? (

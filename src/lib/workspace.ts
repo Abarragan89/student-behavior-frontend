@@ -7,17 +7,22 @@ import { ApiError, apiGet } from './api'
 import { meQueryOptions } from './auth'
 import type { Me } from './auth'
 import { levelOf } from './coteachers'
-import type { FeatureKey, Level } from './coteachers'
+import type { FeatureKey, Level, Space } from './coteachers'
 import { flushDrafts } from './lesson-plan-queue'
 import { useOnline } from './online'
 import { currentSpace, setSpace } from './space-state'
 
 // Spaces: your own classes, or the classes of a teacher who made you their
-// co-teacher. A tab is in one space at a time (space-state.ts), and every
-// request says which. Cached data doesn't say whose space it's from, so
-// switching drops it all (and auth.ts drops it again if `me` ever comes back
-// for another space). Queued marks and checkmarks keep the space they were
-// made in (their mutation meta), so they're still sent there.
+// co-teacher, or (for a school's administrator) a teacher's classes, view
+// only. A tab is in one space at a time (space-state.ts), and every request
+// says which. Cached data doesn't say whose space it's from, so switching
+// drops it all (and auth.ts drops it again if `me` ever comes back for
+// another space). Queued marks and checkmarks keep the space they were made
+// in (their mutation meta), so they're still sent there.
+//
+// A school's administrator has no classes, lesson plans or conferences of
+// their own: their home is the dashboard (/dashboard), and every teacher
+// feature is closed to them in their own space.
 
 export { currentSpace } from './space-state'
 
@@ -26,9 +31,23 @@ export function spaceOf(me: Me | null | undefined): string | null {
   return me?.acting_for?.owner_id ?? null
 }
 
-/** What you may do with a feature in this space. Your own: everything. */
+/** A school's administrator, in their own space (their dashboard). */
+export function isSchoolAdmin(me: Me | null | undefined): boolean {
+  return !!me && !me.acting_for && me.school?.role === 'admin'
+}
+
+/** A school's administrator viewing one of their teachers' classes. */
+export function viewingAsAdmin(me: Me | null | undefined): boolean {
+  return me?.acting_for?.kind === 'school_admin'
+}
+
+/**
+ * What you may do with a feature in this space. Your own: everything, unless
+ * you run a school (then none: no classes, lesson plans or conferences of
+ * your own). Someone else's: what they, or your school, allow.
+ */
 export function permissionIn(me: Me | null | undefined, f: FeatureKey): Level {
-  if (!me?.acting_for) return 'edit'
+  if (!me?.acting_for) return isSchoolAdmin(me) ? 'none' : 'edit'
   return levelOf(me.acting_for.permissions, f)
 }
 
@@ -76,19 +95,27 @@ export function useCanSave(f: FeatureKey): boolean {
 /** The first page this space lets you open. */
 export function homeOf(
   me: Me | null | undefined,
-): '/classes' | '/lesson-plans' | '/conferences' | '/account' {
+): '/dashboard' | '/classes' | '/lesson-plans' | '/conferences' | '/account' {
+  if (isSchoolAdmin(me)) return '/dashboard'
   if (canView(me, 'classes')) return '/classes'
   if (canView(me, 'lesson_plans')) return '/lesson-plans'
   if (canView(me, 'conferences')) return '/conferences'
   return '/account'
 }
 
-/** That teacher no longer shares their space with you. */
+/** That space isn't open to you any more (shared, or in your school). */
 export class LostAccessError extends Error {
   constructor() {
-    super('No longer a co-teacher in that space')
+    super('No longer allowed in that space')
     this.name = 'LostAccessError'
   }
+}
+
+/** What to say when a space you were in, or tried to open, closed to you. */
+function lostText(kind: Space['kind']) {
+  return kind === 'school_admin'
+    ? 'That teacher is no longer in your school.'
+    : 'That teacher no longer shares their classroom with you.'
 }
 
 /**
@@ -125,7 +152,12 @@ export function useSwitchSpace() {
 
   const switchTo = async (
     ownerId: string | null,
-    options: { to?: string; quiet?: boolean } = {},
+    options: {
+      to?: string
+      quiet?: boolean
+      /** Opening a teacher's classes as their school's administrator. */
+      asAdmin?: boolean
+    } = {},
   ) => {
     if (switching !== undefined) return false
     setSwitching(ownerId)
@@ -133,20 +165,26 @@ export function useSwitchSpace() {
       const me = await switchSpace(queryClient, ownerId)
       await navigate({ to: options.to ?? homeOf(me) })
       if (!options.quiet) {
-        toast.success(
-          me.acting_for
-            ? `You’re in ${me.acting_for.name}’s classroom`
-            : 'You’re back in your own classes',
-        )
+        toast.success(switchedText(me), {
+          description: viewingAsAdmin(me) ? 'View only' : undefined,
+        })
       }
       return true
     } catch (error) {
       console.error('Switching space failed:', error)
       if (error instanceof LostAccessError) {
-        toast.error('That teacher no longer shares their classroom with you')
+        toast.error(
+          lostText(options.asAdmin ? 'school_admin' : 'coteacher').replace(
+            /\.$/,
+            '',
+          ),
+        )
         void queryClient.invalidateQueries({
           queryKey: meQueryOptions.queryKey,
         })
+        if (options.asAdmin) {
+          void queryClient.invalidateQueries({ queryKey: ['school-behavior'] })
+        }
       } else if (!navigator.onLine) {
         toast.error('Switching needs a connection')
       } else {
@@ -161,6 +199,18 @@ export function useSwitchSpace() {
   return { switchTo, switching }
 }
 
+/** The toast after switching into `me`'s space. */
+function switchedText(me: Me) {
+  if (me.acting_for) {
+    return viewingAsAdmin(me)
+      ? `Viewing ${me.acting_for.name}’s classes`
+      : `You’re in ${me.acting_for.name}’s classroom`
+  }
+  return isSchoolAdmin(me)
+    ? 'Back to your dashboard'
+    : 'You’re back in your own classes'
+}
+
 /**
  * Keeps the tab's space in step with what the server says: if the owner
  * removed you, `me` comes back for your own space, so go back there and say
@@ -168,19 +218,32 @@ export function useSwitchSpace() {
  * again.
  */
 export function watchSpace(queryClient: QueryClient) {
+  // How the last space was open to you, to say why it closed.
+  let lastKind: Space['kind']
   return queryClient.getQueryCache().subscribe((event) => {
     if (event.type !== 'updated' || event.query.queryKey[0] !== 'me') return
     const me = event.query.state.data as Me | null | undefined
     if (!me) return
+    if (me.acting_for) lastKind = me.acting_for.kind
     const space = currentSpace()
     if (space && !me.acting_for) {
       // The server answered for your own space: the membership is gone.
       setSpace(null)
       queryClient.removeQueries({ predicate: (q) => q.queryKey[0] !== 'me' })
-      toast('You’re back in your own classes', {
-        id: 'lost-space',
-        description: 'That teacher no longer shares their classroom with you.',
-      })
+      toast(
+        isSchoolAdmin(me)
+          ? 'Back to your dashboard'
+          : 'You’re back in your own classes',
+        {
+          id: 'lost-space',
+          // After a reload nothing says how the space was open; an
+          // administrator in their own space was almost surely viewing a
+          // teacher of theirs.
+          description: lostText(
+            lastKind ?? (isSchoolAdmin(me) ? 'school_admin' : 'coteacher'),
+          ),
+        },
+      )
       return
     }
     if (spaceOf(me) !== space) {

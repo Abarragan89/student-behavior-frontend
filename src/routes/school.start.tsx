@@ -76,7 +76,11 @@ function StartSchoolPage() {
           text="You can be in one school at a time."
           action={
             <Link
-              to="/school"
+              to={
+                me.data.school.role === 'admin'
+                  ? '/dashboard'
+                  : '/account/school'
+              }
               className={cn(buttonVariants(), 'h-11 rounded-lg font-bold')}
             >
               Open your school
@@ -126,7 +130,7 @@ function StartForm({
         name: detail.school.name,
         role: detail.role,
       })
-      await navigate({ to: '/school', search: { welcome: true } })
+      await navigate({ to: '/dashboard', search: { welcome: true } })
     },
     onError: (error) => {
       console.error('Starting the school failed:', error)
@@ -163,6 +167,17 @@ function StartForm({
           ? `You’ll be its administrator, signed in as ${me.teacher.email}.`
           : 'Name your school, then sign in with Google. You’ll be its administrator, and you’ll get a link to send your staff.'}
       </LinkPageHeader>
+      {me && (
+        // Starting a school turns this account into an administrator's: say
+        // so before a teacher loses sight of their own classes.
+        <CardContent className="pb-0">
+          <p className="rounded-lg bg-muted px-3 py-2 text-sm">
+            This account becomes your school’s administrator account. It opens
+            on your school’s dashboard, without Classes or Lesson Plans. Teach
+            too? Keep your classes on another Google account.
+          </p>
+        </CardContent>
+      )}
       <CardContent>
         <form
           noValidate

@@ -2,7 +2,6 @@ import { useId } from 'react'
 import {
   CalendarDays,
   CalendarRange,
-  ChartColumn,
   ClipboardList,
   Clock,
   UsersRound,
@@ -36,11 +35,6 @@ const COMING = [
     icon: ClipboardList,
     title: 'Custom progress reports',
     text: 'Your school’s own report layout, filled in from what teachers already track.',
-  },
-  {
-    icon: ChartColumn,
-    title: 'Behavior across the school',
-    text: 'Trends by grade and class, so support goes where it’s needed.',
   },
   {
     icon: UsersRound,

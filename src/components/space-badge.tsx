@@ -14,7 +14,8 @@ import { Spinner } from '@/components/ui/spinner'
 import { cn } from '@/lib/utils'
 import type { Me } from '#/lib/auth'
 import { FEATURES, levelOf } from '#/lib/coteachers'
-import { useSwitchSpace } from '#/lib/workspace'
+import { useSwitchSpace, viewingAsAdmin } from '#/lib/workspace'
+import { AdminViewBar } from '#/components/school/admin-view-bar'
 
 /**
  * "Co-teacher · Ms. Rivera's classroom", shown while you're working in
@@ -23,8 +24,20 @@ import { useSwitchSpace } from '#/lib/workspace'
  *
  * placement="header": next to the wordmark on wide screens.
  * placement="strip": a full-width line at the top of phone screens.
+ *
+ * A school administrator viewing a teacher's classes gets AdminViewBar
+ * instead: view only, and back to their dashboard.
  */
-export function SpaceBadge({
+export function SpaceBadge(props: {
+  me: Me
+  placement: 'header' | 'strip'
+  className?: string
+}) {
+  if (viewingAsAdmin(props.me)) return <AdminViewBar {...props} />
+  return <CoteacherBadge {...props} />
+}
+
+function CoteacherBadge({
   me,
   placement,
   className,

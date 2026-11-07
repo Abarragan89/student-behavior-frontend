@@ -187,7 +187,7 @@ export default function AddStudentsForm({
                 // background is the theme's gray --input, which looks
                 // disabled), and a lighter placeholder so the example can't be
                 // mistaken for typed names.
-                className="max-h-60 min-h-28 rounded-lg border-2 border-border bg-card placeholder:text-muted-foreground/70"
+                className="max-h-60 min-h-28 rounded-lg border-2 border-border bg-card"
                 // Ctrl/⌘ + Enter submits; plain Enter adds a new line.
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {

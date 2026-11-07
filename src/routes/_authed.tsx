@@ -23,7 +23,7 @@ import { SpaceBadge } from '#/components/space-badge'
 import { meQueryOptions, useMe } from '#/lib/auth'
 import { useReminders } from '#/lib/notifications'
 import type { FeatureKey } from '#/lib/coteachers'
-import { homeOf, permissionIn, spaceOf } from '#/lib/workspace'
+import { homeOf, isSchoolAdmin, permissionIn, spaceOf } from '#/lib/workspace'
 import { OfflineError, isOnline, useOnline } from '#/lib/online'
 import { isStandalone } from '#/lib/pwa-install'
 
@@ -44,6 +44,11 @@ declare module '@tanstack/react-router' {
      * The server checks every request too; this keeps the screens honest.
      */
     feature?: { key: FeatureKey; level: 'view' | 'edit' }
+    /**
+     * Only a school's administrator, in their own space, opens the page
+     * (their dashboard and its tabs). Anyone else is sent home.
+     */
+    schoolAdmin?: boolean
   }
 }
 
@@ -73,6 +78,9 @@ function AuthedLayout() {
   const fullScreen = useMatches({
     select: (matches) => matches.some((m) => m.staticData.fullScreen),
   })
+  const adminOnly = useMatches({
+    select: (matches) => matches.some((m) => m.staticData.schoolAdmin),
+  })
   // The deepest page's requirement, if it has one.
   const feature = useMatches({
     select: (matches) =>
@@ -84,7 +92,13 @@ function AuthedLayout() {
   if (me === null) return <Navigate to="/login" />
   if (!me) return null
 
-  // In another teacher's space, a page this co-teacher may not open.
+  // A school administrator's page, for someone who isn't one (or is one,
+  // but is viewing a teacher's classes).
+  if (adminOnly && !isSchoolAdmin(me)) {
+    return <Navigate to={homeOf(me)} replace />
+  }
+  // A page this space doesn't open: in another teacher's space, beyond what
+  // they share; in a school administrator's own, any teacher page.
   if (feature) {
     const level = permissionIn(me, feature.key)
     if (level === 'none' || (feature.level === 'edit' && level !== 'edit')) {
@@ -121,7 +135,7 @@ function AuthedLayout() {
             <Wordmark />
           </Link>
           {/* In another teacher's space: whose, and the way back. */}
-          <SpaceBadge me={me} placement="header" className="max-w-64" />
+          <SpaceBadge me={me} placement="header" className="max-w-lg" />
           <div className="ml-auto flex items-center gap-3">
             <ConnectionStatus />
             <HeaderNav />
@@ -141,8 +155,11 @@ function AuthedLayout() {
         <InstallBanner className="md:hidden print:hidden!" />
 
         {/* The installed app only, phones and computers alike, once: the
-            offer to turn on reminders before each subject. */}
-        <NotificationsBanner className="print:hidden!" />
+            offer to turn on reminders before each subject. Not for a
+            school's administrator: they have no lesson plans. */}
+        {me.school?.role !== 'admin' && (
+          <NotificationsBanner className="print:hidden!" />
+        )}
 
         {/* Phones: the avatar alone at the top right, floating over the
             page and scrolling away with it. The anchor sits under the

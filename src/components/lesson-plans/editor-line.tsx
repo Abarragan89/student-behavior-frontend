@@ -218,7 +218,7 @@ export function EditorLine({
           if (draft.text === '' && !deleted.current) remove()
         }}
         className={cn(
-          'field-sizing-content min-h-10 min-w-0 flex-1 resize-none rounded-md bg-transparent px-2 py-2 text-base leading-snug outline-none placeholder:text-muted-foreground/70 focus-visible:bg-muted/60',
+          'field-sizing-content min-h-10 min-w-0 flex-1 resize-none rounded-md bg-transparent px-2 py-2 text-base leading-snug outline-none focus-visible:bg-muted/60',
           'scroll-mb-[calc(6rem+env(safe-area-inset-bottom))]',
           item.done && 'text-muted-foreground line-through',
         )}

@@ -11,6 +11,7 @@ import {
   Building2,
   CircleAlert,
   Clock,
+  Eye,
   RefreshCw,
   UserRoundX,
   UsersRound,
@@ -149,7 +150,10 @@ function Join({ code, autoAccept }: { code: string; autoAccept: boolean }) {
   )
 }
 
-/** What changes for the teacher, and what doesn't. */
+/**
+ * What joining shares with the administrator, and what it doesn't: said
+ * before anyone taps Join.
+ */
 function WhatJoiningMeans() {
   return (
     <ul className="flex flex-col gap-2 rounded-lg border-2 border-border p-3 text-sm">
@@ -158,9 +162,14 @@ function WhatJoiningMeans() {
         Your administrator sees your name and email on the staff list.
       </li>
       <li className="flex gap-2">
+        <Eye className="mt-0.5 size-4 shrink-0" />
+        They can view your classes, students, marks and notes, but can’t change
+        anything.
+      </li>
+      <li className="flex gap-2">
         <Building2 className="mt-0.5 size-4 shrink-0" />
-        Your classes, students and marks stay yours. TeachForFree stays free for
-        you.
+        Your lesson plans and conferences stay private. TeachForFree stays free
+        for you.
       </li>
     </ul>
   )
@@ -190,9 +199,10 @@ function Accept({
       forgetJoin()
       setMySchool(queryClient, membership)
       queryClient.removeQueries({ queryKey: schoolQueryOptions.queryKey })
-      await navigate({ to: '/school' })
+      // Their school's page: what the administrator can see, and Leave.
+      await navigate({ to: '/account/school' })
       toast.success(`You’re part of ${membership.name}`, {
-        description: 'Your school is in your picture menu.',
+        description: 'Find it on your Account page, under School.',
       })
     },
     onError: (error) => {
@@ -229,7 +239,7 @@ function Accept({
             text="You can be in one school at a time. Leave it from your School page, then open this link again."
             action={
               <Link
-                to="/school"
+                to="/account/school"
                 className={cn(buttonVariants(), 'h-11 rounded-lg font-bold')}
               >
                 Open my school

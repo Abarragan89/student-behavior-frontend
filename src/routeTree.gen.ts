@@ -15,10 +15,17 @@ import { Route as InviteRouteImport } from './routes/invite'
 import { Route as JoinRouteImport } from './routes/join'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as SubRouteImport } from './routes/sub'
+import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as AuthedAccountRouteImport } from './routes/_authed/account'
+import { Route as AuthedCalendarRouteImport } from './routes/_authed/calendar'
 import { Route as AuthedClassesRouteImport } from './routes/_authed/classes'
+import { Route as AuthedDashboardRouteImport } from './routes/_authed/dashboard'
 import { Route as AuthedMarksRouteImport } from './routes/_authed/marks'
+import { Route as AuthedSchedulesRouteImport } from './routes/_authed/schedules'
+import { Route as AuthedStaffRouteImport } from './routes/_authed/staff'
+import { Route as AuthedStaffConferencesRouteImport } from './routes/_authed/staff-conferences'
 import { Route as SchoolStartRouteImport } from './routes/school.start'
+import { Route as AuthedAccountSchoolRouteImport } from './routes/_authed/account_.school'
 import { Route as AuthedConferencesIndexRouteImport } from './routes/_authed/conferences.index'
 import { Route as AuthedConferencesConferenceIdRouteImport } from './routes/_authed/conferences.$conferenceId'
 import { Route as AuthedLessonPlansIndexRouteImport } from './routes/_authed/lesson-plans.index'
@@ -59,9 +66,19 @@ const SubRoute = SubRouteImport.update({
   path: '/sub',
   getParentRoute: () => rootRouteImport,
 } as any)
+const UnsubscribeRoute = UnsubscribeRouteImport.update({
+  id: '/unsubscribe',
+  path: '/unsubscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthedAccountRoute = AuthedAccountRouteImport.update({
   id: '/account',
   path: '/account',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedCalendarRoute = AuthedCalendarRouteImport.update({
+  id: '/calendar',
+  path: '/calendar',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedClassesRoute = AuthedClassesRouteImport.update({
@@ -69,15 +86,40 @@ const AuthedClassesRoute = AuthedClassesRouteImport.update({
   path: '/classes',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedDashboardRoute = AuthedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedMarksRoute = AuthedMarksRouteImport.update({
   id: '/marks',
   path: '/marks',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedSchedulesRoute = AuthedSchedulesRouteImport.update({
+  id: '/schedules',
+  path: '/schedules',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedStaffRoute = AuthedStaffRouteImport.update({
+  id: '/staff',
+  path: '/staff',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedStaffConferencesRoute = AuthedStaffConferencesRouteImport.update({
+  id: '/staff-conferences',
+  path: '/staff-conferences',
   getParentRoute: () => AuthedRoute,
 } as any)
 const SchoolStartRoute = SchoolStartRouteImport.update({
   id: '/school/start',
   path: '/school/start',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthedAccountSchoolRoute = AuthedAccountSchoolRouteImport.update({
+  id: '/account_/school',
+  path: '/account/school',
+  getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedConferencesIndexRoute = AuthedConferencesIndexRouteImport.update({
   id: '/conferences/',
@@ -142,10 +184,17 @@ export interface FileRoutesByFullPath {
   '/join': typeof JoinRoute
   '/login': typeof LoginRoute
   '/sub': typeof SubRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/account': typeof AuthedAccountRoute
+  '/calendar': typeof AuthedCalendarRoute
   '/classes': typeof AuthedClassesRoute
+  '/dashboard': typeof AuthedDashboardRoute
   '/marks': typeof AuthedMarksRoute
+  '/schedules': typeof AuthedSchedulesRoute
+  '/staff': typeof AuthedStaffRoute
+  '/staff-conferences': typeof AuthedStaffConferencesRoute
   '/school/start': typeof SchoolStartRoute
+  '/account/school': typeof AuthedAccountSchoolRoute
   '/conferences/$conferenceId': typeof AuthedConferencesConferenceIdRoute
   '/lesson-plans/$date': typeof AuthedLessonPlansDateRoute
   '/students/$studentId': typeof AuthedStudentsStudentIdRoute
@@ -164,10 +213,17 @@ export interface FileRoutesByTo {
   '/join': typeof JoinRoute
   '/login': typeof LoginRoute
   '/sub': typeof SubRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/account': typeof AuthedAccountRoute
+  '/calendar': typeof AuthedCalendarRoute
   '/classes': typeof AuthedClassesRoute
+  '/dashboard': typeof AuthedDashboardRoute
   '/marks': typeof AuthedMarksRoute
+  '/schedules': typeof AuthedSchedulesRoute
+  '/staff': typeof AuthedStaffRoute
+  '/staff-conferences': typeof AuthedStaffConferencesRoute
   '/school/start': typeof SchoolStartRoute
+  '/account/school': typeof AuthedAccountSchoolRoute
   '/conferences/$conferenceId': typeof AuthedConferencesConferenceIdRoute
   '/lesson-plans/$date': typeof AuthedLessonPlansDateRoute
   '/students/$studentId': typeof AuthedStudentsStudentIdRoute
@@ -187,10 +243,17 @@ export interface FileRoutesById {
   '/join': typeof JoinRoute
   '/login': typeof LoginRoute
   '/sub': typeof SubRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/_authed/account': typeof AuthedAccountRoute
+  '/_authed/calendar': typeof AuthedCalendarRoute
   '/_authed/classes': typeof AuthedClassesRoute
+  '/_authed/dashboard': typeof AuthedDashboardRoute
   '/_authed/marks': typeof AuthedMarksRoute
+  '/_authed/schedules': typeof AuthedSchedulesRoute
+  '/_authed/staff': typeof AuthedStaffRoute
+  '/_authed/staff-conferences': typeof AuthedStaffConferencesRoute
   '/school/start': typeof SchoolStartRoute
+  '/_authed/account_/school': typeof AuthedAccountSchoolRoute
   '/_authed/conferences/$conferenceId': typeof AuthedConferencesConferenceIdRoute
   '/_authed/lesson-plans/$date': typeof AuthedLessonPlansDateRoute
   '/_authed/students/$studentId': typeof AuthedStudentsStudentIdRoute
@@ -211,10 +274,17 @@ export interface FileRouteTypes {
     | '/join'
     | '/login'
     | '/sub'
+    | '/unsubscribe'
     | '/account'
+    | '/calendar'
     | '/classes'
+    | '/dashboard'
     | '/marks'
+    | '/schedules'
+    | '/staff'
+    | '/staff-conferences'
     | '/school/start'
+    | '/account/school'
     | '/conferences/$conferenceId'
     | '/lesson-plans/$date'
     | '/students/$studentId'
@@ -233,10 +303,17 @@ export interface FileRouteTypes {
     | '/join'
     | '/login'
     | '/sub'
+    | '/unsubscribe'
     | '/account'
+    | '/calendar'
     | '/classes'
+    | '/dashboard'
     | '/marks'
+    | '/schedules'
+    | '/staff'
+    | '/staff-conferences'
     | '/school/start'
+    | '/account/school'
     | '/conferences/$conferenceId'
     | '/lesson-plans/$date'
     | '/students/$studentId'
@@ -255,10 +332,17 @@ export interface FileRouteTypes {
     | '/join'
     | '/login'
     | '/sub'
+    | '/unsubscribe'
     | '/_authed/account'
+    | '/_authed/calendar'
     | '/_authed/classes'
+    | '/_authed/dashboard'
     | '/_authed/marks'
+    | '/_authed/schedules'
+    | '/_authed/staff'
+    | '/_authed/staff-conferences'
     | '/school/start'
+    | '/_authed/account_/school'
     | '/_authed/conferences/$conferenceId'
     | '/_authed/lesson-plans/$date'
     | '/_authed/students/$studentId'
@@ -278,6 +362,7 @@ export interface RootRouteChildren {
   JoinRoute: typeof JoinRoute
   LoginRoute: typeof LoginRoute
   SubRoute: typeof SubRoute
+  UnsubscribeRoute: typeof UnsubscribeRoute
   SchoolStartRoute: typeof SchoolStartRoute
 }
 
@@ -325,11 +410,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SubRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/unsubscribe': {
+      id: '/unsubscribe'
+      path: '/unsubscribe'
+      fullPath: '/unsubscribe'
+      preLoaderRoute: typeof UnsubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authed/account': {
       id: '/_authed/account'
       path: '/account'
       fullPath: '/account'
       preLoaderRoute: typeof AuthedAccountRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/calendar': {
+      id: '/_authed/calendar'
+      path: '/calendar'
+      fullPath: '/calendar'
+      preLoaderRoute: typeof AuthedCalendarRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/classes': {
@@ -339,11 +438,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedClassesRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/dashboard': {
+      id: '/_authed/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthedDashboardRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/marks': {
       id: '/_authed/marks'
       path: '/marks'
       fullPath: '/marks'
       preLoaderRoute: typeof AuthedMarksRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/schedules': {
+      id: '/_authed/schedules'
+      path: '/schedules'
+      fullPath: '/schedules'
+      preLoaderRoute: typeof AuthedSchedulesRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/staff': {
+      id: '/_authed/staff'
+      path: '/staff'
+      fullPath: '/staff'
+      preLoaderRoute: typeof AuthedStaffRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/staff-conferences': {
+      id: '/_authed/staff-conferences'
+      path: '/staff-conferences'
+      fullPath: '/staff-conferences'
+      preLoaderRoute: typeof AuthedStaffConferencesRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/school/start': {
@@ -352,6 +479,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/school/start'
       preLoaderRoute: typeof SchoolStartRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authed/account_/school': {
+      id: '/_authed/account_/school'
+      path: '/account/school'
+      fullPath: '/account/school'
+      preLoaderRoute: typeof AuthedAccountSchoolRouteImport
+      parentRoute: typeof AuthedRoute
     }
     '/_authed/conferences/': {
       id: '/_authed/conferences/'
@@ -428,8 +562,14 @@ declare module '@tanstack/react-router' {
 
 interface AuthedRouteChildren {
   AuthedAccountRoute: typeof AuthedAccountRoute
+  AuthedCalendarRoute: typeof AuthedCalendarRoute
   AuthedClassesRoute: typeof AuthedClassesRoute
+  AuthedDashboardRoute: typeof AuthedDashboardRoute
   AuthedMarksRoute: typeof AuthedMarksRoute
+  AuthedSchedulesRoute: typeof AuthedSchedulesRoute
+  AuthedStaffRoute: typeof AuthedStaffRoute
+  AuthedStaffConferencesRoute: typeof AuthedStaffConferencesRoute
+  AuthedAccountSchoolRoute: typeof AuthedAccountSchoolRoute
   AuthedConferencesConferenceIdRoute: typeof AuthedConferencesConferenceIdRoute
   AuthedLessonPlansDateRoute: typeof AuthedLessonPlansDateRoute
   AuthedStudentsStudentIdRoute: typeof AuthedStudentsStudentIdRoute
@@ -444,8 +584,14 @@ interface AuthedRouteChildren {
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAccountRoute: AuthedAccountRoute,
+  AuthedCalendarRoute: AuthedCalendarRoute,
   AuthedClassesRoute: AuthedClassesRoute,
+  AuthedDashboardRoute: AuthedDashboardRoute,
   AuthedMarksRoute: AuthedMarksRoute,
+  AuthedSchedulesRoute: AuthedSchedulesRoute,
+  AuthedStaffRoute: AuthedStaffRoute,
+  AuthedStaffConferencesRoute: AuthedStaffConferencesRoute,
+  AuthedAccountSchoolRoute: AuthedAccountSchoolRoute,
   AuthedConferencesConferenceIdRoute: AuthedConferencesConferenceIdRoute,
   AuthedLessonPlansDateRoute: AuthedLessonPlansDateRoute,
   AuthedStudentsStudentIdRoute: AuthedStudentsStudentIdRoute,
@@ -469,6 +615,7 @@ const rootRouteChildren: RootRouteChildren = {
   JoinRoute: JoinRoute,
   LoginRoute: LoginRoute,
   SubRoute: SubRoute,
+  UnsubscribeRoute: UnsubscribeRoute,
   SchoolStartRoute: SchoolStartRoute,
 }
 export const routeTree = rootRouteImport

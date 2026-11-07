@@ -310,7 +310,7 @@ export function listenForReminderTaps(
         await switchSpace(queryClient, null)
       } catch {
         toast.error('Opening your plan needs a connection', {
-          description: 'You’re in another teacher’s classroom.',
+          description: 'You’re in another teacher’s classes.',
         })
         return
       }
