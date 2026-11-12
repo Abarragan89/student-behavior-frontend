@@ -5,9 +5,11 @@ import { useSyncExternalStore } from 'react'
 // on phones, plays over music the teacher has on instead of pausing it, and
 // on iPhones the silent switch quiets it too.
 
+// MP3: every browser decodes it (decodeAudioData), at a twentieth of the
+// WAVs' size. Saved for offline use with the rest of the app (vite.config.ts).
 const URLS = {
-  positive: '/sounds/positive-mark.wav',
-  negative: '/sounds/negative-mark.wav',
+  positive: '/sounds/positive-mark.mp3',
+  negative: '/sounds/negative-mark.mp3',
 }
 
 type Clips<T> = { positive: T; negative: T }

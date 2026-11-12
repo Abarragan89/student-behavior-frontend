@@ -24,7 +24,7 @@ import { meQueryOptions, useMe } from '#/lib/auth'
 import { useReminders } from '#/lib/notifications'
 import type { FeatureKey } from '#/lib/coteachers'
 import { homeOf, isSchoolAdmin, permissionIn, spaceOf } from '#/lib/workspace'
-import { OfflineError, isOnline, useOnline } from '#/lib/online'
+import { OfflineError, isOnline, onReconnect } from '#/lib/online'
 import { isStandalone } from '#/lib/pwa-install'
 
 // Layout for pages that need a login: put them in src/routes/_authed/.
@@ -187,13 +187,16 @@ function AuthedLayout() {
  */
 function AuthedError({ error }: ErrorComponentProps) {
   const router = useRouter()
-  const online = useOnline()
   const offline = error instanceof OfflineError
 
-  // Try again by itself once the connection is back.
+  // Try again by itself when the connection comes back: on that change,
+  // never when this screen appears. A try shows this screen again while it
+  // runs, so trying on appearing started the next try before the last one
+  // could finish, without end (the tab froze).
   useEffect(() => {
-    if (offline && online) void router.invalidate()
-  }, [offline, online, router])
+    if (!offline) return
+    return onReconnect(() => void router.invalidate())
+  }, [offline, router])
 
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center gap-6 bg-background px-4 py-12 text-center text-foreground">
