@@ -156,7 +156,7 @@ export function EditorSection({
             onKeyDown={onTitleKeyDown}
             onFocus={title.onFocus}
             onBlur={title.onBlur}
-            className="field-sizing-content min-h-11 resize-none rounded-md bg-transparent px-2 py-2 text-lg leading-snug font-bold outline-none placeholder:font-medium placeholder:text-muted-foreground/70 focus-visible:bg-muted/60"
+            className="field-sizing-content min-h-11 resize-none rounded-md bg-transparent px-2 py-2 text-lg leading-snug font-bold outline-none placeholder:font-medium focus-visible:bg-muted/60"
           />
           <button
             type="button"
@@ -388,7 +388,7 @@ function AddLineInput({
           setFocused(false)
           setIndent(0)
         }}
-        className="field-sizing-content min-h-10 min-w-0 flex-1 resize-none rounded-md bg-transparent px-2 py-2 text-base leading-snug outline-none placeholder:text-muted-foreground focus-visible:bg-muted/60 scroll-mb-[calc(6rem+env(safe-area-inset-bottom))]"
+        className="field-sizing-content min-h-10 min-w-0 flex-1 resize-none rounded-md bg-transparent px-2 py-2 text-base leading-snug outline-none focus-visible:bg-muted/60 scroll-mb-[calc(6rem+env(safe-area-inset-bottom))]"
       />
       {focused && (
         <div className="flex shrink-0 items-center">

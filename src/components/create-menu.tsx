@@ -21,19 +21,20 @@ import { bottomTabClass } from '#/components/bottom-tab'
 import { useCreateDialogs } from '#/components/create-dialogs'
 import { meQueryOptions } from '#/lib/auth'
 import type { Me } from '#/lib/auth'
-import { canEdit } from '#/lib/workspace'
+import { canEdit, isSchoolAdmin } from '#/lib/workspace'
 
 type Item = { label: string; icon: LucideIcon; onSelect: () => void }
 
 /**
  * What the Add menu offers in this space. In a co-teacher's space, only what
  * their permissions allow, and never Add co-teacher (only the owner invites).
+ * A school's administrator has nothing to add here: no classes of their own.
  */
 export function useCreateItems(me: Me | null | undefined): Array<Item> {
   const { openAddStudents, openCreateClass, openAddCoteacher } =
     useCreateDialogs()
   const navigate = useNavigate()
-  if (!me) return []
+  if (!me || isSchoolAdmin(me)) return []
   const items: Array<Item> = []
   if (canEdit(me, 'classes')) {
     if (me.classroom) {

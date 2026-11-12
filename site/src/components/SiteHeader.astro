@@ -2,10 +2,10 @@
 import Logo from './Logo.astro'
 import ButtonLink from './ButtonLink.astro'
 import InstallApp from './islands/InstallApp'
-import { FAQ_PAGE, FEATURE_PAGES } from '../nav'
+import { FAQ_PAGE, FEATURE_PAGES, SCHOOLS_PAGE } from '../nav'
 import { loginUrl } from '../site'
 
-const links = [...FEATURE_PAGES, FAQ_PAGE]
+const links = [...FEATURE_PAGES, SCHOOLS_PAGE, FAQ_PAGE]
 const current = Astro.url.pathname.replace(/\.html$/, '')
 ---
 

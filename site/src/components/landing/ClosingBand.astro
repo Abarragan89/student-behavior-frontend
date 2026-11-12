@@ -1,6 +1,24 @@
 ---
+// The last band on a page: one heading, one sentence, one button. Signing in
+// by default; the schools page points it at starting a school.
 import ButtonLink from '../ButtonLink.astro'
 import { loginUrl } from '../../site'
+
+interface Props {
+  title?: string
+  text?: string
+  href?: string
+  label?: string
+  /** nofollow for the API's sign-in URL, which isn't a page to index. */
+  rel?: string
+}
+const {
+  title = 'Ready for tomorrow’s class?',
+  text = 'Sign in with Google to get started. It’s free, and you don’t need a credit card.',
+  href = loginUrl,
+  label = 'Sign in with Google',
+  rel = href === loginUrl ? 'nofollow' : undefined,
+} = Astro.props
 ---
 
 <section
@@ -11,16 +29,11 @@ import { loginUrl } from '../../site'
     class="mx-auto flex max-w-6xl flex-col items-start gap-6 px-4 py-16 sm:px-6 md:flex-row md:items-center md:justify-between"
   >
     <div>
-      <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">
-        Ready for tomorrow’s class?
-      </h2>
-      <p class="mt-2 text-lg text-primary-foreground/80">
-        Sign in with Google to get started. It’s free, and you don’t need a
-        credit card.
-      </p>
+      <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">{title}</h2>
+      <p class="mt-2 text-lg text-primary-foreground/80">{text}</p>
     </div>
-    <ButtonLink href={loginUrl} rel="nofollow" variant="outline">
-      Sign in with Google
+    <ButtonLink href={href} rel={rel} variant="outline">
+      {label}
     </ButtonLink>
   </div>
 </section>

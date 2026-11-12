@@ -262,11 +262,61 @@ export const FAQ_GROUPS: Array<FaqGroup> = [
           label: 'How deleting works',
         },
       },
+    ],
+  },
+  {
+    title: 'Schools',
+    items: [
       {
         id: 'school-version',
         question: 'Is there a version for a whole school or district?',
         answer: [
-          'Not right now. Each teacher has their own free account. To work with another teacher, add them as a co-teacher to share your classes, lesson plans and conferences. A substitute link is the way to share a single day.',
+          'Yes, for a school. An administrator names the school, signs in with Google, and gets one join link and QR code to send the staff. Teachers join with their own Google accounts and keep their own classes, lesson plans and conferences.',
+          'Today a school account is the join link, a dashboard of each teacher’s positive and negative marks for the day (where you can open any teacher’s classes, view only), and a school calendar with email reminders for your whole staff. Schedules, meeting slots with teachers and custom progress reports are coming. There isn’t a district version yet.',
+        ],
+        link: { href: '/for-schools', label: 'TeachForFree for schools' },
+      },
+      {
+        id: 'school-join',
+        question: 'How do teachers join a school?',
+        answer: [
+          'They open the join link (or scan its QR code) and sign in with Google. Someone already using TeachForFree signs in with the same account, and their classes stay theirs. Someone new gets a free account as they sign in.',
+          'Joining lets the administrator view their classes, students, marks and notes, but not change them. Lesson plans and conferences stay private.',
+          'A teacher is in one school at a time, and can leave from Account → School.',
+        ],
+      },
+      {
+        id: 'school-admin',
+        question: 'What can a school administrator do today?',
+        answer: [
+          'Send the join link, see who has joined, and remove someone who left. The link works for 7, 30 or 90 days and up to the number of teachers you choose. You can make a new link or turn it off anytime.',
+          'Their dashboard shows the school’s positive and negative marks for the day, and each teacher’s, for today or any day. Tapping a teacher opens that teacher’s classes, view only, exactly as the teacher sees them.',
+          'An administrator sees each teacher’s name and email, and can view their classes, students, marks and notes, but can’t change them. Teachers’ lesson plans and conferences stay private.',
+          'They can also bring in the whole staff list from Google Admin (or paste emails), sort people into groups, and put events on the school calendar: one-time or repeating. The people and groups they pick get an email invite, an email if it changes or is cancelled, and reminders.',
+          'Already keep the school year in Google Calendar? Export it and import the file: events, repeats and breaks come over, and staff get reminders without a flood of invites.',
+        ],
+      },
+      {
+        id: 'school-reminders',
+        question: 'Does my staff need TeachForFree to get event reminders?',
+        answer: [
+          'No. Invites, changes, cancellations and reminders go by email to anyone on the school’s staff list, whether or not they use TeachForFree. The subject says what and when (“Staff meeting starts in 10 minutes!”), so there’s often no need to open it, and replies go to the administrator.',
+          'Joining with the link is only for teachers who want to use TeachForFree in class. Anyone can stop a school’s event emails with the link at the bottom of one.',
+        ],
+      },
+      {
+        id: 'school-cost',
+        question: 'What does a school account cost?',
+        answer: [
+          'Founding schools are free through June 2027, with no credit card. Pricing for school accounts will be announced before then.',
+          'Teachers stay free either way. Everything a teacher uses today stays free.',
+        ],
+      },
+      {
+        id: 'co-teacher-or-school',
+        question: 'Should I add a co-teacher or start a school?',
+        answer: [
+          'A co-teacher shares one teacher’s classroom: their classes, lesson plans and conferences, and can change what the teacher allows. A school brings the whole staff together: each teacher keeps their own classroom, and the administrator can view it.',
         ],
         link: { href: '/faq#co-teachers', label: 'Sharing with a co-teacher' },
       },

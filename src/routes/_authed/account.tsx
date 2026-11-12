@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { ArrowLeft, HardDrive, LogOut, UsersRound } from 'lucide-react'
+import { ArrowLeft, Eye, HardDrive, LogOut, UsersRound } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -17,7 +17,8 @@ import { ClassroomConnection } from '#/components/classroom-connection'
 import { CoteachersSection } from '#/components/coteachers/coteachers-section'
 import { CoteachingSection } from '#/components/coteachers/coteaching-section'
 import { NotificationsSection } from '#/components/notifications/notifications-section'
-import { useSwitchSpace } from '#/lib/workspace'
+import { SchoolCard } from '#/components/school/school-card'
+import { isSchoolAdmin, useSwitchSpace, viewingAsAdmin } from '#/lib/workspace'
 import { SignOutDialog } from '#/components/sign-out-dialog'
 import { TeacherAvatar } from '#/components/teacher-avatar'
 
@@ -35,6 +36,9 @@ function AccountPage() {
   // Logged out: the layout is already sending the teacher to /login.
   if (!me) return null
   const { teacher } = me
+  // A school's administrator has no classes of their own: no co-teachers,
+  // Google Classroom, archive or lesson-plan reminders to manage here.
+  const admin = me.school?.role === 'admin'
   // Your account is always your own, even in another teacher's classroom:
   // their co-teachers, Google Classroom and archive stay theirs.
   const owner = me.acting_for
@@ -66,7 +70,7 @@ function AccountPage() {
       </Card>
 
       {/* Only the installed app saves anything (see src/lib/persist.ts). */}
-      {standalone && (
+      {standalone && !isSchoolAdmin(me) && (
         <p className="flex gap-3 text-sm text-muted-foreground">
           <HardDrive className="mt-0.5 size-4 shrink-0" />
           So the app opens quickly and works offline, your class list and
@@ -76,9 +80,35 @@ function AccountPage() {
       )}
 
       {/* This device's reminders: always yours, in any classroom. */}
-      <NotificationsSection />
+      {!admin && <NotificationsSection />}
 
-      {owner ? (
+      {/* Your school: also always yours. */}
+      <SchoolCard me={me} />
+
+      {owner && viewingAsAdmin(me) ? (
+        <Card className="gap-3 rounded-lg border-2 border-border shadow-md ring-0 [--card-spacing:--spacing(6)]">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg font-bold">
+              <Eye className="size-5" />
+              You’re viewing {owner.name}’s classes
+            </CardTitle>
+            <CardDescription>
+              View only, as your school’s administrator.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              variant="outline"
+              onClick={() => void switchTo(null, { to: '/dashboard' })}
+              disabled={switching !== undefined}
+              className="h-11 rounded-lg border-2 px-4 font-bold"
+            >
+              <ArrowLeft />
+              Back to dashboard
+            </Button>
+          </CardContent>
+        </Card>
+      ) : owner ? (
         <Card className="gap-3 rounded-lg border-2 border-border shadow-md ring-0 [--card-spacing:--spacing(6)]">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg font-bold">
@@ -103,12 +133,12 @@ function AccountPage() {
           </CardContent>
         </Card>
       ) : (
-        <CoteachersSection ownerName={teacher.name} />
+        !admin && <CoteachersSection ownerName={teacher.name} />
       )}
 
       <CoteachingSection me={me} />
 
-      {!owner && (
+      {!owner && !admin && (
         <>
           <ClassroomConnection />
           <ArchivedClasses />

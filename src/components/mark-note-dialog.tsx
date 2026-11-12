@@ -124,7 +124,7 @@ function MarkNoteDialog({
           placeholder="Add a detail..."
           aria-describedby={hintId}
           aria-invalid={error ? true : undefined}
-          className="min-h-20 rounded-lg border-2 border-border bg-card px-3 py-2.5 text-base placeholder:text-muted-foreground/70"
+          className="min-h-20 rounded-lg border-2 border-border bg-card px-3 py-2.5 text-base"
         />
         <div className="flex items-start justify-between gap-3 text-xs text-muted-foreground">
           <p id={hintId}>

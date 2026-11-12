@@ -98,16 +98,7 @@ export function StudentCard({
               No marks yet
             </span>
           ) : (
-            <>
-              <span className={positiveText}>
-                <Sign>+</Sign>
-                {today.positive}
-              </span>
-              <span className={negativeText}>
-                <Sign>−</Sign>
-                {today.negative}
-              </span>
-            </>
+            <MarkCounts positive={today.positive} negative={today.negative} />
           ))}
       </span>
 
@@ -120,6 +111,28 @@ export function StudentCard({
         className="absolute inset-0 rounded-xl outline-none"
       />
     </Card>
+  )
+}
+
+/** "+3 −1" in the ring's colors: a card's counts under its ring. */
+export function MarkCounts({
+  positive,
+  negative,
+}: {
+  positive: number
+  negative: number
+}) {
+  return (
+    <>
+      <span className={positiveText}>
+        <Sign>+</Sign>
+        {positive}
+      </span>
+      <span className={negativeText}>
+        <Sign>−</Sign>
+        {negative}
+      </span>
+    </>
   )
 }
 

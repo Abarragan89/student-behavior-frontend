@@ -8,6 +8,7 @@ import type { QueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { ApiError, apiFetch } from './api'
 import type { Space } from './coteachers'
+import type { SchoolMembership } from './school'
 import { SHARED_STALE_MS } from './freshness'
 import { turnOff as turnOffNotifications } from './notifications'
 import { clearPersistedCache } from './persist'
@@ -64,6 +65,10 @@ export type Me = {
   acting_for?: Space | null
   // Teachers who made you their co-teacher.
   coteaching?: Array<Space>
+  // Your school and your role in it; null when you aren't in one (missing
+  // in a copy saved before schools existed). Always yours, even in a
+  // classroom you co-teach.
+  school?: SchoolMembership | null
 }
 
 // Who is logged in, plus their dashboard data. The login cookies are

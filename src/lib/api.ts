@@ -13,6 +13,12 @@ export const loginUrl = `${API_URL}/auth/google/login`
 /** Signs in, then comes back to the co-teacher invite page (/invite). */
 export const inviteLoginUrl = `${loginUrl}?next=invite`
 
+/** Signs in, then comes back to a school's join link (/join). */
+export const joinLoginUrl = `${loginUrl}?next=join`
+
+/** Signs in, then comes back to starting a school (/school/start). */
+export const schoolStartLoginUrl = `${loginUrl}?next=school-start`
+
 /** The header naming the owner whose space a co-teacher is working in. */
 export const ACTING_FOR_HEADER = 'X-Acting-For'
 
@@ -37,6 +43,11 @@ export class ApiError extends Error {
     public status: number,
     /** How long the server asked us to wait before trying again (429, 503). */
     public retryAfterMs?: number,
+    /**
+     * Why a 403 or 409 was refused, when the server says (e.g.
+     * "other_school"), so a page can explain it.
+     */
+    public reason?: string,
   ) {
     super(`Request failed with status ${status}`)
     this.name = 'ApiError'
@@ -49,6 +60,26 @@ export function apiErrorFrom(res: Response) {
     res.status,
     parseRetryAfter(res.headers.get('Retry-After')),
   )
+}
+
+/**
+ * apiErrorFrom, plus the reason a 403 or 409 sends in its body
+ * ({"error": …, "reason": …}). Other statuses' bodies aren't read.
+ */
+async function apiErrorWithReason(res: Response) {
+  const error = apiErrorFrom(res)
+  if (res.status === 403 || res.status === 409) {
+    const body: unknown = await res.json().catch(() => null)
+    if (
+      body &&
+      typeof body === 'object' &&
+      'reason' in body &&
+      typeof body.reason === 'string'
+    ) {
+      error.reason = body.reason
+    }
+  }
+  return error
 }
 
 // Retry-After is either a number of seconds or an HTTP date.
@@ -130,7 +161,7 @@ export async function apiGet<T>(
   options?: ApiOptions,
 ): Promise<T> {
   const res = await apiFetch(path, {}, options)
-  if (!res.ok) throw apiErrorFrom(res)
+  if (!res.ok) throw await apiErrorWithReason(res)
   return res.json() as Promise<T>
 }
 
@@ -152,7 +183,7 @@ async function apiSend<T>(
         },
     options,
   )
-  if (!res.ok) throw apiErrorFrom(res)
+  if (!res.ok) throw await apiErrorWithReason(res)
   return res.json() as Promise<T>
 }
 
@@ -186,5 +217,5 @@ export async function apiDelete(
   options?: ApiOptions,
 ): Promise<void> {
   const res = await apiFetch(path, { method: 'DELETE' }, options)
-  if (!res.ok) throw apiErrorFrom(res)
+  if (!res.ok) throw await apiErrorWithReason(res)
 }

@@ -1,6 +1,15 @@
 import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import { CalendarClock, NotebookPen, School } from 'lucide-react'
+import {
+  CalendarClock,
+  CalendarDays,
+  CalendarRange,
+  Handshake,
+  LayoutDashboard,
+  NotebookPen,
+  School,
+  UsersRound,
+} from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -9,13 +18,22 @@ import { ConnectionStatus } from '#/components/connection-status'
 import { CreateMenu, useCreateItems } from '#/components/create-menu'
 import { meQueryOptions } from '#/lib/auth'
 import type { FeatureKey } from '#/lib/coteachers'
-import { canView } from '#/lib/workspace'
+import { canView, isSchoolAdmin } from '#/lib/workspace'
 
 type NavLink = {
-  to: '/classes' | '/lesson-plans' | '/conferences'
+  to:
+    | '/classes'
+    | '/lesson-plans'
+    | '/conferences'
+    | '/dashboard'
+    | '/calendar'
+    | '/schedules'
+    | '/staff-conferences'
+    | '/staff'
   label: string
   icon: LucideIcon
-  feature: FeatureKey
+  /** A teacher feature, hidden where this space doesn't open it. */
+  feature?: FeatureKey
 }
 
 const CLASSES: NavLink = {
@@ -37,10 +55,45 @@ const CONFERENCES: NavLink = {
   feature: 'conferences',
 }
 
-/** The links in this order, less any a co-teacher here can't open. */
-function useLinks(order: Array<NavLink>) {
+// A school administrator's tabs, in their own space.
+const DASHBOARD: NavLink = {
+  to: '/dashboard',
+  label: 'Dashboard',
+  icon: LayoutDashboard,
+}
+const CALENDAR: NavLink = {
+  to: '/calendar',
+  label: 'Calendar',
+  icon: CalendarDays,
+}
+const SCHEDULES: NavLink = {
+  to: '/schedules',
+  label: 'Schedules',
+  icon: CalendarRange,
+}
+// Meetings with teachers: not the teachers' parent conferences.
+const STAFF_CONFERENCES: NavLink = {
+  to: '/staff-conferences',
+  label: 'Conferences',
+  icon: Handshake,
+}
+// The staff list and groups.
+const STAFF: NavLink = {
+  to: '/staff',
+  label: 'Staff',
+  icon: UsersRound,
+}
+
+/**
+ * The teacher's links in this order, less any this space can't open; or a
+ * school administrator's own tabs, in theirs.
+ */
+function useLinks(teacherOrder: Array<NavLink>, adminOrder: Array<NavLink>) {
   const { data: me } = useQuery(meQueryOptions)
-  return order.filter((link) => canView(me, link.feature))
+  if (isSchoolAdmin(me)) return adminOrder
+  return teacherOrder.filter(
+    (link) => !link.feature || canView(me, link.feature),
+  )
 }
 
 // Spelled out so Tailwind sees each class.
@@ -50,6 +103,7 @@ const GRID_COLS = [
   'grid-cols-2',
   'grid-cols-3',
   'grid-cols-4',
+  'grid-cols-5',
 ]
 
 /**
@@ -58,7 +112,10 @@ const GRID_COLS = [
  * drawers).
  */
 export function HeaderNav({ className }: { className?: string }) {
-  const links = useLinks([CLASSES, LESSON_PLANS, CONFERENCES])
+  const links = useLinks(
+    [CLASSES, LESSON_PLANS, CONFERENCES],
+    [DASHBOARD, CALENDAR, SCHEDULES, STAFF_CONFERENCES, STAFF],
+  )
   return (
     <nav aria-label="Main" className={cn('flex items-center gap-1', className)}>
       {links.map(({ to, label, icon: Icon }) => (
@@ -82,13 +139,18 @@ export function HeaderNav({ className }: { className?: string }) {
 
 /**
  * The phone menu, fixed to the bottom of the screen: the Add menu,
- * Conferences, Lesson Plans, and Classes. The avatar floats at the top right
+ * Conferences, Lesson Plans, and Classes (a school administrator: their four
+ * tabs, no Add menu). The avatar floats at the top right
  * of the page (see _authed.tsx). Phones have no top bar, so the offline
  * pill sits on this bar's top edge. The page leaves room for it.
  */
 export function BottomNav({ className }: { className?: string }) {
   const { data: me } = useQuery(meQueryOptions)
-  const links = useLinks([CONFERENCES, LESSON_PLANS, CLASSES])
+  const links = useLinks(
+    [CONFERENCES, LESSON_PLANS, CLASSES],
+    // Home at the right edge, like Classes for a teacher.
+    [STAFF, STAFF_CONFERENCES, SCHEDULES, CALENDAR, DASHBOARD],
+  )
   // The + is left out when a co-teacher here has nothing to add.
   const hasAdd = useCreateItems(me).length > 0
   const columns = links.length + (hasAdd ? 1 : 0)

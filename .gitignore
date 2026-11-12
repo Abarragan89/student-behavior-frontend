@@ -17,3 +17,5 @@ daily-schedule-accordion
 .astro
 # Capture scripts (npm run capture): keys, frames, app build
 scripts/capture/.out
+
+*.xlsx

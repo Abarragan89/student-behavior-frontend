@@ -1,7 +1,7 @@
 ---
 title: Terms of Service
 description: 'The rules for using TeachForFree, the free classroom app for teachers: your account, student data, substitute links, acceptable use, and more.'
-updated: 2026-11-02
+updated: 2026-11-06
 ---
 
 ## About these terms
@@ -45,6 +45,16 @@ By signing in or otherwise using TeachForFree, including opening a substitute li
 ## Google Classroom
 
 Connecting Google Classroom is optional. Only import classes you teach and are allowed to use with TeachForFree. Google's terms apply to your Google Classroom account. You can disconnect it at any time from your Account page. The [Privacy Policy](/privacy#google-user-data) explains what we read from Google and how we use it.
+
+## School staff lists and event emails
+
+A school's administrator can add the school's staff to TeachForFree and have event invites, changes, and reminders emailed to them. If you do:
+
+- **Add only people on your school's staff** whom you're allowed to contact about school business, such as from your school's own staff directory. Never add students.
+- **Use event emails for school events only.** No advertising, fundraising appeals, or messages unrelated to school work.
+- **Respect "stop these emails."** Anyone can stop your school's event emails with the link at the bottom of one. Don't add them again under another address to get around it.
+
+Event emails come from TeachForFree on your school's behalf, with replies going to you. You're responsible for what your events say.
 
 ## Substitute links
 

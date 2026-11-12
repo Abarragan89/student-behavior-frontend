@@ -430,7 +430,7 @@ function NewSubjectCard({
             box.commit()
             onClose()
           }}
-          className="field-sizing-content min-h-11 min-w-0 flex-1 resize-none rounded-md bg-transparent px-2 py-2 text-lg leading-snug font-bold outline-none placeholder:font-medium placeholder:text-muted-foreground/70 focus-visible:bg-muted/60"
+          className="field-sizing-content min-h-11 min-w-0 flex-1 resize-none rounded-md bg-transparent px-2 py-2 text-lg leading-snug font-bold outline-none placeholder:font-medium focus-visible:bg-muted/60"
         />
       </div>
     </div>
@@ -495,7 +495,7 @@ function EmptyPlanCard({
             if (id) focusField(addLineField(id), 0)
           }}
           onBlur={() => box.commit()}
-          className="field-sizing-content min-h-10 min-w-0 flex-1 resize-none rounded-md border-2 border-border bg-background px-2 py-2 text-lg leading-snug font-bold outline-none placeholder:font-medium placeholder:text-muted-foreground focus-visible:bg-muted/60"
+          className="field-sizing-content min-h-10 min-w-0 flex-1 resize-none rounded-md border-2 border-border bg-background px-2 py-2 text-lg leading-snug font-bold outline-none placeholder:font-medium focus-visible:bg-muted/60"
         />
       </div>
       {onStartWithTemplate && (

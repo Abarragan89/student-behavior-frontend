@@ -1,7 +1,7 @@
 ---
-// The top of a feature page: label, heading, a sentence or two, the sign-in
-// button, and the app in a phone beside it (the "visual" slot), sized so
-// both fit on the first screen.
+// The top of a feature page: label, heading, a sentence or two, the main
+// button (signing in, unless the page gives another), and the app in a phone
+// beside it (the "visual" slot), sized so both fit on the first screen.
 import ButtonLink from './ButtonLink.astro'
 import { Eyebrow } from './landing/LandingSections'
 import { loginUrl } from '../site'
@@ -12,10 +12,23 @@ interface Props {
   eyebrowClass?: string
   title: string
   lead: string
+  /** The main button; signing in with Google by default. */
+  primary?: { href: string; label: string; rel?: string }
   /** A second, outlined button, e.g. a jump to a section below. */
   secondary?: { href: string; label: string }
 }
-const { eyebrow, eyebrowClass, title, lead, secondary } = Astro.props
+const {
+  eyebrow,
+  eyebrowClass,
+  title,
+  lead,
+  primary = {
+    href: loginUrl,
+    label: 'Sign in with Google — it’s free',
+    rel: 'nofollow',
+  },
+  secondary,
+} = Astro.props
 ---
 
 <section
@@ -30,8 +43,8 @@ const { eyebrow, eyebrowClass, title, lead, secondary } = Astro.props
     </h1>
     <p class="mt-6 max-w-xl text-lg text-muted-foreground">{lead}</p>
     <div class="mt-8 flex flex-col gap-3 sm:flex-row">
-      <ButtonLink href={loginUrl} rel="nofollow">
-        Sign in with Google — it’s free
+      <ButtonLink href={primary.href} rel={primary.rel}>
+        {primary.label}
       </ButtonLink>
       {
         secondary && (

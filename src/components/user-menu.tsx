@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { Link, useMatchRoute } from '@tanstack/react-router'
 import {
+  Building2,
   Check,
   Download,
+  LayoutDashboard,
   LogOut,
   Moon,
   School,
@@ -36,8 +38,8 @@ import {
  * The teacher's avatar, at the top right: in the top bar on wide screens, and
  * in its own row above the page on phones. Opens their name, the spaces they
  * can switch between (their own classes, and each teacher who made them a
- * co-teacher), Account, Edit marks, Download the app (website only),
- * Dark/Light mode, and Sign out.
+ * co-teacher), Account, their school (if they're in one), Edit marks,
+ * Download the app (website only), Dark/Light mode, and Sign out.
  */
 export function UserMenu({ me }: { me: Me }) {
   const { teacher } = me
@@ -54,7 +56,9 @@ export function UserMenu({ me }: { me: Me }) {
   // theirs.
   const matchRoute = useMatchRoute()
   const active = Boolean(
-    matchRoute({ to: '/account' }) || matchRoute({ to: '/marks' }),
+    matchRoute({ to: '/account' }) ||
+    matchRoute({ to: '/marks' }) ||
+    matchRoute({ to: '/account/school' }),
   )
 
   return (
@@ -109,8 +113,10 @@ export function UserMenu({ me }: { me: Me }) {
                 className="flex flex-col gap-1"
               >
                 <SpaceButton
-                  label="My classes"
-                  icon={School}
+                  label={
+                    me.school?.role === 'admin' ? 'Dashboard' : 'My classes'
+                  }
+                  icon={me.school?.role === 'admin' ? LayoutDashboard : School}
                   current={current === null}
                   busy={switching === null}
                   onClick={() => {
@@ -147,6 +153,21 @@ export function UserMenu({ me }: { me: Me }) {
               <UserRound />
               Account
             </Button>
+            {/* Always your own school, in any classroom. */}
+            {me.school && (
+              <Button
+                variant="ghost"
+                nativeButton={false}
+                render={<Link to="/account/school" />}
+                onClick={() => setOpen(false)}
+                className="h-10 justify-start rounded-lg font-bold"
+              >
+                <Building2 />
+                <span className="min-w-0 flex-1 truncate text-left">
+                  {me.school.name}
+                </span>
+              </Button>
+            )}
             {/* Mark types belong to the class's teacher: Classes: Edit. */}
             {canEdit(me, 'classes') && (
               <Button

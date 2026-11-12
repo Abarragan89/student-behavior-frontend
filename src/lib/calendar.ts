@@ -40,6 +40,56 @@ export function monthGrid(month: string) {
   return Array.from({ length: 42 }, (_, i) => addDays(start, i))
 }
 
+/**
+ * Only the weeks of monthGrid that have days of the month: four to six
+ * weeks, so no row is all next month. The first and last weeks still show
+ * the days of the months beside it that fall in them.
+ */
+export function monthWeeks(month: string) {
+  const days = monthGrid(month)
+  const after = days.findIndex((d, i) => i % 7 === 0 && monthOf(d) > month)
+  return after === -1 ? days : days.slice(0, after)
+}
+
+/**
+ * The Monday that starts date's school week: Monday to Friday, then the
+ * weekend. A Saturday or Sunday belongs to the week that just ended.
+ */
+export function weekStart(date: string) {
+  return addDays(date, -((parseDate(date).getDay() + 6) % 7))
+}
+
+/** The seven dates of the week starting on monday, Monday to Sunday. */
+export function weekDays(monday: string) {
+  return Array.from({ length: 7 }, (_, i) => addDays(monday, i))
+}
+
+/**
+ * The month most of a week's school days are in (its Wednesday's). Its
+ * grid (monthGrid) always holds the whole week, Monday to Sunday.
+ */
+export function weekMonth(monday: string) {
+  return monthOf(addDays(monday, 2))
+}
+
+/**
+ * The week a month opens on: the one with its first school day (a month
+ * starting on a weekend opens on the Monday after).
+ */
+export function firstWeekOf(month: string) {
+  const first = `${month}-01`
+  return weekStart(isWeekend(first) ? stepSchoolDay(first, 1) : first)
+}
+
+/** "Nov 9 – 15, 2026", or "Nov 30 – Dec 6, 2026": a week's dates. */
+export function formatWeekRange(monday: string) {
+  return new Intl.DateTimeFormat(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).formatRange(parseDate(monday), parseDate(addDays(monday, 6)))
+}
+
 /** "Sun", "Mon"…, in the teacher's language, for the calendar's header. */
 export function weekdayLabels(format: 'short' | 'narrow' = 'short') {
   // 2026-11-01 is a Sunday.
@@ -67,6 +117,16 @@ export function formatShortDate(date: string) {
     month: 'short',
     day: 'numeric',
   })
+}
+
+/**
+ * "Thu, Nov 12 – Tue, Nov 17": an event's days. One day is just
+ * "Thu, Nov 12".
+ */
+export function formatDayRange(first: string, last: string) {
+  return first === last
+    ? formatShortDate(first)
+    : `${formatShortDate(first)} – ${formatShortDate(last)}`
 }
 
 /** "Thursday". */

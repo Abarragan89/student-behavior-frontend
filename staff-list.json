@@ -1,0 +1,20 @@
+{
+    "users": [
+        {
+            "First Name [Required]": "Anthony",
+            "Last Name [Required]": "Barragan",
+            "Email Address [Required]": "hello@mathfactmissions.com",
+            "Status [READ ONLY]": "Active",
+            "Last Sign In [READ ONLY]": "2026/11/04 21:58:21",
+            "Email Usage [READ ONLY]": "0.0GB"
+        },
+        {
+            "First Name [Required]": "Anthony",
+            "Last Name [Required]": "Barragan",
+            "Email Address [Required]": "hello@teachforfree.com",
+            "Status [READ ONLY]": "Active",
+            "Last Sign In [READ ONLY]": "2026/11/04 22:02:11",
+            "Email Usage [READ ONLY]": "0.0GB"
+        }
+    ]
+}

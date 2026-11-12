@@ -83,12 +83,18 @@ export function isFullAccess(p: Permissions) {
 
 // ---------- A space shared with you ----------
 
-/** A teacher who made you their co-teacher, as GET /users/me lists them. */
+/**
+ * A teacher's space you can work in, as GET /users/me lists it: they made you
+ * their co-teacher, or (acting_for only) you're their school's administrator,
+ * viewing their classes. Missing kind (a copy saved before schools) means
+ * co-teacher.
+ */
 export type Space = {
   owner_id: string
   name: string
   email: string
   permissions: Permissions
+  kind?: 'coteacher' | 'school_admin'
 }
 
 // ---------- Your own co-teachers (Account page) ----------

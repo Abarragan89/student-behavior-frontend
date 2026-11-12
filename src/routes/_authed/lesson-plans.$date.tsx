@@ -45,6 +45,7 @@ import { canShareWithSub, mayLoad, usePermission } from '#/lib/workspace'
 import { meQueryOptions } from '#/lib/auth'
 import { OfflineNote } from '#/components/offline-note'
 import { CopyDayDialog } from '#/components/lesson-plans/copy-day-dialog'
+import { DayEvents } from '#/components/lesson-plans/day-events'
 import {
   EditorEndSpace,
   PlanEditor,
@@ -181,6 +182,8 @@ function DayPlan({ date }: { date: string }) {
             <ChevronRight className="size-5" />
           </Button>
         </header>
+
+        <DayEvents date={date} today={today} />
 
         {sections.length > 0 && (
           <div className="flex items-center gap-2">
