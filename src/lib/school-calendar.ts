@@ -110,6 +110,9 @@ export type SchoolBreak = {
  */
 export type WeekNote = { week: string; text: string }
 
+/** How many events still to come a school can have (the server's cap). */
+export const MAX_UPCOMING_EVENTS = 2000
+
 export type CalendarWindow = {
   timezone: string
   today: string

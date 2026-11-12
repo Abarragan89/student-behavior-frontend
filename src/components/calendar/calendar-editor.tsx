@@ -9,6 +9,7 @@ import {
 import {
   CalendarOff,
   CircleAlert,
+  Ellipsis,
   FileUp,
   Globe,
   Plus,
@@ -18,6 +19,12 @@ import {
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Spinner } from '@/components/ui/spinner'
 import { cn } from '@/lib/utils'
 import { Agenda } from '#/components/calendar/agenda'
@@ -50,7 +57,11 @@ import { addDays, formatLongDate, timeZoneLabel } from '#/lib/day'
 import { localDate, timeZone } from '#/lib/marks'
 import { mineMatcher } from '#/lib/month-layout'
 import { useEnsureSchoolTimezone } from '#/lib/school'
-import { calendarQueryOptions, weekNoteOf } from '#/lib/school-calendar'
+import {
+  MAX_UPCOMING_EVENTS,
+  calendarQueryOptions,
+  weekNoteOf,
+} from '#/lib/school-calendar'
 import type { Occurrence } from '#/lib/school-calendar'
 import { staffQueryOptions } from '#/lib/staff'
 
@@ -62,8 +73,8 @@ const NONE: Array<never> = []
  * repeating), school breaks, categories, imports and email reminders; a
  * month grid, a week, or a list (the default on phones). For a school's
  * administrators (their Calendar tab) and teachers an administrator let
- * edit it (their School page). Only administrators get "Who can edit" and
- * the Staff link.
+ * edit it (their School page). Import (and, for administrators, "Who can
+ * edit") sit in the "⋯" menu; only administrators get the Staff link.
  *
  * Printing gives only the calendar: the screen part is print:hidden and
  * the paper version sits beside it, so the page must not hide this whole
@@ -178,34 +189,58 @@ export function CalendarEditor({
             </Heading>
             {!isAdmin && <Badge variant="secondary">You can edit</Badge>}
           </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setImportOpen(true)}
-              disabled={!cal || !staff.data}
-              className="h-10 rounded-lg border-2 px-3 font-bold"
-            >
-              <FileUp />
-              <span className="max-sm:sr-only">Import</span>
-            </Button>
+          <div className="flex flex-wrap gap-2">
+            {/* Kept in sight, named on phones too ("Breaks", so New event
+                fits on the row): it shows a break is its own thing, so a
+                break isn't made as an event that repeating events don't
+                skip. */}
+            {/* What's done a few times a year. An empty calendar also offers
+                Import below, where a new school looks first. */}
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    aria-label="More calendar options"
+                    className="size-10 rounded-lg border-2"
+                  />
+                }
+              >
+                <Ellipsis className="size-5" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-56 rounded-lg border-2 border-border p-1 shadow-md ring-0"
+              >
+                <DropdownMenuItem
+                  className="h-10 rounded-md font-bold"
+                  disabled={!cal || !staff.data}
+                  onClick={() => setImportOpen(true)}
+                >
+                  <FileUp />
+                  Import a calendar
+                </DropdownMenuItem>
+                {isAdmin && (
+                  <DropdownMenuItem
+                    className="h-10 rounded-md font-bold"
+                    onClick={() => setEditorsOpen(true)}
+                  >
+                    <UserCog />
+                    Who can edit
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button
               variant="outline"
               onClick={() => setBreaksOpen(true)}
               className="h-10 rounded-lg border-2 px-3 font-bold"
             >
               <CalendarOff />
-              <span className="max-sm:sr-only">School breaks</span>
+              <span className="sm:hidden">Breaks</span>
+              <span className="max-sm:hidden">School breaks</span>
             </Button>
-            {isAdmin && (
-              <Button
-                variant="outline"
-                onClick={() => setEditorsOpen(true)}
-                className="h-10 rounded-lg border-2 px-3 font-bold"
-              >
-                <UserCog />
-                <span className="max-sm:sr-only">Who can edit</span>
-              </Button>
-            )}
             <Button
               onClick={() => newEvent(startAt)}
               disabled={!cal}
@@ -242,6 +277,18 @@ export function CalendarEditor({
             <UsersRound className="size-5 shrink-0" />
             Add your staff to invite them to events and send them reminders.
           </Link>
+        )}
+        {cal && staff.data && cal.events_left >= MAX_UPCOMING_EVENTS && (
+          // Nothing still to come: a new school, or a new school year.
+          <button
+            type="button"
+            onClick={() => setImportOpen(true)}
+            className="flex items-center gap-3 rounded-lg border-2 border-dashed border-border px-4 py-3 text-left text-sm font-bold outline-none hover:bg-muted focus-visible:ring-4 focus-visible:ring-ring"
+          >
+            <FileUp className="size-5 shrink-0" />
+            Bring in your school’s calendar from Google Calendar or a
+            spreadsheet.
+          </button>
         )}
         {cal && (
           <CategoryLegend
