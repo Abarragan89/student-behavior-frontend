@@ -1,4 +1,5 @@
 import type ICAL from 'ical.js'
+import { MAX_SPAN_DAYS } from './event-span'
 import type {
   EventInput,
   ImportWireEvent,
@@ -52,6 +53,7 @@ export type SkipReason =
   | 'no-length'
   | 'cancelled'
   | 'unreadable'
+  | 'undated'
 
 /** Why events were skipped, in words. */
 export const SKIP_REASONS: Record<SkipReason, string> = {
@@ -65,6 +67,7 @@ export const SKIP_REASONS: Record<SkipReason, string> = {
   'no-length': 'Has no length',
   cancelled: 'Cancelled',
   unreadable: 'Couldn’t be read',
+  undated: 'Not on a date (notes like “Core Virtue”)',
 }
 
 /** An event's details as the form has them (no reminders yet). */
@@ -87,6 +90,8 @@ export type ImportOverride = ImportFields & { original_date: string }
 /** An event ready to send, but for the reminders chosen in the preview. */
 export type ImportEvent = ImportFields & {
   uid: string
+  /** The last day of an event that spans days; null for one day. */
+  end_date: string | null
   repeat: Repeat | null
   until: string | null
   cancelled: Array<string>
@@ -122,8 +127,8 @@ export type ImportContext = {
   today: string
   /** Staff list: lowercased email → staff id. */
   staffByEmail: Map<string, string>
-  /** The administrator's email, lowercased. */
-  adminEmail: string
+  /** Your email (whoever imports), lowercased. */
+  yourEmail: string
 }
 
 /** A file that isn't a calendar, or a ZIP with none in it. */
@@ -222,7 +227,7 @@ function parseCalendar(
     fallbackName
   const cal: ImportCalendar = {
     name,
-    personal: name.toLowerCase() === ctx.adminEmail,
+    personal: name.toLowerCase() === ctx.yourEmail,
     items: [],
     skipped: [],
   }
@@ -369,15 +374,18 @@ function mapEvent(
       const last = addDays(first, days - 1)
       if (last < ctx.today) return 'past'
       if (first > fiveYears) return 'far'
-      // As an event: from today at the earliest, a date a day to the last.
+      // As an event: from today at the earliest, to the last day. Up to
+      // 60 days, one event that spans them; longer, a date a day.
       const from = first < ctx.today ? ctx.today : first
       const until =
         last > addYears(from, YEARS_AHEAD) ? addYears(from, YEARS_AHEAD) : last
+      const span = from !== until && daysBetween(from, until) < MAX_SPAN_DAYS
       const event: ImportEvent = {
         ...fields(ev, { date: from, min: null }, null),
         uid,
-        repeat: from === until ? null : daily(),
-        until: from === until ? null : until,
+        end_date: span ? until : null,
+        repeat: from === until || span ? null : daily(),
+        until: from === until || span ? null : until,
         cancelled: [],
         overrides: [],
       }
@@ -400,6 +408,7 @@ function mapEvent(
       {
         ...fields(ev, s, s.min + minutes),
         uid,
+        end_date: null,
         repeat: null,
         until: null,
         cancelled: [],
@@ -510,6 +519,7 @@ function mapEvent(
     {
       ...fields(ev, first, first.min === null ? null : first.min + minutes),
       uid,
+      end_date: null,
       repeat,
       until,
       cancelled: [...cancelled].sort(),
@@ -534,12 +544,12 @@ function audienceOf(ve: Component, ctx: ImportContext) {
     // Rooms and Google's own calendar addresses (a shared calendar can be
     // listed as a guest) aren't people.
     if (!email || /calendar\.google\.com$/.test(email)) continue
-    if (email === ctx.adminEmail) {
+    if (email === ctx.yourEmail) {
       declined = text(a.getParameter('partstat')).toUpperCase() === 'DECLINED'
     }
     const id = ctx.staffByEmail.get(email)
     if (id) staff.add(id)
-    else if (email !== ctx.adminEmail) outside++
+    else if (email !== ctx.yourEmail) outside++
   }
   const cls = text(ve.getFirstPropertyValue('class')).toUpperCase()
   return {
@@ -708,12 +718,14 @@ function ourDates(
 
 /**
  * The event as sent: the reminders chosen in the preview (all-day events
- * can't have the ones before a start time), repeats skipping breaks.
+ * can't have the ones before a start time), repeats skipping breaks, and
+ * its category (a spreadsheet's color), if any.
  */
 export function toWire(
   e: ImportEvent,
   reminders: Array<Reminder>,
   timed: (r: Reminder) => boolean,
+  categoryId: string | null = null,
 ): ImportWireEvent {
   const forEvent = (allDay: boolean) =>
     reminders.filter((r) => !(allDay && timed(r)))
@@ -722,11 +734,13 @@ export function toWire(
     skip_breaks: true,
     group_ids: [],
     reminders: forEvent(e.all_day),
+    category_id: categoryId,
     overrides: e.overrides.map((o) => ({
       ...o,
       skip_breaks: true,
       group_ids: [],
       reminders: forEvent(o.all_day),
+      category_id: categoryId,
     })),
   }
 }

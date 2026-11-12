@@ -8,6 +8,7 @@ import {
   Clock,
   Mail,
   MapPin,
+  Tag,
   Pencil,
   Repeat,
   Trash2,
@@ -15,19 +16,31 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
+import { CategoryDot } from '#/components/calendar/categories'
 import { OfflineNote } from '#/components/offline-note'
 import { ResponsiveDialog } from '#/components/responsive-dialogue'
-import { formatClockRange, formatShortDate } from '#/lib/calendar'
+import {
+  formatClockRange,
+  formatDayRange,
+  formatShortDate,
+} from '#/lib/calendar'
 import { formatLongDate } from '#/lib/day'
+import { isSpan } from '#/lib/event-span'
 import { useOnline } from '#/lib/online'
 import {
-  REMINDERS,
   deleteEvent,
   describeRepeat,
   eventQueryOptions,
+  invalidateCalendar,
+  REMINDERS,
   repeatsWithinAWeek,
 } from '#/lib/school-calendar'
-import type { Occurrence, Scope, SchoolEvent } from '#/lib/school-calendar'
+import type {
+  EventCategory,
+  Occurrence,
+  Scope,
+  SchoolEvent,
+} from '#/lib/school-calendar'
 import { displayName } from '#/lib/staff'
 import type { StaffDirectory } from '#/lib/staff'
 
@@ -41,12 +54,14 @@ export function EventSheet({
   onClose,
   onEdit,
   directory,
+  categories,
   emailsOn,
 }: {
   occurrence: Occurrence | null
   onClose: () => void
   onEdit: (event: SchoolEvent, date: string) => void
   directory: StaffDirectory | undefined
+  categories: Array<EventCategory>
   /** Reminder and update emails go out. */
   emailsOn: boolean
 }) {
@@ -55,7 +70,13 @@ export function EventSheet({
       isOpen={occurrence !== null}
       setIsOpen={(open: boolean) => !open && onClose()}
       title={occurrence?.title ?? 'Event'}
-      description={occurrence ? formatLongDate(occurrence.date) : undefined}
+      description={
+        occurrence
+          ? isSpan(occurrence)
+            ? formatDayRange(occurrence.first_day, occurrence.last_day)
+            : formatLongDate(occurrence.date)
+          : undefined
+      }
       showDescription
     >
       {occurrence && (
@@ -65,6 +86,7 @@ export function EventSheet({
           onClose={onClose}
           onEdit={onEdit}
           directory={directory}
+          categories={categories}
           emailsOn={emailsOn}
         />
       )}
@@ -77,12 +99,14 @@ function Details({
   onClose,
   onEdit,
   directory,
+  categories,
   emailsOn,
 }: {
   occurrence: Occurrence
   onClose: () => void
   onEdit: (event: SchoolEvent, date: string) => void
   directory: StaffDirectory | undefined
+  categories: Array<EventCategory>
   emailsOn: boolean
 }) {
   const online = useOnline()
@@ -109,6 +133,9 @@ function Details({
   const isSeries = !!e.repeat
   const canDelete = !occurrence.past || !isSeries
   const who = describeWho(e, directory)
+  const category = e.category_id
+    ? categories.find((c) => c.id === e.category_id)
+    : undefined
 
   if (deleting) {
     return (
@@ -126,9 +153,15 @@ function Details({
     <div className="flex flex-col gap-4">
       <dl className="flex flex-col gap-3 text-base">
         <Row icon={Clock} label="When">
-          {e.all_day
-            ? 'All day'
-            : formatClockRange(occurrence.start, occurrence.end)}
+          {isSpan(occurrence)
+            ? `${formatDayRange(occurrence.first_day, occurrence.last_day)} · ${
+                e.all_day
+                  ? 'All day'
+                  : `${formatClockRange(occurrence.start, occurrence.end)} each day`
+              }`
+            : e.all_day
+              ? 'All day'
+              : formatClockRange(occurrence.start, occurrence.end)}
         </Row>
         {e.repeat && (
           <Row icon={Repeat} label="Repeats">
@@ -145,6 +178,19 @@ function Details({
         {e.location && (
           <Row icon={MapPin} label="Where">
             {e.location}
+          </Row>
+        )}
+        {category && (
+          <Row icon={Tag} label="Category">
+            <span className="flex items-center gap-2">
+              <CategoryDot color={category.color} />
+              {category.name}
+              {category.shared && (
+                <span className="text-sm text-muted-foreground">
+                  · teachers see it
+                </span>
+              )}
+            </span>
           </Row>
         )}
         <Row icon={UsersRound} label="Who">
@@ -165,7 +211,9 @@ function Details({
       )}
       {occurrence.past && (
         <p className="text-sm text-muted-foreground">
-          This date has passed, so it can’t be changed.
+          {isSpan(occurrence)
+            ? 'This event has ended, so it can’t be changed.'
+            : 'This date has passed, so it can’t be changed.'}
         </p>
       )}
       <OfflineNote action="change events" />
@@ -272,8 +320,7 @@ function DeleteForm({
   const remove = useMutation({
     mutationFn: () => deleteEvent(event.id, date, scope),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['school-calendar'] })
-      void queryClient.invalidateQueries({ queryKey: ['school-event'] })
+      invalidateCalendar(queryClient)
       onDone()
       toast.success(
         !isSeries

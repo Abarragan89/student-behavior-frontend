@@ -1,5 +1,7 @@
 import { queryOptions } from '@tanstack/react-query'
+import type { QueryClient } from '@tanstack/react-query'
 import { apiDelete, apiGet, apiPost, apiPut } from './api'
+import type { CategoryColor } from './category-colors'
 import { parseDate } from './day'
 
 // The school calendar (Calendar tab): events the administrator makes for
@@ -29,7 +31,13 @@ export type SchoolEvent = {
   location: string
   notes: string
   all_day: boolean
+  /** Its date; for an event that spans days, the first. */
   date: string
+  /**
+   * The last day of an event that spans days (up to 60, never repeating);
+   * null for one day. Times, if any, are the same each day.
+   */
+  end_date: string | null
   start: string | null
   end: string | null
   repeat: Repeat | null
@@ -39,6 +47,8 @@ export type SchoolEvent = {
   staff_ids: Array<string>
   group_ids: Array<string>
   reminders: Array<Reminder>
+  /** Its category (the color it shows in), or none. */
+  category_id: string | null
   /** A one-date change of a series: which series, and the date it replaced. */
   series_id: string | null
   original_date: string | null
@@ -57,6 +67,34 @@ export type Occurrence = {
   repeats: boolean
   edited: boolean
   past: boolean
+  category_id: string | null
+  /** The viewer is invited (everyone, or them, or a group of theirs). */
+  invited: boolean
+  /**
+   * The whole event's first and last day: an event that spans days comes
+   * once per day it covers, each with the same two. Both are `date` for a
+   * one-day event or a date of a series. For a span, `past` means it has
+   * ended.
+   */
+  first_day: string
+  last_day: string
+}
+
+/**
+ * How a category's events show in a month: each its own chip; one line a
+ * day ("Employee out: Garcia, Ruiz"); or in the date row, beside the day's
+ * number (a daily duty, "SB-Cruz").
+ */
+export type CategoryDisplay = 'chip' | 'combined' | 'header'
+
+/** A kind of event and its color ("IEP/504", orange). */
+export type EventCategory = {
+  id: string
+  name: string
+  color: CategoryColor
+  display: CategoryDisplay
+  /** Teachers see its events on their school calendar. */
+  shared: boolean
 }
 
 export type SchoolBreak = {
@@ -66,15 +104,41 @@ export type SchoolBreak = {
   last_day: string
 }
 
+/**
+ * A week's message: reminders, a theme or goals that aren't events. `week`
+ * is its Monday (weeks run Monday to Sunday).
+ */
+export type WeekNote = { week: string; text: string }
+
 export type CalendarWindow = {
   timezone: string
   today: string
   occurrences: Array<Occurrence>
   breaks: Array<SchoolBreak>
+  /** The messages of the weeks the window touches. */
+  week_notes: Array<WeekNote>
+  /** The school's categories, oldest first. */
+  categories: Array<EventCategory>
   /** Reminder emails go out (the server has email set up). */
   emails: boolean
-  /** How many more events the school can add (it holds up to 1000). */
+  /**
+   * How many more events the school can add (it holds up to 2000 that are
+   * still to come; past ones don't count).
+   */
   events_left: number
+}
+
+/**
+ * A teacher's read-only school calendar: events they're invited to, and
+ * events in categories the administrator shares with staff.
+ */
+export type StaffCalendarWindow = {
+  timezone: string
+  today: string
+  occurrences: Array<Occurrence>
+  breaks: Array<SchoolBreak>
+  week_notes: Array<WeekNote>
+  categories: Array<EventCategory>
 }
 
 export type Scope = 'one' | 'week' | 'future'
@@ -88,6 +152,18 @@ export function calendarQueryOptions(from: string, to: string) {
         { space: null },
       ),
     staleTime: 30_000,
+  })
+}
+
+export function staffCalendarQueryOptions(from: string, to: string) {
+  return queryOptions({
+    queryKey: ['school-staff-calendar', from, to],
+    queryFn: () =>
+      apiGet<StaffCalendarWindow>(
+        `/schools/mine/staff-calendar?${new URLSearchParams({ from, to })}`,
+        { space: null },
+      ),
+    staleTime: 60_000,
   })
 }
 
@@ -108,6 +184,21 @@ export const breaksQueryOptions = queryOptions({
     apiGet<Array<SchoolBreak>>('/schools/mine/breaks', { space: null }),
   staleTime: 30_000,
 })
+
+/**
+ * After any change to the calendar: refetch every calendar view, the
+ * editor's and the read-only one (the School page, and the events on a
+ * teacher's lesson plans), with the open event and the breaks.
+ */
+export function invalidateCalendar(queryClient: QueryClient) {
+  for (const key of [
+    'school-calendar',
+    'school-staff-calendar',
+    'school-event',
+    'school-breaks',
+  ])
+    void queryClient.invalidateQueries({ queryKey: [key] })
+}
 
 export type Preview = { next: Array<string>; count: number | null }
 
@@ -160,6 +251,88 @@ export function deleteBreak(id: string) {
   })
 }
 
+// ---------- Week messages ----------
+
+/** How long a week's message can be (the server's limit). */
+export const MAX_WEEK_NOTE = 1000
+/** What a week without a message says. */
+export const DEFAULT_WEEK_NOTE = 'Have a great week!'
+
+/** The message of the week starting `monday`, or '' for none. */
+export function weekNoteOf(notes: Array<WeekNote>, monday: string) {
+  return notes.find((n) => n.week === monday)?.text ?? ''
+}
+
+/** Saves the message of the week starting `monday`; '' removes it. */
+export function saveWeekNote(monday: string, text: string) {
+  return apiPut<WeekNote>(
+    `/schools/mine/week-notes/${encodeURIComponent(monday)}`,
+    { text },
+    { space: null },
+  )
+}
+
+/**
+ * Puts a saved message into every calendar window already loaded, the
+ * editor's and the staff one, so the week shows it without a refetch.
+ */
+export function cacheWeekNote(queryClient: QueryClient, note: WeekNote) {
+  const put = <T extends { week_notes: Array<WeekNote> }>(w: T | undefined) =>
+    w && {
+      ...w,
+      week_notes: [
+        ...w.week_notes.filter((n) => n.week !== note.week),
+        ...(note.text ? [note] : []),
+      ],
+    }
+  queryClient.setQueriesData<CalendarWindow>(
+    { queryKey: ['school-calendar'] },
+    put,
+  )
+  queryClient.setQueriesData<StaffCalendarWindow>(
+    { queryKey: ['school-staff-calendar'] },
+    put,
+  )
+}
+
+// ---------- Categories ----------
+
+/** Up to this many per school (the server's limit). */
+export const MAX_CATEGORIES = 30
+export const MAX_CATEGORY_NAME = 40
+
+export type CategoryInput = Omit<EventCategory, 'id'>
+
+export function createCategory(c: CategoryInput) {
+  return apiPost<EventCategory>('/schools/mine/event-categories', c, {
+    space: null,
+  })
+}
+
+export function editCategory(id: string, c: CategoryInput) {
+  return apiPut<EventCategory>(
+    `/schools/mine/event-categories/${encodeURIComponent(id)}`,
+    c,
+    { space: null },
+  )
+}
+
+/** Its events stay, with no category. */
+export function deleteCategory(id: string) {
+  return apiDelete(`/schools/mine/event-categories/${encodeURIComponent(id)}`, {
+    space: null,
+  })
+}
+
+/** The category with this name, ignoring case and spaces at the ends. */
+export function categoryNamed(
+  categories: Array<EventCategory>,
+  name: string,
+): EventCategory | undefined {
+  const key = name.trim().toLocaleLowerCase()
+  return categories.find((c) => c.name.trim().toLocaleLowerCase() === key)
+}
+
 // ---------- Importing a calendar file (see calendar-import.ts) ----------
 
 /** An event from a calendar file, as sent: the form's fields and more. */
@@ -170,7 +343,10 @@ export type ImportWireEvent = EventInput & {
   cancelled: Array<string>
   /** Dates of a series changed there: each its own one-date edit. */
   overrides: Array<
-    Omit<EventInput, 'repeat' | 'until'> & { original_date: string }
+    // One date each: never repeating, never spanning days.
+    Omit<EventInput, 'repeat' | 'until' | 'end_date'> & {
+      original_date: string
+    }
   >
 }
 
@@ -190,10 +366,12 @@ const BATCH_BREAKS = 100
 /**
  * Imports events and breaks in batches; done counts the events sent so
  * far. A failed batch can be sent again: events already saved are skipped.
+ * Every batch carries the same importId, so undoImport takes it all back.
  */
 export async function importEvents(
   events: Array<ImportWireEvent>,
   breaks: Array<Omit<SchoolBreak, 'id'>>,
+  importId: string,
   onProgress?: (done: number) => void,
 ): Promise<ImportResult> {
   const total: ImportResult = { added: 0, already: 0, breaks: 0, skipped: [] }
@@ -205,7 +383,11 @@ export async function importEvents(
   const send = async () => {
     const res = await apiPost<ImportResult>(
       '/schools/mine/events/import',
-      { events: batch, breaks: waitingBreaks.splice(0, BATCH_BREAKS) },
+      {
+        events: batch,
+        breaks: waitingBreaks.splice(0, BATCH_BREAKS),
+        import_id: importId,
+      },
       { space: null, timeoutMs: 60_000 },
     )
     total.added += res.added
@@ -230,6 +412,17 @@ export async function importEvents(
   }
   while (batch.length > 0 || waitingBreaks.length > 0) await send()
   return total
+}
+
+/**
+ * Takes back an import: the events and breaks it saved (and one-date
+ * changes made to them since). Nobody is emailed.
+ */
+export function undoImport(importId: string) {
+  return apiDelete(
+    `/schools/mine/events/imports/${encodeURIComponent(importId)}`,
+    { space: null, timeoutMs: 60_000 },
+  )
 }
 
 // ---------- Repeats, in words ----------

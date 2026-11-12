@@ -23,8 +23,8 @@ import { leaveSchool, schoolQueryOptions, setMySchool } from '#/lib/school'
 import type { SchoolDetail } from '#/lib/school'
 
 /**
- * A teacher's School page: which school they're in and who runs it, what's
- * coming, and Leave.
+ * The rest of a teacher's School page, under the calendar: which school
+ * they're in and who runs it, what's coming, and Leave.
  */
 export function SchoolMemberView({ detail }: { detail: SchoolDetail }) {
   const online = useOnline()
@@ -34,10 +34,9 @@ export function SchoolMemberView({ detail }: { detail: SchoolDetail }) {
     <>
       <SchoolNameCard detail={detail} />
       <p className="text-sm text-muted-foreground">
-        {detail.admin_name || 'Your administrator'} sees your name and email on
-        the staff list, and can view your classes, students, marks and notes.
-        They can’t change anything. Your lesson plans and conferences stay
-        private to you.
+        Your school’s administrators see your name and email on the staff list,
+        and can view your classes, students, marks and notes. They can’t change
+        anything. Your lesson plans and conferences stay private to you.
       </p>
       <SchoolComingCard forAdmin={false} />
       <OfflineNote action="leave your school" />
@@ -59,14 +58,17 @@ export function SchoolMemberView({ detail }: { detail: SchoolDetail }) {
   )
 }
 
-function LeaveDialog({
+/** "Leave Lincoln?" For a teacher, or an administrator when another remains. */
+export function LeaveDialog({
   open,
   schoolName,
   onClose,
+  description = 'You keep your account, classes and students. To join again, ask your administrator for a new link.',
 }: {
   open: boolean
   schoolName: string
   onClose: () => void
+  description?: string
 }) {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
@@ -100,10 +102,7 @@ function LeaveDialog({
           <AlertDialogTitle className="font-bold wrap-break-word">
             Leave {schoolName}?
           </AlertDialogTitle>
-          <AlertDialogDescription>
-            You keep your account, classes and students. To join again, ask your
-            administrator for a new link.
-          </AlertDialogDescription>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>

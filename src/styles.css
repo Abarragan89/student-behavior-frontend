@@ -266,8 +266,11 @@ body {
     color-scheme: light;
     padding: 0;
   }
-  /* Toasts float over the page; keep them off paper. */
-  [data-sonner-toaster] {
+  /* Toasts float over the page; keep them off paper. So does the TanStack
+     devtools button in development, whose closed panel waits just below the
+     screen and would print a blank extra page. */
+  [data-sonner-toaster],
+  [data-testid='tanstack_devtools'] {
     display: none !important;
   }
   /* So are dialogs and drawers, e.g. the print question still closing when
@@ -282,6 +285,27 @@ body {
   [data-slot='alert-dialog-content'],
   [data-slot='dropdown-menu-content'] {
     display: none !important;
+  }
+  /* The school calendar (src/components/calendar/print-calendar.tsx): a
+     month or list landscape, like a wall calendar; a week portrait. The
+     page name goes on the root (the
+     calendar is all that prints on its pages): naming only the calendar's
+     section makes Chrome add a blank page after it. Browsers without named
+     pages print it on the page size chosen. */
+  @page calendar-month {
+    size: landscape;
+    margin: 8mm;
+  }
+  html.calendar-print-page {
+    page: calendar-month;
+  }
+  /* The week (weekly notes) prints portrait. */
+  @page calendar-week {
+    size: portrait;
+    margin: 8mm;
+  }
+  html.calendar-print-week {
+    page: calendar-week;
   }
   /* Conference notices (src/components/conferences/print-notices.tsx): one
      page per student. The old name is for older Safari. */

@@ -27,8 +27,16 @@ const API_URL = import.meta.env.VITE_API_URL
 
 export type SchoolRole = 'admin' | 'teacher'
 
-/** Your school, as GET /users/me sends it. */
-export type SchoolMembership = { id: string; name: string; role: SchoolRole }
+/**
+ * Your school, as GET /users/me sends it. `can_edit_calendar`: an
+ * administrator, or a teacher an administrator let edit the calendar.
+ */
+export type SchoolMembership = {
+  id: string
+  name: string
+  role: SchoolRole
+  can_edit_calendar?: boolean
+}
 
 export type SchoolInfo = {
   id: string
@@ -61,7 +69,9 @@ export type SchoolMember = {
   email: string
   role: SchoolRole
   joined_at: string
-  /** The administrator's own row. */
+  /** A teacher an administrator let edit the calendar (always for admins). */
+  can_edit_calendar: boolean
+  /** Your own row. */
   is_you: boolean
 }
 
@@ -215,7 +225,26 @@ export function removeSchoolMember(userId: string) {
   })
 }
 
-/** A teacher leaves their school. The administrator can't (409 last_admin). */
+/**
+ * Makes a member an administrator or a teacher again, or lets a teacher edit
+ * the calendar. Administrators only. 409 last_admin (a school keeps one
+ * administrator) or own_role (another administrator changes yours).
+ */
+export function changeMember(
+  userId: string,
+  change: { role?: SchoolRole; can_edit_calendar?: boolean },
+) {
+  return apiPatch<SchoolMember>(
+    `/schools/mine/members/${encodeURIComponent(userId)}`,
+    change,
+    { space: null },
+  )
+}
+
+/**
+ * You leave your school. The last administrator can't (409 last_admin): a
+ * school always has one.
+ */
 export function leaveSchool() {
   return apiDelete('/schools/mine/membership', { space: null })
 }

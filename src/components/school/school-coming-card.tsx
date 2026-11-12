@@ -60,19 +60,22 @@ export function SchoolComingCard({ forAdmin }: { forAdmin: boolean }) {
         </CardHeader>
         <CardContent>
           <ul className="grid gap-3 sm:grid-cols-2">
-            {COMING.map(({ icon: Icon, title, text }) => (
-              <li
-                key={title}
-                className="flex flex-col gap-1.5 rounded-lg border-2 border-dashed border-border p-3"
-              >
-                <p className="flex items-center gap-2 font-bold">
-                  <Icon className="size-4 shrink-0" />
-                  <span className="min-w-0 flex-1">{title}</span>
-                  <Badge variant="outline">Coming</Badge>
-                </p>
-                <p className="text-sm text-muted-foreground">{text}</p>
-              </li>
-            ))}
+            {/* A teacher has the calendar on this page already. */}
+            {COMING.filter((c) => forAdmin || c.title !== 'Staff events').map(
+              ({ icon: Icon, title, text }) => (
+                <li
+                  key={title}
+                  className="flex flex-col gap-1.5 rounded-lg border-2 border-dashed border-border p-3"
+                >
+                  <p className="flex items-center gap-2 font-bold">
+                    <Icon className="size-4 shrink-0" />
+                    <span className="min-w-0 flex-1">{title}</span>
+                    <Badge variant="outline">Coming</Badge>
+                  </p>
+                  <p className="text-sm text-muted-foreground">{text}</p>
+                </li>
+              ),
+            )}
           </ul>
         </CardContent>
       </Card>

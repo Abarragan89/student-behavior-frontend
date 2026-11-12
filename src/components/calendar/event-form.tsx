@@ -6,7 +6,13 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { CircleAlert, Mail, Repeat as RepeatIcon } from 'lucide-react'
+import {
+  CalendarRange,
+  CircleAlert,
+  Mail,
+  Repeat as RepeatIcon,
+  X,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
@@ -15,26 +21,30 @@ import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import { OfflineNote } from '#/components/offline-note'
 import { ResponsiveDialog } from '#/components/responsive-dialogue'
+import { CategoryPicker } from '#/components/calendar/categories'
 import { ReminderChips } from '#/components/calendar/reminder-chips'
 import { WhoPicker, invitedCount } from '#/components/calendar/who-picker'
 import type { Audience } from '#/components/calendar/who-picker'
 import { ApiError } from '#/lib/api'
-import { formatShortDate } from '#/lib/calendar'
-import { formatLongDate } from '#/lib/day'
+import { formatDayRange, formatShortDate } from '#/lib/calendar'
+import { addDays, formatLongDate } from '#/lib/day'
+import { MAX_SPAN_DAYS, daysIn } from '#/lib/event-span'
 import { useOnline } from '#/lib/online'
 import {
-  WEEKDAYS,
   createEvent,
   describeRepeat,
   editEvent,
+  invalidateCalendar,
   previewQueryOptions,
   repeatPresets,
   sameRepeat,
   timedOnly,
   weekdayName,
   weekdayOf,
+  WEEKDAYS,
 } from '#/lib/school-calendar'
 import type {
+  EventCategory,
   EventInput,
   Freq,
   MonthlyBy,
@@ -55,12 +65,14 @@ export function EventDialog({
   mode,
   onClose,
   directory,
+  categories,
   today,
   emailsOn,
 }: {
   mode: EventFormMode | null
   onClose: () => void
   directory: StaffDirectory
+  categories: Array<EventCategory>
   today: string
   /** Reminder emails go out; off, the form says so. */
   emailsOn: boolean
@@ -72,7 +84,11 @@ export function EventDialog({
       title={mode?.kind === 'edit' ? 'Edit event' : 'New event'}
       description={
         mode?.kind === 'edit'
-          ? `${mode.event.title}, ${formatLongDate(mode.date)}`
+          ? `${mode.event.title}, ${
+              mode.event.end_date
+                ? formatDayRange(mode.event.date, mode.event.end_date)
+                : formatLongDate(mode.date)
+            }`
           : 'Invite staff; they get an email reminder.'
       }
       showDescription
@@ -88,6 +104,7 @@ export function EventDialog({
           }
           mode={mode}
           directory={directory}
+          categories={categories}
           today={today}
           emailsOn={emailsOn}
           onDone={onClose}
@@ -102,12 +119,14 @@ const field = 'h-11 rounded-lg border-2 border-border bg-card text-base'
 function EventForm({
   mode,
   directory,
+  categories,
   today,
   emailsOn,
   onDone,
 }: {
   mode: EventFormMode
   directory: StaffDirectory
+  categories: Array<EventCategory>
   today: string
   emailsOn: boolean
   onDone: () => void
@@ -119,9 +138,14 @@ function EventForm({
   const isSeries = !!event?.repeat
   // A date of a series that was changed on its own stays one date.
   const canRepeat = !event?.series_id
+  // An event that spans days is edited whole, from its own first day (not
+  // the day that was clicked). One already under way keeps its first day.
+  const ongoing = !!event?.end_date && event.date < today
 
   const [title, setTitle] = useState(event?.title ?? '')
-  const [date, setDate] = useState(mode.date)
+  const [date, setDate] = useState(event?.end_date ? event.date : mode.date)
+  // The last day of an event that spans days; '' for one day.
+  const [lastDay, setLastDay] = useState(event?.end_date ?? '')
   const [allDay, setAllDay] = useState(event?.all_day ?? false)
   const [start, setStart] = useState(event?.start ?? '15:15')
   const [end, setEnd] = useState(event?.end ?? '16:00')
@@ -156,12 +180,16 @@ function EventForm({
   )
   // What's sent: an all-day event has no start, so no "before" reminders.
   const sending = [...reminders].filter((r) => !(allDay && timedOnly(r)))
+  const [categoryId, setCategoryId] = useState<string | null>(
+    event?.category_id ?? null,
+  )
   const [location, setLocation] = useState(event?.location ?? '')
   const [notes, setNotes] = useState(event?.notes ?? '')
 
+  const spanning = lastDay !== ''
   // Repeat settings show for a new event, a one-time event, or a series
-  // when changing all future dates.
-  const showRepeat = canRepeat && (!isSeries || allFuture)
+  // when changing all future dates; never for one that spans days.
+  const showRepeat = canRepeat && (!isSeries || allFuture) && !spanning
   const presets = useMemo(() => repeatPresets(date), [date])
   // "Last Tuesday" isn't offered for a date that isn't one: the 10th instead.
   const shownKey =
@@ -173,11 +201,20 @@ function EventForm({
       ? customRepeat
       : (presets.find((p) => p.key === shownKey)?.repeat ?? null)
 
+  // Days can be added to a new or one-time event that doesn't repeat.
+  const canSpan = canRepeat && !isSeries && !(showRepeat && repeat)
   const backwards = !allDay && start !== '' && end !== '' && end <= start
   const untilBad = showRepeat && !!repeat && until !== '' && until < date
+  const dateOk = date >= today || (ongoing && date === event.date)
+  const lastBad =
+    spanning &&
+    (lastDay <= date ||
+      lastDay < today ||
+      daysIn(date, lastDay) > MAX_SPAN_DAYS)
   const valid =
     title.trim() !== '' &&
-    date >= today &&
+    dateOk &&
+    !lastBad &&
     !backwards &&
     !untilBad &&
     (allDay || (start !== '' && end !== ''))
@@ -188,6 +225,7 @@ function EventForm({
     notes,
     all_day: allDay,
     date,
+    end_date: spanning ? lastDay : null,
     start: allDay ? null : start,
     end: allDay ? null : end,
     repeat: showRepeat ? repeat : null,
@@ -197,6 +235,7 @@ function EventForm({
     staff_ids: audience.everyone ? [] : [...audience.staffIds],
     group_ids: audience.everyone ? [] : [...audience.groupIds],
     reminders: sending,
+    category_id: categoryId,
   }
 
   const preview = useQuery({
@@ -215,14 +254,13 @@ function EventForm({
       event
         ? editEvent(
             event.id,
-            mode.date,
+            event.end_date ? event.date : mode.date,
             isSeries && allFuture ? 'future' : 'one',
             input,
           )
         : createEvent(input),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['school-calendar'] })
-      void queryClient.invalidateQueries({ queryKey: ['school-event'] })
+      invalidateCalendar(queryClient)
       onDone()
       toast.success(event ? 'Event saved' : 'Event added', {
         description:
@@ -230,7 +268,9 @@ function EventForm({
             ? `Only ${formatLongDate(date)} changed.`
             : input.repeat
               ? describeRepeat(input.repeat, date)
-              : formatLongDate(date),
+              : spanning
+                ? formatDayRange(date, lastDay)
+                : formatLongDate(date),
       })
     },
     onError: (error) => {
@@ -291,22 +331,90 @@ function EventForm({
         />
       </div>
 
+      <fieldset disabled={busy} className="flex flex-col gap-2">
+        <legend className="mb-2 text-base font-bold">Category</legend>
+        <CategoryPicker
+          categories={categories}
+          value={categoryId}
+          onChange={setCategoryId}
+          disabled={busy}
+        />
+      </fieldset>
+
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-end gap-3">
           <div className="flex flex-col gap-2">
             <label htmlFor={`${id}-date`} className="text-base font-bold">
-              {showRepeat && repeat ? 'Starts' : 'Date'}
+              {spanning
+                ? 'First day'
+                : showRepeat && repeat
+                  ? 'Starts'
+                  : 'Date'}
             </label>
             <Input
               id={`${id}-date`}
               type="date"
               min={today}
               value={date}
-              onChange={(e) => e.target.value && setDate(e.target.value)}
-              disabled={busy}
+              onChange={(e) => {
+                const next = e.target.value
+                if (!next) return
+                setDate(next)
+                // The last day stays after the first.
+                if (spanning && lastDay <= next) setLastDay(addDays(next, 1))
+              }}
+              // Under way: its first day has passed and stays.
+              disabled={busy || ongoing}
               className={cn(field, 'w-auto px-3')}
             />
           </div>
+          {spanning ? (
+            <div className="flex flex-col gap-2">
+              <label htmlFor={`${id}-last`} className="text-base font-bold">
+                Last day
+              </label>
+              <div className="flex items-center gap-1">
+                <Input
+                  id={`${id}-last`}
+                  type="date"
+                  min={addDays(
+                    date < today ? today : date,
+                    date < today ? 0 : 1,
+                  )}
+                  max={addDays(date, MAX_SPAN_DAYS - 1)}
+                  value={lastDay}
+                  onChange={(e) => e.target.value && setLastDay(e.target.value)}
+                  disabled={busy}
+                  aria-invalid={lastBad || undefined}
+                  className={cn(field, 'w-auto px-3')}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setLastDay('')}
+                  disabled={busy || ongoing}
+                  aria-label="Make it one day"
+                  className="size-11 rounded-lg"
+                >
+                  <X className="size-5" />
+                </Button>
+              </div>
+            </div>
+          ) : (
+            canSpan && (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setLastDay(addDays(date, 1))}
+                disabled={busy}
+                className="h-11 rounded-lg px-3 font-bold"
+              >
+                <CalendarRange />
+                Add days
+              </Button>
+            )
+          )}
           <label className="flex h-11 cursor-pointer items-center gap-2 font-bold">
             <Switch
               checked={allDay}
@@ -358,9 +466,35 @@ function EventForm({
             The end has to be after the start.
           </p>
         )}
-        {date < today && (
+        {spanning && !allDay && !backwards && (
+          <p className="text-sm text-muted-foreground">
+            The same times each day.
+          </p>
+        )}
+        {ongoing && (
+          <p className="text-sm text-muted-foreground">
+            Started {formatShortDate(event.date)}. You can still change the last
+            day and the details.
+          </p>
+        )}
+        {!dateOk && (
           <p role="alert" className="text-sm font-bold text-destructive">
             Pick today or a later date.
+          </p>
+        )}
+        {lastBad && (
+          <p role="alert" className="text-sm font-bold text-destructive">
+            {daysIn(date, lastDay) > MAX_SPAN_DAYS
+              ? `An event can span up to ${MAX_SPAN_DAYS} days.`
+              : lastDay < today
+                ? 'Pick today or a later last day.'
+                : 'The last day has to be after the first.'}
+          </p>
+        )}
+        {spanning && canRepeat && !isSeries && (
+          <p className="flex items-center gap-2 text-sm text-muted-foreground">
+            <RepeatIcon className="size-4 shrink-0" />
+            Events that span days don’t repeat.
           </p>
         )}
       </div>

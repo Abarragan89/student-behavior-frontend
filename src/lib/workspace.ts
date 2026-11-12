@@ -36,6 +36,15 @@ export function isSchoolAdmin(me: Me | null | undefined): boolean {
   return !!me && !me.acting_for && me.school?.role === 'admin'
 }
 
+/**
+ * Whether you may change your school's calendar: its administrators, and
+ * teachers an administrator let edit it. Always your own school (calendar
+ * calls send no space), so the space on screen doesn't matter.
+ */
+export function canEditCalendar(me: Me | null | undefined): boolean {
+  return me?.school?.role === 'admin' || !!me?.school?.can_edit_calendar
+}
+
 /** A school's administrator viewing one of their teachers' classes. */
 export function viewingAsAdmin(me: Me | null | undefined): boolean {
   return me?.acting_for?.kind === 'school_admin'

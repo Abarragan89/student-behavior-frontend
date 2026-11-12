@@ -17,12 +17,14 @@ import {
   lessonPlanDayQueryOptions,
   progress,
 } from '#/lib/lesson-plans'
+import { DayEvents } from '#/components/lesson-plans/day-events'
 import { ProgressBar } from '#/components/lesson-plans/progress-bar'
 import { usePermission } from '#/lib/workspace'
 
 /**
- * Today's plan at a glance, above the calendar: how much is done, what's
- * next, and a big button to open it. Most visits are for today.
+ * Today's plan at a glance, above the calendar: today's school events (if
+ * any), how much is done, what's next, and a big button to open it. Most
+ * visits are for today.
  */
 export function TodayCard({ today }: { today: string }) {
   const day = useQuery(lessonPlanDayQueryOptions(today))
@@ -54,6 +56,8 @@ export function TodayCard({ today }: { today: string }) {
           </p>
         </div>
       </div>
+
+      <DayEvents date={today} today={today} />
 
       {day.isPending ? (
         <p

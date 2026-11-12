@@ -14,11 +14,14 @@ import {
   breaksQueryOptions,
   createBreak,
   deleteBreak,
+  invalidateCalendar,
 } from '#/lib/school-calendar'
+import { breaksIn, schoolYearOf, yearLabel } from '#/lib/school-years'
 
 /**
  * The school's breaks ("Winter break, Dec 21 – Jan 1"): entered once,
- * skipped by every repeating event that skips breaks.
+ * skipped by every repeating event that skips breaks. One school year at a
+ * time (July to June), so the list stays short as the years go by.
  */
 export function BreaksDialog({
   open,
@@ -53,17 +56,29 @@ function Breaks({ today }: { today: string }) {
   const [name, setName] = useState('')
   const [first, setFirst] = useState('')
   const [last, setLast] = useState('')
+  const thisYear = schoolYearOf(today)
+  const [year, setYear] = useState(thisYear)
+  // Years with breaks, this year and next (to enter next year's in spring),
+  // and the one shown; newest first.
+  const years = [
+    ...new Set([
+      thisYear + 1,
+      thisYear,
+      year,
+      ...(breaks.data ?? []).map((b) => schoolYearOf(b.first_day)),
+    ]),
+  ].sort((a, b) => b - a)
+  const shown = breaksIn(year, breaks.data ?? [])
   const refresh = () => {
-    void queryClient.invalidateQueries({
-      queryKey: breaksQueryOptions.queryKey,
-    })
-    void queryClient.invalidateQueries({ queryKey: ['school-calendar'] })
+    invalidateCalendar(queryClient)
   }
   const add = useMutation({
     mutationFn: () =>
       createBreak({ name, first_day: first, last_day: last || first }),
     onSuccess: (b) => {
       refresh()
+      // Show the year it's in, so it doesn't seem to vanish.
+      setYear(schoolYearOf(b.first_day))
       setName('')
       setFirst('')
       setLast('')
@@ -90,11 +105,31 @@ function Breaks({ today }: { today: string }) {
 
   return (
     <div className="flex flex-col gap-5">
-      <ul className="flex flex-col gap-2">
-        {breaks.data?.length === 0 && (
-          <li className="text-sm text-muted-foreground">No breaks yet.</li>
+      <div className="flex items-center justify-between gap-3">
+        <label htmlFor={`${id}-year`} className="font-bold">
+          School year
+        </label>
+        <select
+          id={`${id}-year`}
+          value={year}
+          onChange={(e) => setYear(Number(e.target.value))}
+          className="h-10 rounded-lg border-2 border-border bg-card px-2 text-sm font-bold outline-none focus-visible:ring-4 focus-visible:ring-ring"
+        >
+          {years.map((y) => (
+            <option key={y} value={y}>
+              {yearLabel(y)}
+              {y === thisYear ? ' (this year)' : ''}
+            </option>
+          ))}
+        </select>
+      </div>
+      <ul className="-mt-2 flex flex-col gap-2">
+        {breaks.data && shown.length === 0 && (
+          <li className="text-sm text-muted-foreground">
+            No breaks in {yearLabel(year)} yet.
+          </li>
         )}
-        {breaks.data?.map((b) => (
+        {shown.map((b) => (
           <li
             key={b.id}
             className={cn(
