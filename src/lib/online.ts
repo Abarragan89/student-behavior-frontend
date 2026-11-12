@@ -16,6 +16,16 @@ export function useOnline() {
   return useSyncExternalStore(subscribe, isOnline)
 }
 
+/**
+ * Calls onBack each time the connection comes back: on the change itself,
+ * not right away when already online. Returns the unsubscribe.
+ */
+export function onReconnect(onBack: () => void) {
+  return onlineManager.subscribe((online) => {
+    if (online) onBack()
+  })
+}
+
 /** Thrown when a page needs data that isn't saved and there's no connection. */
 export class OfflineError extends Error {
   constructor() {

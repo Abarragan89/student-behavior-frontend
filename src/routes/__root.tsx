@@ -1,9 +1,11 @@
+import { useEffect, useState } from 'react'
 import {
   Link,
   Outlet,
   createRootRouteWithContext,
   useRouterState,
 } from '@tanstack/react-router'
+import { useQueryClient } from '@tanstack/react-query'
 import type { QueryClient } from '@tanstack/react-query'
 
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
@@ -15,6 +17,7 @@ import { Wordmark } from '#/components/Wordmark'
 import { MarkNoteHost } from '#/components/mark-note-dialog'
 import { PwaUpdater } from '#/components/pwa-updater'
 import { ThemeProvider } from '#/components/theme-provider'
+import { safeToReload, switchToNewerVersion } from '#/lib/app-update'
 
 import '../styles.css'
 
@@ -71,19 +74,37 @@ function RootComponent() {
 /**
  * Any URL that isn't a page. nginx sends unknown URLs to the app (so new app
  * pages need no server change) with a noindex header, so search engines
- * don't list them.
+ * don't list them. On a saved copy of the app, the page may be in a newer
+ * version: if the server has one, it switches to it and reloads.
  */
 function NotFound() {
+  const queryClient = useQueryClient()
+  const [updating, setUpdating] = useState(false)
+  useEffect(() => {
+    void switchToNewerVersion({
+      onFound: () => setUpdating(true),
+      canReload: () => safeToReload(queryClient.isMutating()),
+    })
+      .catch(() => false)
+      .then((switching) => {
+        if (!switching) setUpdating(false)
+      })
+  }, [queryClient])
+
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center gap-6 bg-background px-4 py-12 text-center text-foreground">
       {/* Full page loads: the homepage is a separate page (site/). */}
       <a href="/" aria-label="TeachForFree home">
         <Wordmark className="h-24" />
       </a>
-      <div>
-        <h1 className="text-2xl font-bold">Page not found</h1>
+      <div role="status">
+        <h1 className="text-2xl font-bold">
+          {updating ? 'Updating TeachForFree…' : 'Page not found'}
+        </h1>
         <p className="mt-2 text-muted-foreground">
-          This link doesn’t go to a page in TeachForFree.
+          {updating
+            ? 'This page is in a newer version. It opens in a moment.'
+            : 'This link doesn’t go to a page in TeachForFree.'}
         </p>
       </div>
       <div className="flex flex-col gap-3 sm:flex-row">

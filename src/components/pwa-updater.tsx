@@ -1,15 +1,24 @@
 import { useEffect } from 'react'
+import { useRouter } from '@tanstack/react-router'
+import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useRegisterSW } from 'virtual:pwa-register/react'
+import { safeToReload } from '#/lib/app-update'
 
 const HOUR = 60 * 60 * 1000
 
 /**
  * Registers the service worker, and when a new version of the app has been
- * deployed, offers a Refresh button instead of reloading on its own, so a
- * teacher in the middle of a note doesn't lose it.
+ * deployed, moves to it at a safe moment instead of reloading mid-note: the
+ * next time the teacher opens another page (the one they left is closed by
+ * then, so nothing typed is lost), unless marks or saves are still on their
+ * way. Until then a Refresh button offers it, for a teacher who stays on one
+ * page. A page this version doesn't have switches right away (NotFound in
+ * __root.tsx).
  */
 export function PwaUpdater() {
+  const router = useRouter()
+  const queryClient = useQueryClient()
   const {
     needRefresh: [needRefresh],
     updateServiceWorker,
@@ -35,7 +44,12 @@ export function PwaUpdater() {
       duration: Infinity,
       action: { label: 'Refresh', onClick: () => void updateServiceWorker() },
     })
-  }, [needRefresh, updateServiceWorker])
+    // The new version takes over, then the page reloads.
+    return router.subscribe('onRendered', (event) => {
+      if (event.pathChanged && safeToReload(queryClient.isMutating()))
+        void updateServiceWorker()
+    })
+  }, [needRefresh, updateServiceWorker, router, queryClient])
 
   return null
 }

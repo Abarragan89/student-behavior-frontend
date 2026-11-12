@@ -272,7 +272,7 @@ export const FAQ_GROUPS: Array<FaqGroup> = [
         question: 'Is there a version for a whole school or district?',
         answer: [
           'Yes, for a school. An administrator names the school, signs in with Google, and gets one join link and QR code to send the staff. Teachers join with their own Google accounts and keep their own classes, lesson plans and conferences.',
-          'Today a school account is the join link, a dashboard of each teacher’s positive and negative marks for the day (where you can open any teacher’s classes, view only), and a school calendar with email reminders for your whole staff. Schedules, meeting slots with teachers and custom progress reports are coming. There isn’t a district version yet.',
+          'Today a school account is the join link, a dashboard of each teacher’s positive and negative marks for the day (where you can open any teacher’s classes, view only), and a school calendar with email reminders for your whole staff. Schedules, meetings with teachers and report cards are coming. There isn’t a district version yet.',
         ],
         link: { href: '/for-schools', label: 'TeachForFree for schools' },
       },

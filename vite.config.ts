@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto'
+import { createHash, randomBytes } from 'node:crypto'
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { defineConfig, loadEnv } from 'vite'
@@ -32,6 +32,17 @@ function publicFileUrl(file: string) {
   return `${file}?v=${hash}`
 }
 
+/**
+ * The app's page as the service worker saves it: a copy of app.html under a
+ * name only this build has. During a deploy the old and new servers both
+ * answer for a moment. If the worker's request for its page reaches the old
+ * one, it gets a 404 and tries again later, instead of saving the old page as
+ * the new one (which then asks for files the new server doesn't have).
+ * Random, not a hash of the page: a name must never come back with other
+ * content. nginx.conf gives it app.html's headers.
+ */
+const APP_SHELL = `assets/app-shell-${randomBytes(4).toString('hex')}.html`
+
 /** Where `npm run dev:site` serves the marketing pages (site/). */
 const SITE_DEV_URL = 'http://localhost:4321'
 
@@ -48,6 +59,7 @@ function isPageRequest(req: Connect.IncomingMessage) {
 /**
  * The app's page is app.html, since / belongs to the marketing site:
  * - adds shared/pwa-head.html, then ?v= to every /branding/ image
+ * - build: adds the service worker's copy of it (APP_SHELL)
  * - dev: app URLs get app.html, anything else is sent to the Astro dev server
  * - preview: the same rules as nginx.conf
  */
@@ -56,6 +68,19 @@ function appShell(): Plugin {
     name: 'tff-app-shell',
     transformIndexHtml: (html) =>
       versionBranding(html.replace('<!-- tff:pwa-head -->', pwaHeadRaw())),
+    // Last, so app.html is finished: script tags, manifest link and all.
+    generateBundle: {
+      order: 'post',
+      handler(_options, bundle) {
+        const page = 'app.html' in bundle ? bundle['app.html'] : undefined
+        if (page?.type !== 'asset') this.error('app.html is not in the build')
+        this.emitFile({
+          type: 'asset',
+          fileName: APP_SHELL,
+          source: page.source,
+        })
+      },
+    },
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         if (!isPageRequest(req)) return next()
@@ -112,8 +137,9 @@ const config = defineConfig(({ command, mode }) => {
       // worker that caches the app's own files. Icons and launch images live in
       // public/branding/ and come from `npm run generate-pwa-assets`.
       VitePWA({
-        // Ask before switching to a new version (src/components/pwa-updater.tsx),
-        // so a teacher typing a note isn't reloaded mid-sentence.
+        // The app picks when to switch to a new version
+        // (src/components/pwa-updater.tsx), so a teacher typing a note isn't
+        // reloaded mid-sentence.
         registerType: 'prompt',
         manifest: {
           id: '/',
@@ -171,15 +197,16 @@ const config = defineConfig(({ command, mode }) => {
           // Launch images are left out: each phone only needs one of the 22.
           // The mark sounds, since marks can be given offline.
           globPatterns: [
-            'app.html',
+            APP_SHELL,
             'assets/**/*.{js,css,woff2}',
             'branding/favicon.ico',
             'branding/chalkboard.png',
-            'sounds/*.wav',
+            'sounds/*.mp3',
           ],
-          // App URLs open the saved app.html, even offline. Others (/,
-          // /privacy, …) always come from the network.
-          navigateFallback: 'app.html',
+          // App URLs open the saved page (app.html's copy), even offline.
+          // Others (/, /privacy, …) always come from the network. A newer
+          // version waits for a safe moment (src/components/pwa-updater.tsx).
+          navigateFallback: APP_SHELL,
           navigateFallbackAllowlist: [APP_PATH],
           // Answer branding URLs (?v=<hash>) from the cached file. The default
           // list, plus v.

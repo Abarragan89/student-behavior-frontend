@@ -50,14 +50,9 @@ const steps: Array<Step> = [
 ]
 
 const today = [
-  'A dashboard of each day’s positive and negative marks, for your school and each teacher',
-  'Open any teacher’s classes and students, view only',
-  'A school calendar of one-time and repeating events. The staff you pick get email invites, changes and reminders',
-  'Bring your events over from Google Calendar: export, import, done',
-  'Bring in your whole staff from Google Admin, and sort them into groups. They don’t need to use TeachForFree',
-  'One join link and QR code for your whole staff',
-  'Choose how long it works (7, 30 or 90 days) and how many can join',
-  'See who’s joined, and remove someone who left',
+  'A school calendar that emails invites and reminders to your staff, on TeachForFree or not',
+  'Import staff from Google Admin and events from Google Calendar',
+  'A daily dashboard of behavior marks for your school and each teacher',
   'Teachers keep their own free accounts, classes and students',
 ]
 
@@ -68,13 +63,13 @@ const coming: Array<Feature> = [
     icon: CalendarRange,
   },
   {
-    title: 'Meeting slots with teachers',
-    text: 'Coming: set your open times, and teachers pick one, the way families pick conference times.',
+    title: 'Meetings with teachers',
+    text: 'Coming: post open slots for contract meetings, action plans and more, and teachers sign up for one.',
     icon: Clock,
   },
   {
-    title: 'Custom progress reports',
-    text: 'Coming: your school’s own report layout, filled in from what teachers already track.',
+    title: 'Report cards, made for you',
+    text: 'Coming: report cards generated from what teachers already track, in your school’s own layout.',
     icon: ClipboardList,
   },
   {
@@ -103,13 +98,13 @@ const coming: Array<Feature> = [
     primary={{ href: START, label: 'Start your school' }}
     secondary={{ href: '#how-it-works', label: 'See how it works' }}
   >
-    <div
-      slot="visual"
-      class="rounded-lg border-2 border-border bg-card p-6 text-card-foreground shadow-md"
-    >
-      <p class="text-lg font-bold">Included today</p>
-      <CheckList className="mt-4" items={today} />
-    </div>
+  <div
+    slot="visual"
+    class="rounded-lg border-2 border-border bg-card p-6 text-card-foreground shadow-md"
+  >
+    <p class="text-lg font-bold">Included today</p>
+    <CheckList className="mt-4" items={today} />
+  </div>
   </PageHero>
 
   <Section id="how-it-works" title="How it works" muted>

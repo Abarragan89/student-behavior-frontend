@@ -14,6 +14,78 @@
     <title>TeachForFree</title>
     <meta name="robots" content="noindex" />
 
+    <!-- Self-repair. When the app's own files won't load, this page is an
+         old copy saved by the service worker whose files a newer version
+         replaced, or it was caught mid-deploy. It switches to the newer
+         version (or, if this is the newest, loads its files from the server
+         again) and reloads: online only, and once a minute at most, so it
+         can't loop. Inline and first, so it runs when every file is missing.
+         Unsent marks are kept: they're in IndexedDB, not in these caches. -->
+    <script>
+      ;(() => {
+        const KEY = 'tff:repaired-at'
+        let started = false
+        const reload = () => location.reload()
+        // Done installing: ready to take over, or failed.
+        const installed = (worker) =>
+          new Promise((done) => {
+            const check = () => worker.state !== 'installing' && done()
+            worker.addEventListener('statechange', check)
+            check()
+          })
+        async function repair() {
+          if (started || !navigator.onLine) return
+          try {
+            if (Date.now() - Number(sessionStorage.getItem(KEY)) < 60000) return
+            sessionStorage.setItem(KEY, String(Date.now()))
+          } catch {
+            return // Without the note, a repair could repeat forever.
+          }
+          started = true
+          const sw = navigator.serviceWorker
+          // Straight from the server, mid-deploy: a moment later it's done.
+          if (!sw || !sw.controller) return void setTimeout(reload, 3000)
+          const reg = await sw.getRegistration()
+          if (!reg) return
+          await reg.update()
+          const next = reg.installing || reg.waiting
+          if (next) {
+            await installed(next)
+            if (next.state !== 'installed') return
+            sw.addEventListener('controllerchange', reload)
+            next.postMessage({ type: 'SKIP_WAITING' })
+            return
+          }
+          // The newest version, but its saved files are broken: drop them,
+          // so they come from the server (saved again with the next version).
+          const names = await caches.keys()
+          await Promise.all(
+            names
+              .filter((name) => name.startsWith('workbox-precache'))
+              .map((name) => caches.delete(name)),
+          )
+          reload()
+        }
+        const run = () => void repair().catch(() => {})
+        addEventListener(
+          'error',
+          (event) => {
+            const el = event.target
+            const url =
+              el instanceof HTMLScriptElement
+                ? el.src
+                : el instanceof HTMLLinkElement
+                  ? el.href
+                  : ''
+            if (url.includes('/assets/')) run()
+          },
+          true,
+        )
+        // A page's code, fetched when it's opened.
+        addEventListener('vite:preloadError', run)
+      })()
+    </script>
+
     <!-- Theme color, icons, iPhone launch screens, dark mode, install offer:
          shared/pwa-head.html, put here by vite.config.ts. vite-plugin-pwa
          adds the manifest link. -->
