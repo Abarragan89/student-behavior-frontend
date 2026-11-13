@@ -53,7 +53,7 @@ function CalendarPage() {
         picked={picked}
         onPick={(next) => void navigate({ search: next, replace: true })}
         prefs={prefs}
-        heading="h1"
+        title="Calendar"
       />
     </main>
   )

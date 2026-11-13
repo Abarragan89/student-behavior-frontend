@@ -84,14 +84,15 @@ export function CalendarEditor({
   picked,
   onPick,
   prefs,
-  heading,
+  title,
 }: {
   /** ?month= and ?week=; neither for now. */
   picked: Picked
   onPick: (next: Picked) => void
   prefs: CalendarPrefs
-  /** h1 on the administrator's Calendar page, h2 on a School page. */
-  heading: 'h1' | 'h2'
+  /** The page's h1: "Calendar" for an administrator, "School Calendar" on a
+   * teacher's School page. */
+  title: string
 }) {
   const { data: me } = useSuspenseQuery(meQueryOptions)
   const queryClient = useQueryClient()
@@ -166,27 +167,14 @@ export function CalendarEditor({
   const notSetUp =
     calendar.error instanceof ApiError &&
     calendar.error.reason === 'no_timezone'
-  const Heading = heading
 
   return (
     <>
       <div className="flex flex-col gap-4 print:hidden">
-        <div
-          className={cn(
-            'flex flex-wrap items-center justify-between gap-3',
-            // Clear of the floating avatar on phones, at the top of a page.
-            heading === 'h1' && 'max-md:pr-12',
-          )}
-        >
+        {/* Clear of the floating avatar on phones, at the top of a page. */}
+        <div className="flex flex-wrap items-center justify-between gap-3 max-md:pr-12">
           <div className="flex items-center gap-2">
-            <Heading
-              className={cn(
-                'font-bold',
-                heading === 'h1' ? 'text-2xl' : 'text-xl',
-              )}
-            >
-              Calendar
-            </Heading>
+            <h1 className="text-2xl font-bold">{title}</h1>
             {!isAdmin && <Badge variant="secondary">You can edit</Badge>}
           </div>
           <div className="flex flex-wrap gap-2">

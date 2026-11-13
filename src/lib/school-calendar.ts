@@ -56,6 +56,37 @@ export type SchoolEvent = {
 
 export type EventInput = Omit<SchoolEvent, 'id' | 'series_id' | 'original_date'>
 
+/**
+ * One event as a teacher opens it from their calendar: the details and
+ * notes, and who's invited by name (not the staff list's ids).
+ */
+export type StaffEvent = Pick<
+  SchoolEvent,
+  | 'id'
+  | 'title'
+  | 'location'
+  | 'notes'
+  | 'all_day'
+  | 'date'
+  | 'end_date'
+  | 'start'
+  | 'end'
+  | 'repeat'
+  | 'until'
+  | 'everyone'
+  | 'category_id'
+  | 'series_id'
+  | 'original_date'
+> & {
+  /** Who's invited by name, sorted; both empty for an everyone event. */
+  groups: Array<string>
+  people: Array<string>
+  /** They're in its audience. */
+  invited: boolean
+  /** The emails they'll get: only when invited and emails go out. */
+  reminders: Array<Reminder>
+}
+
 export type Occurrence = {
   event_id: string
   date: string
@@ -181,6 +212,19 @@ export function eventQueryOptions(id: string) {
   })
 }
 
+/** One event on the teacher's calendar, opened (404 if it's not on it). */
+export function staffEventQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: ['school-staff-event', id],
+    queryFn: () =>
+      apiGet<StaffEvent>(
+        `/schools/mine/staff-calendar/events/${encodeURIComponent(id)}`,
+        { space: null },
+      ),
+    staleTime: 30_000,
+  })
+}
+
 export const breaksQueryOptions = queryOptions({
   queryKey: ['school-breaks'],
   queryFn: () =>
@@ -198,6 +242,7 @@ export function invalidateCalendar(queryClient: QueryClient) {
     'school-calendar',
     'school-staff-calendar',
     'school-event',
+    'school-staff-event',
     'school-breaks',
   ])
     void queryClient.invalidateQueries({ queryKey: [key] })
