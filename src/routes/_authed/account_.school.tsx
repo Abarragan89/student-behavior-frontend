@@ -126,7 +126,14 @@ function SchoolPage() {
             ),
       )}
     >
-      <div className="flex flex-col items-start gap-2 print:hidden">
+      {/* A teacher's title is the calendar's ("School Calendar"), kept as
+          close under the link as a heading here would be. */}
+      <div
+        className={cn(
+          'flex flex-col items-start gap-2 print:hidden',
+          teacher && '-mb-4',
+        )}
+      >
         <Link
           to="/account"
           className={cn(
@@ -137,7 +144,7 @@ function SchoolPage() {
           <ChevronLeft />
           Account
         </Link>
-        <h1 className="text-2xl font-bold">School</h1>
+        {!teacher && <h1 className="text-2xl font-bold">School</h1>}
       </div>
       {teacher &&
         (canEditCalendar(me) ? (
@@ -145,7 +152,7 @@ function SchoolPage() {
             picked={picked}
             onPick={onPick}
             prefs={prefs}
-            heading="h2"
+            title="School Calendar"
           />
         ) : (
           <CalendarViewer picked={picked} onPick={onPick} prefs={prefs} />

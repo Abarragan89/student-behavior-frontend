@@ -102,7 +102,8 @@ export function CalendarViewer({
   return (
     <>
       <div className="flex flex-col gap-4 print:hidden">
-        <h2 className="text-xl font-bold">Calendar</h2>
+        {/* The School page's title: a teacher's page is their calendar. */}
+        <h1 className="text-2xl font-bold">School Calendar</h1>
 
         <CalendarToolbar
           month={month}
