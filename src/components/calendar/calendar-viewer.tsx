@@ -36,10 +36,10 @@ import type { Occurrence } from '#/lib/school-calendar'
 const NONE: Array<never> = []
 
 /**
- * A teacher's view of their school's calendar, read only: the events
- * they're invited to, and the categories the administrators share with
- * staff (the color-coded spreadsheet everyone used to look at). On the
- * teacher's School page: a month, a week, or a list.
+ * A teacher's view of their school's calendar, read only: every event but
+ * private ones that aren't for them (like the color-coded spreadsheet
+ * everyone used to look at). On the teacher's School page: a month, a week,
+ * or a list.
  *
  * Printing gives only the calendar: the screen part is print:hidden and
  * the paper version sits beside it.
@@ -130,12 +130,6 @@ export function CalendarViewer({
             focus={focus}
             onFocusChange={prefs.setFocus}
           />
-        )}
-        {cal && cal.categories.length === 0 && (
-          <p className="text-sm text-muted-foreground">
-            You see the events you’re invited to. Your school can share more
-            with staff, like breaks, testing days and field trips.
-          </p>
         )}
 
         {!cal ? (

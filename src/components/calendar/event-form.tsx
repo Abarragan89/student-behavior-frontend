@@ -9,7 +9,7 @@ import { toast } from 'sonner'
 import {
   CalendarRange,
   CircleAlert,
-  Mail,
+  Lock,
   Repeat as RepeatIcon,
   X,
 } from 'lucide-react'
@@ -89,7 +89,7 @@ export function EventDialog({
                 ? formatDayRange(mode.event.date, mode.event.end_date)
                 : formatLongDate(mode.date)
             }`
-          : 'Invite staff; they get an email reminder.'
+          : 'Everyone on staff sees it, unless it’s private.'
       }
       showDescription
       keyboardAware
@@ -178,8 +178,11 @@ function EventForm({
   const [reminders, setReminders] = useState<Set<Reminder>>(
     new Set(event?.reminders ?? ['day']),
   )
+  const [isPrivate, setIsPrivate] = useState(event?.private ?? false)
   // What's sent: an all-day event has no start, so no "before" reminders.
   const sending = [...reminders].filter((r) => !(allDay && timedOnly(r)))
+  // How many get the emails (Everyone counts even before staff are added).
+  const listed = invitedCount(audience, directory)
   const [categoryId, setCategoryId] = useState<string | null>(
     event?.category_id ?? null,
   )
@@ -236,6 +239,7 @@ function EventForm({
     group_ids: audience.everyone ? [] : [...audience.groupIds],
     reminders: sending,
     category_id: categoryId,
+    private: isPrivate,
   }
 
   const preview = useQuery({
@@ -411,7 +415,7 @@ function EventForm({
                 className="h-11 rounded-lg px-3 font-bold"
               >
                 <CalendarRange />
-                Add days
+                Add range
               </Button>
             )
           )}
@@ -609,28 +613,62 @@ function EventForm({
         </section>
       )}
 
-      <WhoPicker
-        directory={directory}
-        value={audience}
-        onChange={setAudience}
-        disabled={busy}
-      />
-
-      <fieldset disabled={busy} className="flex flex-col gap-2">
-        <legend className="mb-1 text-base font-bold">Email reminder</legend>
-        <ReminderChips
-          value={reminders}
-          onChange={setReminders}
-          allDay={allDay}
-        />
+      {/* Who hears about it, and when. Seeing it is separate: everyone
+          does, unless it's private. */}
+      <fieldset disabled={busy} className="flex flex-col gap-3">
+        <legend className="mb-1 text-base font-bold">Reminders</legend>
+        <div className="flex flex-col gap-2">
+          <label htmlFor={`${id}-who`} className="text-sm font-bold">
+            Send to
+          </label>
+          <WhoPicker
+            id={`${id}-who`}
+            directory={directory}
+            value={audience}
+            onChange={setAudience}
+            disabled={busy}
+          />
+        </div>
+        {(listed > 0 || audience.everyone) && (
+          <div
+            role="group"
+            aria-labelledby={`${id}-when`}
+            className="flex flex-col gap-2"
+          >
+            <span id={`${id}-when`} className="text-sm font-bold">
+              When
+            </span>
+            <ReminderChips
+              value={reminders}
+              onChange={setReminders}
+              allDay={allDay}
+            />
+          </div>
+        )}
         <p className="text-sm text-muted-foreground">
-          {sending.length === 0
-            ? 'No reminder emails.'
-            : emailsOn
-              ? 'Everyone invited gets an email, with a link to add it to their calendar.'
-              : 'Reminder emails aren’t turned on yet, so none go out for now. Your choice is saved for when they are.'}
+          {reminderSummary(listed, audience.everyone, sending.length, emailsOn)}
         </p>
       </fieldset>
+
+      <label className="flex cursor-pointer items-start gap-3">
+        <Switch
+          checked={isPrivate}
+          onCheckedChange={setIsPrivate}
+          disabled={busy}
+          className="mt-0.5"
+        />
+        <span className="flex flex-col gap-0.5">
+          <span className="flex items-center gap-1.5 font-bold">
+            <Lock aria-hidden className="size-4" />
+            Private
+          </span>
+          <span className="text-sm text-muted-foreground">
+            {isPrivate
+              ? 'Only the people above, administrators and staff who can edit the calendar see it.'
+              : 'Off: everyone on staff sees it on their calendar, notes included.'}
+          </span>
+        </span>
+      </label>
 
       <div className="flex flex-col gap-2">
         <label htmlFor={`${id}-where`} className="text-sm font-bold">
@@ -663,14 +701,6 @@ function EventForm({
         />
       </div>
 
-      {emailsOn && (event || invitedCount(audience, directory) > 0) && (
-        <p className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Mail className="size-4 shrink-0" />
-          {event
-            ? 'Everyone invited gets an email about what changed.'
-            : 'Everyone invited gets an email invite.'}
-        </p>
-      )}
       <OfflineNote action="save events" />
       <Button
         type="submit"
@@ -683,6 +713,29 @@ function EventForm({
       </Button>
     </form>
   )
+}
+
+/**
+ * Under the reminders: who gets emails and which. Everyone on the list hears
+ * when it's added, changed or cancelled, and gets the reminders picked.
+ */
+function reminderSummary(
+  listed: number,
+  everyone: boolean,
+  reminders: number,
+  emailsOn: boolean,
+) {
+  if (listed === 0 && !everyone) return 'Nobody gets emails about it.'
+  if (!emailsOn)
+    return 'Emails aren’t turned on yet, so none go out for now. Your choices are saved for when they are.'
+  const who = everyone
+    ? 'Everyone on staff, including anyone added later, gets'
+    : listed === 1
+      ? '1 person gets'
+      : `${listed} people get`
+  return reminders === 0
+    ? `${who} an email when it’s added, changed or cancelled. No reminders.`
+    : `${who} an email when it’s added, changed or cancelled, and the reminders above.`
 }
 
 /** "2026-11-10", 6 → "2027-05-10" (the end of that month if shorter). */

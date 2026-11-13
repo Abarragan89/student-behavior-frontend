@@ -68,7 +68,7 @@ export function EditorsDialog({
       isOpen={open}
       setIsOpen={onOpenChange}
       title="Who can edit the calendar"
-      description="Administrators always can. Teachers you turn on here can add, change and delete events, breaks and categories, and import. They also see your staff list, to invite people."
+      description="Administrators always can. Teachers you turn on here can add, change and delete events, breaks and categories, and import. They also see private events and your staff list, to send people reminders."
       showDescription
       className="sm:max-w-lg"
     >

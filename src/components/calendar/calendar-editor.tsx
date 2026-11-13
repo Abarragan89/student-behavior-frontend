@@ -263,7 +263,7 @@ export function CalendarEditor({
             className="flex items-center gap-3 rounded-lg border-2 border-dashed border-border px-4 py-3 text-sm font-bold hover:bg-muted"
           >
             <UsersRound className="size-5 shrink-0" />
-            Add your staff to invite them to events and send them reminders.
+            Add your staff to send them event reminders.
           </Link>
         )}
         {cal && staff.data && cal.events_left >= MAX_UPCOMING_EVENTS && (
