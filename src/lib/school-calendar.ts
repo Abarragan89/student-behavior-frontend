@@ -52,6 +52,12 @@ export type SchoolEvent = {
   /** A one-date change of a series: which series, and the date it replaced. */
   series_id: string | null
   original_date: string | null
+  /**
+   * Only the people it's for, administrators and calendar editors see it.
+   * Otherwise everyone on staff does; staff_ids, group_ids and everyone are
+   * who gets its emails.
+   */
+  private: boolean
 }
 
 export type EventInput = Omit<SchoolEvent, 'id' | 'series_id' | 'original_date'>
@@ -77,6 +83,7 @@ export type StaffEvent = Pick<
   | 'category_id'
   | 'series_id'
   | 'original_date'
+  | 'private'
 > & {
   /** Who's invited by name, sorted; both empty for an everyone event. */
   groups: Array<string>
@@ -99,8 +106,13 @@ export type Occurrence = {
   edited: boolean
   past: boolean
   category_id: string | null
-  /** The viewer is invited (everyone, or them, or a group of theirs). */
+  /**
+   * The viewer gets its emails (it's for everyone, them, or a group of
+   * theirs): one of "their" events.
+   */
   invited: boolean
+  /** Only the people it's for and the calendar's editors see it. */
+  private: boolean
   /**
    * The whole event's first and last day: an event that spans days comes
    * once per day it covers, each with the same two. Both are `date` for a
@@ -124,8 +136,6 @@ export type EventCategory = {
   name: string
   color: CategoryColor
   display: CategoryDisplay
-  /** Teachers see its events on their school calendar. */
-  shared: boolean
 }
 
 export type SchoolBreak = {
@@ -163,8 +173,8 @@ export type CalendarWindow = {
 }
 
 /**
- * A teacher's read-only school calendar: events they're invited to, and
- * events in categories the administrator shares with staff.
+ * A teacher's read-only school calendar: every event but private ones that
+ * aren't for them (a calendar editor sees those too).
  */
 export type StaffCalendarWindow = {
   timezone: string

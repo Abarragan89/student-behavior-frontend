@@ -1,11 +1,26 @@
 import { useId, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Check, Eye, Pencil, Plus, Trash2, UserRound } from 'lucide-react'
+import {
+  Check,
+  ChevronDown,
+  Pencil,
+  Plus,
+  Trash2,
+  UserRound,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
-import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 import { ResponsiveDialog } from '#/components/responsive-dialogue'
 import { ApiError } from '#/lib/api'
@@ -47,6 +62,19 @@ export function CategoryDot({
       className={cn(
         'inline-block size-2.5 shrink-0 rounded-full',
         categoryStyle(color).dot,
+        className,
+      )}
+    />
+  )
+}
+
+/** "No category": a hollow dot where a category's color would be. */
+function NoCategoryDot({ className }: { className?: string }) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        'inline-block size-2.5 shrink-0 rounded-full border-2 border-muted-foreground/60',
         className,
       )}
     />
@@ -190,9 +218,8 @@ function CategoryForm({
   const [name, setName] = useState(initial.name)
   const [color, setColor] = useState<CategoryColor>(initial.color)
   const [display, setDisplay] = useState<CategoryDisplay>(initial.display)
-  const [shared, setShared] = useState(initial.shared)
   const valid = name.trim() !== ''
-  const value = { name, color, display, shared }
+  const value = { name, color, display }
   return (
     <div className="flex flex-col gap-3 rounded-lg border-2 border-border bg-muted/40 p-3">
       <div className="flex flex-col gap-1.5">
@@ -222,21 +249,6 @@ function CategoryForm({
         <span className="text-sm font-bold">Show as</span>
         <DisplayPicker value={display} onChange={setDisplay} disabled={busy} />
       </div>
-      <label className="flex cursor-pointer items-start gap-3">
-        <Switch
-          checked={shared}
-          onCheckedChange={setShared}
-          disabled={busy}
-          className="mt-0.5"
-        />
-        <span className="flex flex-col">
-          <span className="text-sm font-bold">Teachers can see these</span>
-          <span className="text-xs text-muted-foreground">
-            On their school calendar. Off, only staff invited to an event see
-            it.
-          </span>
-        </span>
-      </label>
       <div className="flex gap-2">
         <Button
           type="button"
@@ -268,7 +280,11 @@ function useRefreshCalendar() {
   }
 }
 
-/** The event form's choice of category, with a quick "New category". */
+/**
+ * The event form's choice of category: a button showing the chosen one (or
+ * None) that opens a menu of them all, None first and "New category" last.
+ * An event has at most one: it's the color it shows in.
+ */
 export function CategoryPicker({
   categories,
   value,
@@ -282,10 +298,13 @@ export function CategoryPicker({
 }) {
   const refresh = useRefreshCalendar()
   const [adding, setAdding] = useState(false)
+  // Just made: chosen before the refreshed list has it.
+  const [made, setMade] = useState<EventCategory | null>(null)
   const create = useMutation({
     mutationFn: createCategory,
     onSuccess: (c) => {
       refresh()
+      setMade(c)
       onChange(c.id)
       setAdding(false)
     },
@@ -294,64 +313,89 @@ export function CategoryPicker({
       toast.error(categoryError(error, c.name))
     },
   })
-  // An id the list doesn't have yet (just made) still shows as chosen.
-  const chip = (on: boolean) =>
-    cn(
-      'flex min-h-10 items-center gap-2 rounded-full border-2 px-3 text-sm font-bold transition-colors outline-none focus-visible:ring-4 focus-visible:ring-ring disabled:opacity-50 motion-reduce:transition-none',
-      on
-        ? 'border-primary bg-primary/10'
-        : 'border-border bg-card hover:bg-muted',
-    )
+  const chosen =
+    value === null
+      ? undefined
+      : (categories.find((c) => c.id === value) ??
+        (made?.id === value ? made : undefined))
+  const canAdd = !adding && categories.length < MAX_CATEGORIES
+
   return (
     <div className="flex flex-col gap-2">
-      <div
-        role="radiogroup"
-        aria-label="Category"
-        className="flex flex-wrap gap-2"
-      >
-        <button
-          type="button"
-          role="radio"
-          aria-checked={value === null}
+      <DropdownMenu>
+        <DropdownMenuTrigger
           disabled={disabled}
-          onClick={() => onChange(null)}
-          className={chip(value === null)}
+          render={
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 w-full justify-between rounded-lg border-2 bg-card px-3 text-base font-medium sm:w-72"
+            />
+          }
         >
-          None
-        </button>
-        {categories.map((c) => (
-          <button
-            key={c.id}
-            type="button"
-            role="radio"
-            aria-checked={value === c.id}
-            disabled={disabled}
-            onClick={() => onChange(c.id)}
-            className={chip(value === c.id)}
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="sr-only">Category: </span>
+            {chosen ? (
+              <>
+                <CategoryDot color={chosen.color} />
+                <span className="truncate font-bold">{chosen.name}</span>
+              </>
+            ) : (
+              <>
+                <NoCategoryDot />
+                <span className="text-muted-foreground">None</span>
+              </>
+            )}
+          </span>
+          <ChevronDown className="text-muted-foreground" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="start"
+          className="max-h-80 w-(--anchor-width) min-w-64 overflow-y-auto rounded-lg border-2 border-border p-1 shadow-md ring-0"
+        >
+          <DropdownMenuRadioGroup
+            value={chosen ? chosen.id : ''}
+            onValueChange={(id: string) => onChange(id || null)}
           >
-            <CategoryDot color={c.color} />
-            {c.name}
-          </button>
-        ))}
-        {!adding && categories.length < MAX_CATEGORIES && (
-          <button
-            type="button"
-            disabled={disabled}
-            onClick={() => setAdding(true)}
-            className={cn(chip(false), 'border-dashed text-muted-foreground')}
-          >
-            <Plus className="size-4" />
-            New category
-          </button>
-        )}
-      </div>
+            <DropdownMenuRadioItem
+              value=""
+              closeOnClick
+              className="min-h-10 rounded-md text-base font-bold"
+            >
+              <NoCategoryDot />
+              None
+            </DropdownMenuRadioItem>
+            {categories.map((c) => (
+              <DropdownMenuRadioItem
+                key={c.id}
+                value={c.id}
+                // One per event: picking it is the whole job.
+                closeOnClick
+                className="min-h-10 rounded-md text-base font-bold"
+              >
+                <CategoryDot color={c.color} />
+                <span className="min-w-0 truncate">{c.name}</span>
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
+          {canAdd && <DropdownMenuSeparator />}
+          {canAdd && (
+            <DropdownMenuItem
+              className="min-h-10 rounded-md text-base font-bold text-muted-foreground"
+              onClick={() => setAdding(true)}
+            >
+              <Plus />
+              New category
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
       {adding && (
         <CategoryForm
           initial={{
             name: '',
             color: unusedColor(categories),
             display: 'chip',
-            shared: false,
           }}
           submitLabel="Add category"
           busy={create.isPending}
@@ -442,7 +486,7 @@ export function CategoryLegend({
       type="button"
       aria-pressed={mineOn}
       onClick={() => toggle(MINE)}
-      title="Your events: ones you’re invited to, or with your name in them"
+      title="Your events: ones you get reminders for, or with your name in them"
       className={chipClass(mineOn, mineCount)}
     >
       <UserRound className="size-3.5" />
@@ -504,14 +548,8 @@ export function CategoryLegend({
                 className={cn(on && 'ring-2 ring-primary-foreground')}
               />
             ) : (
-              <span
-                aria-hidden
-                className={cn(
-                  'inline-block size-2.5 shrink-0 rounded-full border-2',
-                  on
-                    ? 'border-primary-foreground'
-                    : 'border-muted-foreground/60',
-                )}
+              <NoCategoryDot
+                className={cn(on && 'border-primary-foreground')}
               />
             )}
             {k.name}
@@ -616,7 +654,6 @@ function CategoryList({ categories }: { categories: Array<EventCategory> }) {
                   name: c.name,
                   color: c.color,
                   display: c.display,
-                  shared: c.shared,
                 }}
                 submitLabel="Save"
                 busy={save.isPending}
@@ -632,16 +669,9 @@ function CategoryList({ categories }: { categories: Array<EventCategory> }) {
               <CategoryDot color={c.color} className="size-3.5" />
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate font-bold">{c.name}</span>
-                <span className="flex items-center gap-1 truncate text-xs text-muted-foreground">
+                <span className="truncate text-xs text-muted-foreground">
                   {DISPLAY_OPTIONS.find((o) => o.value === c.display)?.label ??
                     'Each event'}
-                  {c.shared && (
-                    <>
-                      {' · '}
-                      <Eye aria-hidden className="size-3.5" />
-                      Teachers see it
-                    </>
-                  )}
                 </span>
               </span>
               {confirming === c.id ? (
@@ -708,7 +738,6 @@ function CategoryList({ categories }: { categories: Array<EventCategory> }) {
             name: '',
             color: unusedColor(categories),
             display: 'chip',
-            shared: false,
           }}
           submitLabel="Add category"
           busy={save.isPending}

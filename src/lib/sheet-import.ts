@@ -81,8 +81,6 @@ export type ColorChoice =
       name: string
       color: CategoryColor
       display: CategoryDisplay
-      /** Teachers see its events (their spreadsheet was everyone's). */
-      shared: boolean
     }
   | { kind: 'none' }
   | { kind: 'break' }
@@ -521,7 +519,6 @@ export function defaultChoices(
       name: g.label,
       color,
       display: displayFor(g),
-      shared: true,
     })
   }
   return out

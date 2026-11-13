@@ -4,6 +4,7 @@ import {
   CalendarDays,
   CircleAlert,
   Clock,
+  Lock,
   MapPin,
   Repeat,
   Tag,
@@ -35,7 +36,7 @@ import type {
 
 /**
  * One event, read only: a teacher's view of their school calendar. What the
- * calendar sent shows at once; the notes, how it repeats, who's invited and
+ * calendar sent shows at once; the notes, how it repeats, who it's for and
  * their reminders follow from the event itself.
  */
 export function OccurrenceSheet({
@@ -139,13 +140,18 @@ function Details({
         )}
         {o.invited && (
           <Row icon={<UserRoundCheck className="size-5" />} label="You">
-            You’re invited
+            You get emails about it
           </Row>
         )}
         {reminders.length > 0 && (
           <Row icon={<Bell className="size-5" />} label="Reminders">
             {reminders.length === 1 ? 'Email reminder' : 'Email reminders'}:{' '}
             {reminders.join(', ')}
+          </Row>
+        )}
+        {o.private && (
+          <Row icon={<Lock className="size-5" />} label="Private">
+            Private: only the people it’s for and calendar editors see it
           </Row>
         )}
       </dl>
@@ -162,7 +168,7 @@ function Details({
           >
             <span className="flex items-center gap-2 text-muted-foreground">
               <CircleAlert className="size-4 shrink-0 text-destructive" />
-              Couldn’t load the notes and who’s invited.
+              Couldn’t load the notes and who it’s for.
             </span>
             <Button
               variant="outline"
@@ -176,7 +182,7 @@ function Details({
           </div>
         ) : details.fetchStatus === 'paused' ? (
           <p className="text-sm text-muted-foreground">
-            The notes and who’s invited show once you’re back online.
+            The notes and who it’s for show once you’re back online.
           </p>
         ) : (
           <p

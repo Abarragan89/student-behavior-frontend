@@ -8,7 +8,6 @@ import {
   ChevronRight,
   MapPin,
 } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { breakOn } from '#/components/calendar/month-grid'
@@ -29,10 +28,10 @@ import { mineMatcher } from '#/lib/month-layout'
 import { staffCalendarQueryOptions } from '#/lib/school-calendar'
 
 /**
- * "You have 3 events today": what's on your school's calendar the day
- * you're planning (the events you're invited to and the categories shared
- * with staff, as on your School page). Tapping it lists each event's time,
- * name and place. For a teacher in a school, in their own space: never on a
+ * "You have 3 events today": your events on the school calendar the day
+ * you're planning, the ones its Mine button shows (you get its emails, or
+ * your name is in it), not the whole school's. Tapping it lists each
+ * event's time, name and place. For a teacher in a school, in their own space: never on a
  * co-teacher's plans, a template, the presenter view, a sub's page or paper.
  * Nothing shows while loading, offline, or on a day with no events.
  */
@@ -52,7 +51,7 @@ export function DayEvents({ date, today }: { date: string; today: string }) {
 
   const cal = calendar.data
   if (!forYou || !cal) return null
-  const events = cal.occurrences.filter((o) => o.date === date)
+  const events = cal.occurrences.filter((o) => o.date === date && isMine(o))
   if (events.length === 0) return null
 
   const byId = new Map(cal.categories.map((c) => [c.id, c]))
@@ -152,14 +151,7 @@ export function DayEvents({ date, today }: { date: string; today: string }) {
                     )}
                   </span>
                   <span className="flex min-w-0 flex-1 flex-col">
-                    <span className="flex items-center gap-1.5 font-bold">
-                      <span className="min-w-0 wrap-break-word">{o.title}</span>
-                      {isMine(o) && (
-                        <Badge variant="secondary" className="shrink-0">
-                          You
-                        </Badge>
-                      )}
-                    </span>
+                    <span className="font-bold wrap-break-word">{o.title}</span>
                     {isSpan(o) && (
                       <span className="text-sm font-medium">
                         {formatDayRange(o.first_day, o.last_day)}

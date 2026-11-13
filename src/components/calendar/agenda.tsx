@@ -1,4 +1,4 @@
-import { MapPin, Repeat } from 'lucide-react'
+import { Lock, MapPin, Repeat } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatClock, formatDayRange } from '#/lib/calendar'
 import { categoryStyle } from '#/lib/category-colors'
@@ -103,6 +103,12 @@ export function Agenda({
                           {o.repeats && (
                             <Repeat
                               aria-label="Repeats"
+                              className="size-3.5 shrink-0"
+                            />
+                          )}
+                          {o.private && (
+                            <Lock
+                              aria-label="Private"
                               className="size-3.5 shrink-0"
                             />
                           )}

@@ -718,8 +718,9 @@ function ourDates(
 
 /**
  * The event as sent: the reminders chosen in the preview (all-day events
- * can't have the ones before a start time), repeats skipping breaks, and
- * its category (a spreadsheet's color), if any.
+ * can't have the ones before a start time), repeats skipping breaks, its
+ * category (a spreadsheet's color), if any, and public: an imported
+ * calendar was the whole school's.
  */
 export function toWire(
   e: ImportEvent,
@@ -735,12 +736,14 @@ export function toWire(
     group_ids: [],
     reminders: forEvent(e.all_day),
     category_id: categoryId,
+    private: false,
     overrides: e.overrides.map((o) => ({
       ...o,
       skip_breaks: true,
       group_ids: [],
       reminders: forEvent(o.all_day),
       category_id: categoryId,
+      private: false,
     })),
   }
 }

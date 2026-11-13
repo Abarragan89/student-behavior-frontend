@@ -67,8 +67,8 @@ import { SpreadsheetError, readWorkbook } from '#/lib/xlsx'
 
 // Importing a school's color-coded spreadsheet: read it here, choose what
 // each color becomes (a category, a school break, nothing), check the
-// events, import. Nobody is invited and no emails go out; Undo takes the
-// whole import back. Nothing read from the file is kept on the device.
+// events, import. Every event is public (the spreadsheet was the whole
+// school's), nobody gets emails; Undo takes the whole import back. Nothing read from the file is kept on the device.
 
 type Props = {
   file: SheetFile
@@ -261,7 +261,6 @@ function ColorsStep({
         <p className="text-sm text-muted-foreground">
           Your spreadsheet’s colors become categories, read from its legend.
           Check each one; colors the legend doesn’t name are yours to place.
-          Teachers see the categories you leave ticked, like your spreadsheet.
         </p>
       </div>
       <ul className="flex flex-col gap-2">
@@ -359,7 +358,6 @@ function ColorRow({
       categories.map((c) => c.color),
     ),
     display: displayFor(group),
-    shared: true,
   })
   const existing =
     choice.kind === 'new' ? categoryNamed(categories, choice.name) : undefined
@@ -466,17 +464,6 @@ function ColorRow({
                 </option>
               ))}
             </select>
-          </label>
-          <label className="flex cursor-pointer items-center gap-2 text-sm font-bold">
-            <input
-              type="checkbox"
-              checked={choice.shared}
-              onChange={(e) =>
-                onChoice({ ...choice, shared: e.target.checked })
-              }
-              className="size-5 accent-primary"
-            />
-            Teachers see it
           </label>
         </div>
       )}
@@ -692,7 +679,6 @@ function PreviewStep({
               name,
               color: choice.color,
               display: choice.display,
-              shared: choice.shared,
             })
           ).id
           made.set(key, id)
@@ -840,8 +826,8 @@ function PreviewStep({
       {parsed.skipped.length > 0 && <Skipped skipped={parsed.skipped} />}
 
       <p className="text-sm text-muted-foreground">
-        No emails go out, and no one is invited. Open an event later to invite
-        staff or add reminders.
+        Everyone on staff will see these events. No emails go out: open an event
+        later to send reminders to the people it’s for.
       </p>
       {tooMany ? (
         <p role="alert" className="text-sm font-bold text-destructive">

@@ -6,6 +6,8 @@ import {
   CalendarDays,
   CircleAlert,
   Clock,
+  Eye,
+  Lock,
   Mail,
   MapPin,
   Tag,
@@ -185,23 +187,25 @@ function Details({
             <span className="flex items-center gap-2">
               <CategoryDot color={category.color} />
               {category.name}
-              {category.shared && (
-                <span className="text-sm text-muted-foreground">
-                  · teachers see it
-                </span>
-              )}
             </span>
           </Row>
         )}
-        <Row icon={UsersRound} label="Who">
+        <Row icon={UsersRound} label="Gets emails">
           {who}
         </Row>
-        <Row icon={Bell} label="Reminders">
-          {e.reminders.length === 0
-            ? 'None'
-            : REMINDERS.filter((r) => e.reminders.includes(r.value))
-                .map((r) => r.label)
-                .join(', ')}
+        {who !== NOBODY && (
+          <Row icon={Bell} label="Reminders">
+            {e.reminders.length === 0
+              ? 'No reminders'
+              : REMINDERS.filter((r) => e.reminders.includes(r.value))
+                  .map((r) => r.label)
+                  .join(', ')}
+          </Row>
+        )}
+        <Row icon={e.private ? Lock : Eye} label="Who sees it">
+          {e.private
+            ? 'Private: only the people it’s for, administrators and calendar editors see it'
+            : 'Everyone on staff sees it'}
         </Row>
       </dl>
       {e.notes && (
@@ -265,6 +269,9 @@ function Row({
   )
 }
 
+const NOBODY = 'Nobody gets emails about it'
+
+/** Who gets its emails: "Everyone on staff", or groups then people. */
 function describeWho(e: SchoolEvent, directory: StaffDirectory | undefined) {
   if (e.everyone) return 'Everyone on staff'
   if (!directory) return '…'
@@ -275,7 +282,7 @@ function describeWho(e: SchoolEvent, directory: StaffDirectory | undefined) {
     .filter((p) => e.staff_ids.includes(p.id))
     .map(displayName)
   const parts = [...groups, ...people]
-  if (parts.length === 0) return 'Nobody invited'
+  if (parts.length === 0) return NOBODY
   return parts.length > 8
     ? `${parts.slice(0, 8).join(', ')} and ${parts.length - 8} more`
     : parts.join(', ')
@@ -368,7 +375,7 @@ function DeleteForm({
       {tellsPeople && (
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
           <Mail className="size-4 shrink-0" />
-          Everyone invited gets an email that it’s cancelled.
+          Everyone it’s for gets an email that it’s cancelled.
         </p>
       )}
       <div className="flex gap-2">
