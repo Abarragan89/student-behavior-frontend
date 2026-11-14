@@ -12,7 +12,11 @@ import {
   formatWeekRange,
   monthOf,
 } from '#/lib/calendar'
-import { categoryStyle, printChip } from '#/lib/category-colors'
+import {
+  NO_CATEGORY_COLOR,
+  categoryStyle,
+  printChip,
+} from '#/lib/category-colors'
 import { formatLongDate } from '#/lib/day'
 import { isSpan } from '#/lib/event-span'
 import type {
@@ -271,7 +275,7 @@ function PrintList({
                       aria-hidden
                       className={cn(
                         'mt-1.5 size-2 shrink-0 rounded-full',
-                        c ? categoryStyle(c.color).dot : 'bg-neutral-400',
+                        categoryStyle(c?.color ?? NO_CATEGORY_COLOR).dot,
                       )}
                     />
                     <span className="w-[5.25rem] shrink-0 font-semibold tabular-nums">

@@ -8,7 +8,11 @@ import {
   monthOf,
   weekdayLabels,
 } from '#/lib/calendar'
-import { categoryStyle, printChip } from '#/lib/category-colors'
+import {
+  NO_CATEGORY_COLOR,
+  categoryStyle,
+  printChip,
+} from '#/lib/category-colors'
 import { isSpan } from '#/lib/event-span'
 import { formatLongDate, isWeekend, parseDate } from '#/lib/day'
 import {
@@ -17,14 +21,17 @@ import {
   layoutMonth,
   shortTitle,
 } from '#/lib/month-layout'
-import type { DayItem, Span, WeekLayout } from '#/lib/month-layout'
+import type { DayLine, Span, WeekLayout } from '#/lib/month-layout'
 import type {
   EventCategory,
   Occurrence,
   SchoolBreak,
 } from '#/lib/school-calendar'
 
-/** How many lines a day cell shows before "+N more". */
+/**
+ * How many lines a day shows before "+N more": min-h-32 fits the date and
+ * six 17px lines. Bars count on the days they cross.
+ */
 const PER_DAY = 6
 
 /** An event's line: small type, so a day fits six. */
@@ -90,7 +97,7 @@ export function MonthGrid({
   onOpen?: (o: Occurrence) => void
   onDay?: (date: string) => void
 }) {
-  const weeks = layoutMonth(monthWeeks(month), occurrences, categories)
+  const weeks = layoutMonth(monthWeeks(month), occurrences, categories, PER_DAY)
   const print = variant === 'print'
   const ctx: Ctx = {
     month,
@@ -160,8 +167,10 @@ type Ctx = {
 }
 
 /**
- * One week: a grid whose first row is the dates, then a row per bar, then
- * each day's lines. The day boxes (borders, shading) sit behind it all.
+ * One week: a grid whose first row is the dates, then a row per line. Bars
+ * keep their rows; each day's own lines fill the rows its bars leave free
+ * (see month-layout.ts). The last row takes what's left of the day boxes'
+ * height. The day boxes (borders, shading) sit behind it all.
  */
 function Week({
   week,
@@ -173,13 +182,14 @@ function Week({
   ctx: Ctx
 }) {
   const { print } = ctx
-  // repeat(0, …) isn't valid CSS: a week without bars would lose its rows.
+  // repeat(0, …) isn't valid CSS: an empty week would lose its rows. The
+  // last row's minimum is the gap under a full day's lines.
   const style: CSSProperties = {
     gridTemplateRows:
-      week.lanes > 0 ? `auto repeat(${week.lanes}, auto) 1fr` : 'auto 1fr',
+      week.rows > 0
+        ? `auto repeat(${week.rows}, auto) minmax(0.25rem, 1fr)`
+        : 'auto minmax(0.25rem, 1fr)',
   }
-  // Bars take room in every day of the week; the days' own lines get the rest.
-  const room = Math.max(1, PER_DAY - week.lanes)
   return (
     <div
       className={cn(
@@ -228,16 +238,17 @@ function Week({
           }}
         />
       ))}
-      {week.days.map((date, col) => (
-        <DayLines
-          key={`lines:${date}`}
-          date={date}
-          items={week.body[col]}
-          room={room}
-          ctx={ctx}
-          style={{ gridColumn: col + 1, gridRow: week.lanes + 2 }}
-        />
-      ))}
+      {week.days.map((date, col) =>
+        week.lines[col].map((line) => (
+          <div
+            key={lineKey(line, date)}
+            style={{ gridColumn: col + 1, gridRow: line.row + 2 }}
+            className="relative min-w-0 px-0.5 pt-px"
+          >
+            <DayLineView line={line} date={date} ctx={ctx} />
+          </div>
+        )),
+      )}
     </div>
   )
 }
@@ -369,76 +380,67 @@ function Bar({
   )
 }
 
-/** A day's own lines, then "+N more" when they don't fit. */
-function DayLines({
+function lineKey(line: DayLine, date: string) {
+  if (line.kind === 'more') return `more:${date}`
+  const { item } = line
+  return item.kind === 'event'
+    ? `${item.o.event_id}:${item.o.date}`
+    : `all:${item.category.id}:${date}`
+}
+
+/** One of a day's own lines: an event, a gathered line, or "+N more". */
+function DayLineView({
+  line,
   date,
-  items,
-  room,
   ctx,
-  style,
 }: {
+  line: DayLine
   date: string
-  items: Array<DayItem>
-  room: number
   ctx: Ctx
-  style: CSSProperties
 }) {
-  const shown = items.slice(0, room)
-  const hidden = items
-    .slice(room)
-    .reduce((n, i) => n + (i.kind === 'combined' ? i.items.length : 1), 0)
-  return (
-    <div
-      style={style}
-      className="relative flex min-w-0 flex-col gap-px px-0.5 pt-px pb-1"
+  if (line.kind === 'more') {
+    return ctx.print ? (
+      <p className="px-1 text-[0.625rem] leading-4 font-bold text-neutral-700">
+        +{line.hidden} more, see list
+      </p>
+    ) : (
+      <button
+        type="button"
+        onClick={() => ctx.onDay?.(date)}
+        className="rounded-md px-1 text-left text-[0.6875rem] leading-4 font-bold text-muted-foreground outline-none hover:text-foreground focus-visible:ring-4 focus-visible:ring-ring"
+      >
+        +{line.hidden} more
+      </button>
+    )
+  }
+  const { item } = line
+  return item.kind === 'event' ? (
+    <Line
+      o={item.o}
+      ctx={ctx}
+      title={`${item.o.all_day ? '' : `${startLabel(item.o)} `}${item.o.title}`}
+      className={LINE}
     >
-      {shown.map((item) =>
-        item.kind === 'event' ? (
-          <Line
-            key={`${item.o.event_id}:${item.o.date}`}
-            o={item.o}
-            ctx={ctx}
-            title={`${item.o.all_day ? '' : `${startLabel(item.o)} `}${item.o.title}`}
-            className={LINE}
-          >
-            {!item.o.all_day && (
-              <span className="shrink-0 font-medium tabular-nums">
-                {shortTime(item.o)}
-              </span>
-            )}
-            <span className="min-w-0 truncate">{labelOf(item.o, ctx)}</span>
-          </Line>
-        ) : (
-          <Line
-            key={`all:${item.category.id}:${date}`}
-            o={item.items[0]}
-            items={item.items}
-            ctx={ctx}
-            onClick={ctx.onDay ? () => ctx.onDay?.(date) : undefined}
-            title={item.items.map((o) => o.title).join('\n')}
-            className={LINE}
-          >
-            <span className="min-w-0 truncate">
-              {combinedText(item.category, item.items)}
-            </span>
-          </Line>
-        ),
+      {!item.o.all_day && (
+        <span className="shrink-0 font-medium tabular-nums">
+          {shortTime(item.o)}
+        </span>
       )}
-      {hidden > 0 && ctx.print && (
-        <p className="px-1 text-[0.625rem] leading-4 font-bold text-neutral-700">
-          +{hidden} more, see list
-        </p>
-      )}
-      {hidden > 0 && !ctx.print && (
-        <button
-          type="button"
-          onClick={() => ctx.onDay?.(date)}
-          className="rounded-md px-1 text-left text-[0.6875rem] leading-4 font-bold text-muted-foreground outline-none hover:text-foreground focus-visible:ring-4 focus-visible:ring-ring"
-        >
-          +{hidden} more
-        </button>
-      )}
-    </div>
+      <span className="min-w-0 truncate">{labelOf(item.o, ctx)}</span>
+    </Line>
+  ) : (
+    <Line
+      o={item.items[0]}
+      items={item.items}
+      ctx={ctx}
+      onClick={ctx.onDay ? () => ctx.onDay?.(date) : undefined}
+      title={item.items.map((o) => o.title).join('\n')}
+      className={LINE}
+    >
+      <span className="min-w-0 truncate">
+        {combinedText(item.category, item.items)}
+      </span>
+    </Line>
   )
 }
 
@@ -472,18 +474,11 @@ function Line({
   className: string
   children: ReactNode
 }) {
-  const color = o.category_id ? ctx.colorOf.get(o.category_id) : undefined
+  const color =
+    (o.category_id ? ctx.colorOf.get(o.category_id) : undefined) ??
+    NO_CATEGORY_COLOR
   if (ctx.print) {
-    return (
-      <div
-        className={cn(
-          className,
-          color ? printChip(color) : 'bg-neutral-100 text-black',
-        )}
-      >
-        {children}
-      </div>
-    )
+    return <div className={cn(className, printChip(color))}>{children}</div>
   }
   const lens = ctx.highlight
   const lit = lens ? (items ?? [o]).some(lens) : true
@@ -495,11 +490,8 @@ function Line({
       className={cn(
         className,
         'outline-none focus-visible:ring-4 focus-visible:ring-ring',
-        color
-          ? [categoryStyle(color).chip, o.past && 'opacity-60']
-          : o.past
-            ? 'bg-muted text-muted-foreground hover:bg-muted/80'
-            : 'bg-primary/15 text-foreground hover:bg-primary/25',
+        categoryStyle(color).chip,
+        o.past && 'opacity-60',
         !lit && 'opacity-25',
       )}
     >

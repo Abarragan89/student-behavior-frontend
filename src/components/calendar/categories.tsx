@@ -25,8 +25,9 @@ import { cn } from '@/lib/utils'
 import { ResponsiveDialog } from '#/components/responsive-dialogue'
 import { ApiError } from '#/lib/api'
 import {
-  CATEGORY_COLORS,
   CATEGORY_STYLES,
+  NO_CATEGORY_COLOR,
+  PICK_COLORS,
   categoryStyle,
 } from '#/lib/category-colors'
 import type { CategoryColor } from '#/lib/category-colors'
@@ -68,20 +69,15 @@ export function CategoryDot({
   )
 }
 
-/** "No category": a hollow dot where a category's color would be. */
+/** "No category": gray, as events with no category are. */
 function NoCategoryDot({ className }: { className?: string }) {
-  return (
-    <span
-      aria-hidden
-      className={cn(
-        'inline-block size-2.5 shrink-0 rounded-full border-2 border-muted-foreground/60',
-        className,
-      )}
-    />
-  )
+  return <CategoryDot color={NO_CATEGORY_COLOR} className={className} />
 }
 
-/** The colors to choose from, as a row of swatches. */
+/**
+ * The colors to choose from, as a row of swatches: not gray, which is no
+ * category's (a category made gray before shows none picked).
+ */
 export function ColorPicker({
   value,
   onChange,
@@ -99,7 +95,7 @@ export function ColorPicker({
       aria-label={label}
       className="flex flex-wrap gap-1.5"
     >
-      {CATEGORY_COLORS.map((c) => {
+      {PICK_COLORS.map((c) => {
         const on = c === value
         return (
           <button
@@ -549,7 +545,7 @@ export function CategoryLegend({
               />
             ) : (
               <NoCategoryDot
-                className={cn(on && 'border-primary-foreground')}
+                className={cn(on && 'ring-2 ring-primary-foreground')}
               />
             )}
             {k.name}
@@ -573,10 +569,13 @@ export function CategoryLegend({
   )
 }
 
-/** The first color no category has yet. */
+/** The first color no category has yet; once all are, they go round again. */
 export function unusedColor(categories: Array<EventCategory>): CategoryColor {
   const used = new Set(categories.map((c) => c.color))
-  return CATEGORY_COLORS.find((c) => !used.has(c)) ?? 'slate'
+  return (
+    PICK_COLORS.find((c) => !used.has(c)) ??
+    PICK_COLORS[categories.length % PICK_COLORS.length]
+  )
 }
 
 /** Rename, recolor, add and delete the school's categories. */

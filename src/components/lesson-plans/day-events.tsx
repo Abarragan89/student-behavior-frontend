@@ -20,7 +20,7 @@ import {
   monthGrid,
   monthOf,
 } from '#/lib/calendar'
-import { categoryStyle } from '#/lib/category-colors'
+import { NO_CATEGORY_COLOR, categoryStyle } from '#/lib/category-colors'
 import type { CategoryColor } from '#/lib/category-colors'
 import { addDays, formatLongDate } from '#/lib/day'
 import { isSpan } from '#/lib/event-span'
@@ -131,9 +131,7 @@ export function DayEvents({ date, today }: { date: string; today: string }) {
                     aria-hidden
                     className={cn(
                       '-my-1 -ml-1 w-1.5 shrink-0 rounded-full',
-                      category
-                        ? categoryStyle(category.color).dot
-                        : 'bg-border',
+                      categoryStyle(category?.color ?? NO_CATEGORY_COLOR).dot,
                     )}
                   />
                   <span className="flex w-20 shrink-0 flex-col text-sm font-bold whitespace-nowrap tabular-nums">
