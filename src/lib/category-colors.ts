@@ -2,8 +2,10 @@
 // checks it against the same list (internal/schoolevent). Chips are a soft
 // tint with dark text (light text in dark mode), so a month full of them
 // stays readable; the hue still tells "yellow = out" at a glance, as a
-// school's color-coded spreadsheet does. Class names are written out in
-// full so Tailwind finds them. No React or app imports: the spreadsheet
+// school's color-coded spreadsheet does. Gray is for events with no
+// category: categories pick from the rest (PICK_COLORS). The server still
+// takes gray, for categories made gray before. Class names are written out
+// in full so Tailwind finds them. No React or app imports: the spreadsheet
 // import (sheet-import.ts) uses nearestColor too.
 
 export const CATEGORY_COLORS = [
@@ -27,6 +29,14 @@ export const CATEGORY_COLORS = [
 ] as const
 
 export type CategoryColor = (typeof CATEGORY_COLORS)[number]
+
+/** An event with no category is gray. */
+export const NO_CATEGORY_COLOR: CategoryColor = 'slate'
+
+/** The colors a category can be given: all but gray. */
+export const PICK_COLORS = CATEGORY_COLORS.filter(
+  (c) => c !== NO_CATEGORY_COLOR,
+)
 
 type Style = {
   label: string
@@ -180,17 +190,22 @@ export function hueGap(a: number, b: number) {
 }
 
 /**
- * Our color closest to a spreadsheet's "RRGGBB". Near-grays are gray. A
- * color not yet taken is preferred when it's fairly close, so two pinks in
- * the sheet don't both become Pink.
+ * Our color closest to a spreadsheet's "RRGGBB". A color not yet taken is
+ * preferred when it's fairly close, so two pinks in the sheet don't both
+ * become Pink. Gray is for no category, so a near-gray gets the first color
+ * free from Blue on.
  */
 export function nearestColor(
   hex: string,
   taken: ReadonlySet<CategoryColor> = new Set(),
 ): CategoryColor {
   const { hue, chroma } = hueOf(hex)
-  if (chroma < 0.15) return 'slate'
-  const ranked = CATEGORY_COLORS.filter((c) => CATEGORY_STYLES[c].hue !== null)
+  if (chroma < 0.15) {
+    const from = PICK_COLORS.indexOf('blue')
+    const order = [...PICK_COLORS.slice(from), ...PICK_COLORS.slice(0, from)]
+    return order.find((c) => !taken.has(c)) ?? 'blue'
+  }
+  const ranked = PICK_COLORS.filter((c) => CATEGORY_STYLES[c].hue !== null)
     .map((c) => ({ c, gap: hueGap(hue, CATEGORY_STYLES[c].hue ?? 0) }))
     .sort((a, b) => a.gap - b.gap)
   const best = ranked[0]

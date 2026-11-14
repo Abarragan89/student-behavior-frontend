@@ -12,6 +12,9 @@ import type { EventCategory, Occurrence } from './school-calendar'
 //   events into one line;
 // - everything else is a line of its own, in the order the server sends
 //   (all-day first, then by time).
+// Every line has a row in its week: bars keep theirs, and a day's own lines
+// fill the rows its bars leave free, top down, so a bar on Friday takes no
+// room on Tuesday.
 // Plain functions, no React.
 
 export type DayItem =
@@ -34,15 +37,22 @@ export type Span = {
   after: boolean
 }
 
+/** A day's own line, in a row of its week (0 = the first under the dates). */
+export type DayLine =
+  | { kind: 'item'; row: number; item: DayItem }
+  /** "+N more": hidden counts events, each in a gathered line too. */
+  | { kind: 'more'; row: number; hidden: number }
+
 export type WeekLayout = {
   days: Array<string>
   /** By column: shown beside the day's number. */
   header: Array<Array<Occurrence>>
+  /** Bars, each in the row its lane says. */
   spans: Array<Span>
-  /** How many bar rows the week needs. */
-  lanes: number
-  /** By column: the day's own lines. */
-  body: Array<Array<DayItem>>
+  /** By column: the day's own lines, in the rows its bars leave free. */
+  lines: Array<Array<DayLine>>
+  /** How many rows of lines the week needs, bars and days' own. */
+  rows: number
 }
 
 /** Lowercase, single spaces: how titles are compared. */
@@ -50,11 +60,15 @@ function same(s: string) {
   return s.trim().replace(/\s+/g, ' ').toLocaleLowerCase()
 }
 
-/** The weeks of a month grid (dates: whole weeks, Sunday first). */
+/**
+ * The weeks of a month grid (dates: whole weeks, Sunday first). A day shows
+ * perDay lines, or as many as the week's bars make it tall, before "+N more".
+ */
 export function layoutMonth(
   dates: Array<string>,
   occurrences: Array<Occurrence>,
   categories: Array<EventCategory>,
+  perDay: number,
 ): Array<WeekLayout> {
   const byId = new Map(categories.map((c) => [c.id, c]))
   const categoryOf = (o: Occurrence) =>
@@ -159,9 +173,57 @@ export function layoutMonth(
         byId,
       ),
     )
-    weeks.push({ days, header, spans, lanes: laneEnds.length, body })
+    // The rows each day's bars are in.
+    const taken = days.map(
+      (_, col) =>
+        new Set(
+          spans
+            .filter((s) => s.first <= col && col <= s.last)
+            .map((s) => s.lane),
+        ),
+    )
+    // A stack of bars makes the whole week taller: every day may use it.
+    let capacity = Math.max(perDay, laneEnds.length)
+    // A day its bars fill still gets a row, for its "+N more".
+    if (
+      body.some((items, col) => items.length > 0 && taken[col].size >= capacity)
+    )
+      capacity += 1
+    const lines = body.map((items, col) =>
+      placeDay(items, taken[col], capacity),
+    )
+    const rows = Math.max(
+      laneEnds.length,
+      ...lines.flat().map((line) => line.row + 1),
+    )
+    weeks.push({ days, header, spans, lines, rows })
   }
   return weeks
+}
+
+/**
+ * A day's lines in the rows its bars leave free, top down. When they don't
+ * all fit, the last free row says "+N more" instead.
+ */
+function placeDay(
+  items: Array<DayItem>,
+  taken: Set<number>,
+  capacity: number,
+): Array<DayLine> {
+  const free: Array<number> = []
+  for (let row = 0; row < capacity; row++) if (!taken.has(row)) free.push(row)
+  if (items.length <= free.length)
+    return items.map((item, i) => ({ kind: 'item', row: free[i], item }))
+  const shown = free.length - 1
+  const hidden = items
+    .slice(shown)
+    .reduce((n, i) => n + (i.kind === 'combined' ? i.items.length : 1), 0)
+  return [
+    ...items
+      .slice(0, shown)
+      .map((item, i): DayLine => ({ kind: 'item', row: free[i], item })),
+    { kind: 'more', row: free[shown], hidden },
+  ]
 }
 
 /**

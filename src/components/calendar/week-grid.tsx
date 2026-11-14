@@ -3,7 +3,11 @@ import { MapPin, Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { breakOn } from '#/components/calendar/month-grid'
 import { formatClockRange, formatDayRange, weekDays } from '#/lib/calendar'
-import { categoryStyle, printChip } from '#/lib/category-colors'
+import {
+  NO_CATEGORY_COLOR,
+  categoryStyle,
+  printChip,
+} from '#/lib/category-colors'
 import { formatLongDate, parseDate } from '#/lib/day'
 import { isSpan } from '#/lib/event-span'
 import {
@@ -342,18 +346,11 @@ function Line({
   className: string
   children: ReactNode
 }) {
-  const color = o.category_id ? ctx.colorOf.get(o.category_id) : undefined
+  const color =
+    (o.category_id ? ctx.colorOf.get(o.category_id) : undefined) ??
+    NO_CATEGORY_COLOR
   if (ctx.print) {
-    return (
-      <div
-        className={cn(
-          className,
-          color ? printChip(color) : 'bg-neutral-100 text-black',
-        )}
-      >
-        {children}
-      </div>
-    )
+    return <div className={cn(className, printChip(color))}>{children}</div>
   }
   const lens = ctx.highlight
   const lit = lens ? (items ?? [o]).some(lens) : true
@@ -365,11 +362,8 @@ function Line({
       className={cn(
         className,
         'outline-none focus-visible:ring-4 focus-visible:ring-ring',
-        color
-          ? [categoryStyle(color).chip, o.past && 'opacity-60']
-          : o.past
-            ? 'bg-muted text-muted-foreground hover:bg-muted/80'
-            : 'bg-primary/15 text-foreground hover:bg-primary/25',
+        categoryStyle(color).chip,
+        o.past && 'opacity-60',
         !lit && 'opacity-25',
       )}
     >
