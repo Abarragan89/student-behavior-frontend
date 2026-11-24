@@ -1,4 +1,4 @@
-import { useId } from 'react'
+import { useId, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { Controller, useForm } from 'react-hook-form'
@@ -56,15 +56,21 @@ function submitErrorMessage(error: unknown) {
 
 /**
  * "Create class" from the + menu. Creates the class, opens it (it becomes the
- * default classroom), and goes to the Classes page.
+ * default classroom), and goes to the Classes page. A school member's class
+ * is the school's, unless they untick "Part of Lincoln" (a club, tutoring):
+ * once it's the school's, only an administrator can take it back out.
  */
 export default function CreateClassForm({
   onSuccess,
+  schoolName,
 }: {
   /** Called once the class is open on the Classes page, e.g. to close the dialog. */
   onSuccess?: () => void
+  /** The teacher's school, in their own space; omitted otherwise. */
+  schoolName?: string
 }) {
   const inputId = useId()
+  const [inSchool, setInSchool] = useState(true)
   const queryClient = useQueryClient()
   const navigate = useNavigate()
 
@@ -76,7 +82,7 @@ export default function CreateClassForm({
 
   const create = useMutation({
     mutationFn: async (name: string) => {
-      const created = await createClassroom(name)
+      const created = await createClassroom(name, !!schoolName && !inSchool)
       if (created.is_default) {
         // The backend opened it: reload the tabs and roster.
         await queryClient.invalidateQueries({
@@ -143,6 +149,28 @@ export default function CreateClassForm({
           )}
         />
       </FieldGroup>
+
+      {schoolName && (
+        <div className="flex flex-col gap-1.5">
+          <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border-2 border-border bg-card px-3 py-1.5 font-bold transition-colors has-checked:border-primary has-checked:bg-primary/10 motion-reduce:transition-none">
+            <input
+              type="checkbox"
+              checked={inSchool}
+              disabled={isSaving}
+              onChange={(e) => setInSchool(e.target.checked)}
+              className="size-5 shrink-0 accent-primary"
+            />
+            <span className="min-w-0 flex-1 wrap-break-word">
+              Part of {schoolName}
+            </span>
+          </label>
+          <p className="text-sm text-muted-foreground">
+            {inSchool
+              ? 'Your administrators can view it, and it stays with the school if you leave. Only an administrator can take it out.'
+              : 'Your own class: private to you, and yours if you leave.'}
+          </p>
+        </div>
+      )}
 
       {errors.root?.server && (
         <Alert

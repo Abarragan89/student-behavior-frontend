@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   ChevronLeft,
   CircleAlert,
+  History,
   MessageSquarePlus,
   MessageSquareText,
   Printer,
@@ -26,7 +27,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { cn } from '@/lib/utils'
 import { ApiError } from '#/lib/api'
 import { useMe } from '#/lib/auth'
-import { canEdit, mayLoad } from '#/lib/workspace'
+import { canEdit, mayLoad, viewingAsAdmin } from '#/lib/workspace'
 import {
   formatHourSpan,
   formatLongDate,
@@ -62,6 +63,7 @@ import { DeleteStudentDialog } from '#/components/delete-student-dialog'
 import type { DeleteStudentTarget } from '#/components/delete-student-dialog'
 import { StudentNameForm } from '#/components/forms/student-name-form'
 import { StudentReport } from '#/components/student-report'
+import { AccessRecordDialog } from '#/components/access-record-dialog'
 import { MarkRing, initials } from '#/components/student-card'
 import { usePrintTitle } from '#/hooks/usePrintTitle'
 
@@ -155,6 +157,9 @@ function StudentPage() {
       teacherName={me?.acting_for?.name ?? me?.teacher.name ?? ''}
       openClassId={me?.classroom?.id}
       readOnly={!canEdit(me, 'classes')}
+      // The teacher, or their school's administrator viewing; not a
+      // co-teacher.
+      showAccessRecord={!me?.acting_for || viewingAsAdmin(me)}
       onDeleted={() => navigate({ to: '/classes' })}
       classroomNames={
         new Map([
@@ -174,6 +179,7 @@ function StudentDay({
   teacherName,
   openClassId,
   readOnly,
+  showAccessRecord,
   onDeleted,
   classroomNames,
 }: {
@@ -184,6 +190,8 @@ function StudentDay({
   teacherName: string
   /** A co-teacher with View only: no renaming or deleting. */
   readOnly: boolean
+  /** Who opened their records: for the teacher and the school. */
+  showAccessRecord: boolean
   /** The class open on the Classes page. */
   openClassId?: string
   /** The student was deleted: leave their page. */
@@ -197,6 +205,7 @@ function StudentDay({
   )
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleteKey, setDeleteKey] = useState(0)
+  const [accessOpen, setAccessOpen] = useState(false)
 
   // The trash can on a mark in "All marks". Kept after the mark is deleted,
   // so the dialog doesn't blank out while it closes.
@@ -299,16 +308,36 @@ function StudentDay({
 
         <div className="flex flex-wrap items-center gap-2">
           <DayPicker date={date} today={today} onChange={onShowDay} />
-          <Button
-            variant="outline"
-            onClick={() => window.print()}
-            disabled={!reportReady}
-            className="ml-auto h-10 rounded-lg border-2 border-border bg-card px-3 text-base font-bold"
-          >
-            <Printer className="size-5" />
-            Print report
-          </Button>
+          <div className="ml-auto flex flex-wrap gap-2">
+            {showAccessRecord && (
+              <Button
+                variant="outline"
+                onClick={() => setAccessOpen(true)}
+                className="h-10 rounded-lg border-2 border-border bg-card px-3 text-base font-bold"
+              >
+                <History className="size-5" />
+                Record of access
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              onClick={() => window.print()}
+              disabled={!reportReady}
+              className="h-10 rounded-lg border-2 border-border bg-card px-3 text-base font-bold"
+            >
+              <Printer className="size-5" />
+              Print report
+            </Button>
+          </div>
         </div>
+        {showAccessRecord && (
+          <AccessRecordDialog
+            studentId={student.id}
+            firstName={student.first_name}
+            open={accessOpen}
+            onOpenChange={setAccessOpen}
+          />
+        )}
 
         <Card className={cardClass}>
           <div className="flex flex-col gap-1">

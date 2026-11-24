@@ -163,13 +163,15 @@ function WhatJoiningMeans() {
       </li>
       <li className="flex gap-2">
         <Eye className="mt-0.5 size-4 shrink-0" />
-        They can view your classes, students, marks and notes, but can’t change
-        anything.
+        They can view your school classes, with their students, marks and notes,
+        but can’t change anything. You choose which of your classes are the
+        school’s; new ones are, unless you say otherwise.
       </li>
       <li className="flex gap-2">
         <Building2 className="mt-0.5 size-4 shrink-0" />
-        Your lesson plans and conferences stay private. TeachForFree stays free
-        for you.
+        If you leave, the school’s classes stay with the school. Your own
+        classes, lesson plans and conferences stay private. TeachForFree stays
+        free for you.
       </li>
     </ul>
   )
@@ -202,7 +204,9 @@ function Accept({
       // Their school's page: what the administrator can see, and Leave.
       await navigate({ to: '/account/school' })
       toast.success(`You’re part of ${membership.name}`, {
-        description: 'Find it on your Account page, under School.',
+        description: membership.ask_classes
+          ? 'Next: choose which of your classes are part of it.'
+          : 'Find it on your Account page, under School.',
       })
     },
     onError: (error) => {

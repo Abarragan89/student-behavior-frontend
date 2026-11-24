@@ -28,6 +28,7 @@ import {
   updatePerson,
 } from '#/lib/staff'
 import type { StaffDirectory, StaffGroup, StaffPerson } from '#/lib/staff'
+import { HELD_CLASS_DAYS } from '#/lib/school'
 
 /**
  * Add someone to the staff list, or edit them: name, email, title,
@@ -347,7 +348,7 @@ export function RemovePersonDialog({
           <AlertDialogDescription>
             They’ll be taken off your staff list, every group and every event.
             {shown?.uses_app &&
-              ` They also leave ${schoolName} in TeachForFree, so you can no longer view their classes. Their account stays theirs.`}
+              ` They also leave ${schoolName} in TeachForFree. Their account and own classes stay theirs; their school classes stay with the school for ${HELD_CLASS_DAYS} days, then they’re deleted.`}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

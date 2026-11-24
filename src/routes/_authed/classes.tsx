@@ -1,8 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
-import { createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { Archive, CircleAlert, Plus, Users } from 'lucide-react'
+import {
+  Archive,
+  ArrowRight,
+  Building2,
+  CircleAlert,
+  Plus,
+  Users,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Empty,
@@ -23,6 +30,7 @@ import { useCreateDialogs } from '#/components/create-dialogs'
 import { PrintReportsDialog } from '#/components/print-reports-dialog'
 import type { ReportsToPrint } from '#/components/print-reports-dialog'
 import { PrintedReports } from '#/components/printed-reports'
+import { AdminClassNote } from '#/components/school/admin-class-note'
 import { SwitchClassDialog } from '#/components/switch-class-dialog'
 import { useClassroomSwitch } from '#/hooks/useClassroomSwitch'
 import {
@@ -32,7 +40,7 @@ import {
 import { meQueryOptions } from '#/lib/auth'
 import type { Me, OpenClassroom, Student } from '#/lib/auth'
 import { markTypesQueryOptions } from '#/lib/marks'
-import { canEdit, currentSpace, mayLoad } from '#/lib/workspace'
+import { canEdit, currentSpace, mayLoad, viewingAsAdmin } from '#/lib/workspace'
 
 export const Route = createFileRoute('/_authed/classes')({
   // ?classroom=connected or ?classroom_error=…, from the backend after
@@ -63,9 +71,59 @@ function ClassesPage() {
   const { data: me } = useSuspenseQuery(meQueryOptions)
 
   // Logged out: the layout is already sending the teacher to /login. No
-  // class: a co-teacher without Classes, whom the layout sends elsewhere.
-  if (!me?.classroom) return null
+  // class: a co-teacher without Classes, whom the layout sends elsewhere, or
+  // an administrator viewing a teacher with no school classes.
+  if (!me?.classroom) {
+    return me?.acting_for && viewingAsAdmin(me) ? (
+      <NoSchoolClasses teacherName={me.acting_for.name} />
+    ) : null
+  }
   return <ClassesContent me={me} classroom={me.classroom} />
+}
+
+/** An administrator viewing a teacher who has no school classes. */
+function NoSchoolClasses({ teacherName }: { teacherName: string }) {
+  return (
+    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-10">
+      <Empty className="max-w-md self-center px-0">
+        <EmptyHeader>
+          <EmptyMedia
+            variant="icon"
+            className="size-14 rounded-lg border-2 border-border bg-secondary text-foreground"
+          >
+            <Building2 className="size-7" />
+          </EmptyMedia>
+          <EmptyTitle className="text-2xl font-bold">
+            No school classes yet
+          </EmptyTitle>
+          <EmptyDescription className="text-base">
+            {teacherName} hasn’t added any classes to your school. You see only
+            their school classes, never their own.
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
+    </main>
+  )
+}
+
+/**
+ * Until a teacher answers which of their classes are part of their school:
+ * one line, to the School page where they answer.
+ */
+function SchoolClassesPrompt({ schoolName }: { schoolName: string }) {
+  return (
+    <Link
+      to="/account/school"
+      className="flex items-center gap-3 rounded-lg border-2 border-primary bg-primary/10 px-4 py-3 text-sm font-bold outline-none hover:bg-primary/15 focus-visible:ring-4 focus-visible:ring-ring"
+    >
+      <Building2 className="size-5 shrink-0" />
+      <span className="min-w-0 flex-1">
+        Which of your classes are part of {schoolName}? Choose once, on your
+        School page.
+      </span>
+      <ArrowRight className="size-4 shrink-0" />
+    </Link>
+  )
 }
 
 function ClassesContent({
@@ -145,6 +203,10 @@ function ClassesContent({
           shownPrinted && 'print:hidden',
         )}
       >
+        {!me.acting_for && me.school?.ask_classes && (
+          <SchoolClassesPrompt schoolName={me.school.name} />
+        )}
+
         <ClassHeader
           classroom={classroom}
           name={shownName}
@@ -216,6 +278,13 @@ function ClassesContent({
               </Button>
             </div>
           </div>
+        )}
+
+        {!isLoading && me.acting_for && viewingAsAdmin(me) && (
+          <AdminClassNote
+            classroom={classroom}
+            teacherName={me.acting_for.name}
+          />
         )}
 
         {archiveTarget && (

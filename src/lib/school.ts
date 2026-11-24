@@ -36,6 +36,11 @@ export type SchoolMembership = {
   name: string
   role: SchoolRole
   can_edit_calendar?: boolean
+  /**
+   * Not yet asked "Which of your classes are part of this school?", and
+   * they have classes of their own that could be.
+   */
+  ask_classes?: boolean
 }
 
 export type SchoolInfo = {
@@ -94,6 +99,84 @@ export type JoinPreview = {
   admin_name: string
   status: SchoolInviteStatus
   expires_at: string
+}
+
+/**
+ * How long a school keeps a class after its teacher leaves, for the
+ * administrators to view or print, before it's deleted. Matches the server.
+ */
+export const HELD_CLASS_DAYS = 30
+
+/** One of the school's classes whose teacher left. */
+export type HeldClass = {
+  id: string
+  name: string
+  teacher_id: string
+  teacher_name: string
+  held_at: string
+  /** When it's deleted, unless an administrator deletes it sooner. */
+  delete_after: string
+}
+
+/**
+ * The school's classes kept after their teachers left, oldest first. For
+ * administrators only. In memory only: class and teacher names.
+ */
+export const heldClassesQueryOptions = queryOptions({
+  queryKey: ['school', 'held-classes'],
+  queryFn: () =>
+    apiGet<Array<HeldClass>>('/schools/mine/held-classes', { space: null }),
+  staleTime: SHARED_STALE_MS,
+})
+
+/**
+ * One of your own classes, as GET /classrooms sends it (never a
+ * co-teacher's owner's).
+ */
+export type MyClass = {
+  id: string
+  name: string
+  is_default: boolean
+  school_id: string | null
+  created_at: string
+}
+
+/**
+ * Your own open classes, for "Which of your classes are part of your
+ * school?". In memory only.
+ */
+export const myClassesQueryOptions = queryOptions({
+  queryKey: ['my-classes'],
+  queryFn: () => apiGet<Array<MyClass>>('/classrooms', { space: null }),
+})
+
+/**
+ * Makes these of your own classes part of your school, and answers "Which
+ * of your classes are part of it?" (an empty list: none). Only an
+ * administrator can take a class back out.
+ */
+export function linkSchoolClasses(classroomIds: Array<string>) {
+  return apiPost<void>(
+    '/schools/mine/classes',
+    { classroom_ids: classroomIds },
+    { space: null },
+  )
+}
+
+/** Administrators: gives one of the school's classes back to its teacher. */
+export function releaseSchoolClass(classroomId: string) {
+  return apiPost<void>(
+    `/schools/mine/classes/${encodeURIComponent(classroomId)}/release`,
+    undefined,
+    { space: null },
+  )
+}
+
+/** Administrators: deletes a class kept after its teacher left, now. */
+export function deleteHeldClass(classroomId: string) {
+  return apiDelete(`/schools/mine/classes/${encodeURIComponent(classroomId)}`, {
+    space: null,
+  })
 }
 
 /** How long a new link works, in days. */
@@ -463,7 +546,7 @@ export function staffMessage({
     `1. Open this link: ${url}`,
     '2. Sign in with your school Google account.',
     '',
-    'Already using TeachForFree? Sign in with the same account and keep everything you have. Once you join, I can view your classes, marks and notes, but not change them. Your lesson plans and conferences stay private.',
+    'Already using TeachForFree? Sign in with the same account and keep everything you have. You choose which of your classes are part of the school, and new classes you make are. I can view the school’s classes, with their marks and notes, but not change them. Your own classes, lesson plans and conferences stay private.',
     '',
     `The link works until ${formatLongDate(expiresAt)}.`,
     '',

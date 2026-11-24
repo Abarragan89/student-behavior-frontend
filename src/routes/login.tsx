@@ -36,6 +36,8 @@ const errorMessages: Record<string, string> = {
   account_conflict:
     'That email is already linked to a different account. Try another Google account.',
   server_error: 'Something went wrong on our side. Please try again.',
+  account_disabled:
+    'This account has been turned off. If you think that’s a mistake, email a.barragan.89@gmail.com.',
 }
 
 export const Route = createFileRoute('/login')({

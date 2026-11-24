@@ -29,6 +29,12 @@ export type ClassroomTab = {
   id: string
   name: string
   is_default: boolean // the open tab
+  // The school it belongs to; null (or missing, in a copy saved before
+  // school classes existed) for the teacher's own class.
+  school_id?: string | null
+  // A school class whose teacher left the school: only its administrators
+  // see it, view only, until it's deleted.
+  held?: boolean
 }
 
 // The open classroom, with its roster.
@@ -37,6 +43,9 @@ export type OpenClassroom = {
   name: string
   // The Google Classroom class it was imported from; null if made here.
   google_course_id: string | null
+  // As on ClassroomTab.
+  school_id?: string | null
+  held?: boolean
   students: Array<Student>
 }
 
@@ -57,8 +66,9 @@ export type Me = {
     picture_url?: string | null
   }
   classrooms: Array<ClassroomTab>
-  // The open classroom, the one on screen. Null only for a co-teacher who
-  // can't see the owner's classes.
+  // The open classroom, the one on screen. Null for a co-teacher who can't
+  // see the owner's classes, or a school administrator viewing a teacher
+  // with no school classes.
   classroom: OpenClassroom | null
   // The teacher whose space this is; null (or missing, in a copy saved
   // before co-teachers existed) in your own.
@@ -91,11 +101,18 @@ export function useMe() {
   return useQuery(meQueryOptions)
 }
 
+/**
+ * Signs out on this device, or with `everywhere`, on every device at once
+ * (a lost phone, a shared computer left signed in): the server ends every
+ * session and removes every device's reminders. "Everywhere" throws if the
+ * server didn't confirm it, so nobody is told a lost phone is signed out
+ * when it isn't; signing out here always finishes.
+ */
 export function useLogout() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
 
-  return async () => {
+  return async ({ everywhere = false }: { everywhere?: boolean } = {}) => {
     // This device's reminders stop with the teacher: first, while the
     // session can still remove them on the server. Never holds up signing
     // out for long, and a failure doesn't stop it.
@@ -103,7 +120,16 @@ export function useLogout() {
       turnOffNotifications().catch(() => {}),
       new Promise((resolve) => setTimeout(resolve, 2500)),
     ])
-    await apiFetch('/auth/logout', { method: 'POST' }, { space: null })
+    if (everywhere) {
+      const res = await apiFetch(
+        '/auth/sign-out-everywhere',
+        { method: 'POST' },
+        { space: null },
+      )
+      if (!res.ok) throw new ApiError(res.status)
+    } else {
+      await apiFetch('/auth/logout', { method: 'POST' }, { space: null })
+    }
     // The next person on this device starts in their own space.
     setSpace(null)
     // Update 'me' in place so everything showing the user re-renders now,

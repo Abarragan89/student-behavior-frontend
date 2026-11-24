@@ -15,13 +15,18 @@ import { cn } from '@/lib/utils'
 import { useLogout } from '#/lib/auth'
 import { describeUnsent, useUnsentChanges } from '#/hooks/useUnsentChanges'
 
-/** Asks before signing out. Used by the avatar menu and the Account page. */
+/**
+ * Asks before signing out. Used by the avatar menu and the Account page.
+ * `everywhere`: signs out on every device at once (Account page).
+ */
 export function SignOutDialog({
   open,
   onOpenChange,
+  everywhere = false,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
+  everywhere?: boolean
 }) {
   const logout = useLogout()
   const [signingOut, setSigningOut] = useState(false)
@@ -34,11 +39,15 @@ export function SignOutDialog({
     setSigningOut(true)
     try {
       // Clears the session and leaves the signed-in pages.
-      await logout()
+      await logout({ everywhere })
     } catch (error) {
       console.error('Sign out failed:', error)
       setSigningOut(false)
-      toast.error('Couldn’t sign out. Check your connection and try again.')
+      toast.error(
+        everywhere
+          ? 'Couldn’t sign out your other devices. Check your connection and try again.'
+          : 'Couldn’t sign out. Check your connection and try again.',
+      )
     }
   }
 
@@ -52,8 +61,12 @@ export function SignOutDialog({
     >
       <AlertDialogContent className="rounded-lg border-2 border-border ring-0">
         <AlertDialogHeader>
-          <AlertDialogTitle className="font-bold">Sign out?</AlertDialogTitle>
+          <AlertDialogTitle className="font-bold">
+            {everywhere ? 'Sign out everywhere?' : 'Sign out?'}
+          </AlertDialogTitle>
           <AlertDialogDescription>
+            {everywhere &&
+              'This signs you out right away on every phone, tablet and computer, this one included, and stops reminders on all of them. A device that saved your class list erases it the next time it goes online. '}
             {unsent > 0
               ? `${describeUnsent(changes)} ${unsent === 1 ? 'hasn’t' : 'haven’t'} been saved yet. Signing out now deletes ${unsent === 1 ? 'it' : 'them'}. To keep ${unsent === 1 ? 'it' : 'them'}, connect to the internet and wait a moment first.`
               : 'You’ll need to sign in with Google again to see your classes.'}
@@ -70,7 +83,11 @@ export function SignOutDialog({
             className="relative bg-destructive font-bold text-destructive-foreground hover:bg-destructive/90 disabled:opacity-100"
           >
             <span className={cn(signingOut && 'invisible')}>
-              {unsent > 0 ? 'Sign out anyway' : 'Sign out'}
+              {everywhere
+                ? 'Sign out everywhere'
+                : unsent > 0
+                  ? 'Sign out anyway'
+                  : 'Sign out'}
             </span>
             {signingOut && (
               <Spinner

@@ -165,7 +165,8 @@ export async function apiGet<T>(
   return res.json() as Promise<T>
 }
 
-// Sends body (if any) as JSON and resolves to the JSON response.
+// Sends body (if any) as JSON and resolves to the JSON response, or to
+// undefined when the route answers 204 with no body.
 async function apiSend<T>(
   method: 'POST' | 'PUT' | 'PATCH',
   path: string,
@@ -184,6 +185,7 @@ async function apiSend<T>(
     options,
   )
   if (!res.ok) throw await apiErrorWithReason(res)
+  if (res.status === 204) return undefined as T
   return res.json() as Promise<T>
 }
 

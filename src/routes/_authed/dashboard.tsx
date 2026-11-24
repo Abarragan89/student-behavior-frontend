@@ -2,17 +2,23 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import { DayPicker } from '#/components/day-picker'
 import { DashboardInvite } from '#/components/school/dashboard-invite'
+import { HeldClassesCard } from '#/components/school/held-classes-card'
 import { SchoolBehaviorGrid } from '#/components/school/school-behavior-grid'
 import { meQueryOptions } from '#/lib/auth'
 import type { Me } from '#/lib/auth'
 import { isDateString, useToday } from '#/lib/day'
 import { localDate } from '#/lib/marks'
-import { schoolBehaviorQueryOptions, schoolQueryOptions } from '#/lib/school'
+import {
+  heldClassesQueryOptions,
+  schoolBehaviorQueryOptions,
+  schoolQueryOptions,
+} from '#/lib/school'
 import { isSchoolAdmin } from '#/lib/workspace'
 
 // /dashboard: a school administrator's home. The join link they first see
-// after starting the school (until they hide it), then the day's marks: the
-// school's ring, and one per teacher. ?date= picks another day, like a
+// after starting the school (until they hide it), classes kept after
+// teachers left (while there are any), then the day's marks: the school's
+// ring, and one per teacher's school classes. ?date= picks another day, like a
 // student's page; ?welcome says the school was just made.
 export const Route = createFileRoute('/_authed/dashboard')({
   staticData: { schoolAdmin: true },
@@ -29,6 +35,7 @@ export const Route = createFileRoute('/_authed/dashboard')({
     const me = queryClient.getQueryData<Me | null>(meQueryOptions.queryKey)
     if (me !== undefined && !isSchoolAdmin(me)) return
     void queryClient.query(schoolQueryOptions).catch(() => null)
+    void queryClient.query(heldClassesQueryOptions).catch(() => null)
     void queryClient
       .query(schoolBehaviorQueryOptions(deps.date ?? localDate()))
       .catch(() => null)
@@ -61,6 +68,10 @@ function DashboardPage() {
           />
         </div>
       )}
+
+      <div className="max-w-2xl empty:hidden">
+        <HeldClassesCard />
+      </div>
 
       <section aria-label="Marks" className="flex flex-col">
         <SchoolBehaviorGrid

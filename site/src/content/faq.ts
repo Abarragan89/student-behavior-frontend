@@ -272,7 +272,7 @@ export const FAQ_GROUPS: Array<FaqGroup> = [
         question: 'Is there a version for a whole school or district?',
         answer: [
           'Yes, for a school. An administrator names the school, signs in with Google, and gets one join link and QR code to send the staff. Teachers join with their own Google accounts and keep their own classes, lesson plans and conferences.',
-          'Today a school account is the join link, a dashboard of each teacher’s positive and negative marks for the day (where you can open any teacher’s classes, view only), and a school calendar with email reminders for your whole staff. Schedules, meetings with teachers and report cards are coming. There isn’t a district version yet.',
+          'Today a school account is the join link, a dashboard of each teacher’s positive and negative marks for the day (where you can open any teacher’s school classes, view only), and a school calendar with email reminders for your whole staff. Schedules, meetings with teachers and report cards are coming. There isn’t a district version yet.',
         ],
         link: { href: '/for-schools', label: 'TeachForFree for schools' },
       },
@@ -281,7 +281,8 @@ export const FAQ_GROUPS: Array<FaqGroup> = [
         question: 'How do teachers join a school?',
         answer: [
           'They open the join link (or scan its QR code) and sign in with Google. Someone already using TeachForFree signs in with the same account, and their classes stay theirs. Someone new gets a free account as they sign in.',
-          'Joining lets the administrator view their classes, students, marks and notes, but not change them. Lesson plans and conferences stay private.',
+          'Each class is either the school’s or the teacher’s own. When teachers join, they choose which of their classes are part of the school, and new classes they make are, unless they say otherwise. The administrator can view the school’s classes, with their students, marks and notes, but not change them. A teacher’s own classes, lesson plans and conferences stay private.',
+          'If a teacher leaves, the school’s classes stay with the school for 30 days, for the administrator to view or print, and then they’re deleted. The teacher’s own classes go with them.',
           'A teacher is in one school at a time, and can leave from Account → School.',
         ],
       },
@@ -290,8 +291,8 @@ export const FAQ_GROUPS: Array<FaqGroup> = [
         question: 'What can a school administrator do today?',
         answer: [
           'Send the join link, see who has joined, and remove someone who left. The link works for 7, 30 or 90 days and up to the number of teachers you choose. You can make a new link or turn it off anytime.',
-          'Their dashboard shows the school’s positive and negative marks for the day, and each teacher’s, for today or any day. Tapping a teacher opens that teacher’s classes, view only, exactly as the teacher sees them.',
-          'An administrator sees each teacher’s name and email, and can view their classes, students, marks and notes, but can’t change them. Teachers’ lesson plans and conferences stay private.',
+          'Their dashboard shows the school’s positive and negative marks for the day, and each teacher’s, for today or any day. Tapping a teacher opens that teacher’s school classes, view only, exactly as the teacher sees them.',
+          'An administrator sees each teacher’s name and email, and can view their school classes, students, marks and notes, but can’t change them. Teachers’ own classes, lesson plans and conferences stay private.',
           'They can also bring in the whole staff list from Google Admin (or paste emails), sort people into groups, and put events on the school calendar: one-time or repeating. The people and groups they pick get an email invite, an email if it changes or is cancelled, and reminders.',
           'Already keep the school year in Google Calendar? Export it and import the file: events, repeats and breaks come over, and staff get reminders without a flood of invites.',
         ],

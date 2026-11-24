@@ -65,7 +65,7 @@ export function SchoolAdminHub({
         open={leaving}
         schoolName={detail.school.name}
         onClose={() => setLeaving(false)}
-        description="You keep your account. The other administrators keep running the school. To join again, ask one of them for a new link."
+        description={`You keep your account and your own classes. The other administrators keep running the school, and any classes of yours that are the school’s stay with it. To join again, ask one of them for a new link.`}
       />
     </>
   )

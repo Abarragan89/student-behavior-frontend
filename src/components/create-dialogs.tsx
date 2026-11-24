@@ -125,7 +125,16 @@ export function CreateDialogsProvider({
         title="Create class"
         description="Name your new class"
       >
-        <CreateClassForm onSuccess={() => setCreateClassOpen(false)} />
+        <CreateClassForm
+          onSuccess={() => setCreateClassOpen(false)}
+          // Only in their own space: in a co-teacher's, the server decides
+          // (the owner's school class if they share that school).
+          schoolName={
+            !acting && me.school?.role === 'teacher'
+              ? me.school.name
+              : undefined
+          }
+        />
       </ResponsiveDialog>
 
       {coteacherLoaded && !acting && (

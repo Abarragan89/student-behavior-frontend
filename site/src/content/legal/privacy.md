@@ -1,7 +1,46 @@
 ---
 title: Privacy Policy
 description: 'How TeachForFree handles teacher and student information: what we collect, how we protect it, Google Classroom data, and how to delete it.'
-updated: 2026-11-06
+updated: 2026-11-15
+# Open items. YAML comments never reach the page, and they don't trip the
+# "[TODO" draft guard in LegalLayout.astro, so the site still deploys.
+# Full list: docs/compliance/remaining-checklist.md.
+#
+# TODO (after the LLC is formed), section "Who we are": replace "a personal
+#   project ... It isn't a company" with the LLC's legal name and state, say
+#   that "we" means the LLC, and move the contact email to a business address
+#   if it changes. Match the agreement's Parties section.
+#
+# TODO (region), "Who we share information with", Hetzner bullet: the code and
+#   config don't say which Hetzner location this is. Check the Hetzner console
+#   and, if you want, name it (Ashburn, Virginia or Hillsboro, Oregon). Use the
+#   same wording in docs/legal/student-data-privacy-agreement.md.
+#
+# TODO (decision: Resend), "Who we share information with", Resend bullet. It
+#   is accurate for today's code: internal/schoolevent/reminders.go and
+#   notices.go put the event's title, location and notes in the subject, the
+#   body and the attached event.ics. Pick one before signing an agreement:
+#   A. Keep the content and disclose it. Leave the bullet as it is, and list
+#      Resend in the agreement's subprocessor table as receiving staff names
+#      and emails plus event titles, locations and notes, which may name
+#      students.
+#   B. Strip it. Change the emails to say only that there's an event on a
+#      date, with a link to open TeachForFree (no title, location, notes or
+#      .ics details). Then shorten the bullet to "the person's email address,
+#      their first name, the school's name, and the event's date and time",
+#      and fix "With the staff your school invites to an event" to match.
+#
+# TODO (decision: backups), section "No backups". Nothing in the code makes
+#   backups, so this section must match what the server actually does.
+#   A. Add backups (what you lean toward): daily, encrypted, kept in the US
+#      for 30 days, with the encryption key backed up separately. Then rename
+#      the heading to "Backups" and replace the text with something like: "We
+#      back up the database every day. Backups are encrypted, kept in the
+#      United States, and deleted after 30 days, so something you delete is
+#      gone from backups within 30 days." Update the agreement's Retention
+#      section and Exhibit B to match.
+#   B. Keep no backups. Leave this section as it is, and take the backup
+#      promise out of the agreement (Retention section and Exhibit B).
 ---
 
 ## Who we are
@@ -18,8 +57,8 @@ This policy covers the TeachForFree website, the installed app (the version you 
 - Student information you add belongs to you and your school. We use it only to run TeachForFree for you.
 - We never sell data, show ads, build profiles of students, or use your data to train AI models.
 - There are no analytics tools, ad trackers, or third-party tracking scripts.
-- Student names, lesson plan text, and notes on marks are encrypted in our database.
-- A mark records which student, which class, which kind of mark, and when. You can add a short note to a negative mark to say what happened.
+- Student names, notes, lesson plan text, group names, and school calendar text are encrypted in our database.
+- A mark records which student, which class, which kind of mark, and when. You can add a short note to any mark to say what happened.
 - Families can choose or change their parent conference time with a code on a printed notice. Other families never see which student has which time, and we don't collect anything about parents.
 - Google Classroom is optional. We only read your classes and rosters, and only when you ask. We never store student email addresses.
 - You can delete marks, students, and classes yourself, and you can ask us to delete your whole account at any time.
@@ -48,11 +87,15 @@ We don't ask for student email addresses, birthdays, grades, photos, or ID numbe
 
 - **Your mark types:** the labels you choose, like "Helping others" or "Off task," and whether each one is positive or negative.
 - **Each mark:** which student, which class, which mark type, the time on your device when you tapped, and the time our server received it. When you mark several students with one tap, those marks share a group ID so Undo can take them all back together. Marks a substitute gives are labeled as theirs.
-- **Notes on marks:** an optional short note (up to 280 characters) you or your substitute add to a negative mark to say what happened. Notes are encrypted before they're saved. A note shows on that student's page and prints on their behavior report, which may go home to their family, so leave out other students' names.
+- **Notes on marks:** an optional short note (up to 280 characters) you or your substitute add to a mark to say what happened. Notes are encrypted before they're saved. A note shows on that student's page and prints on their behavior report, which may go home to their family, so leave out other students' names.
+
+### Student groups
+
+If you split a class into groups ("Table 1," "Sharks"), we store each group's name and color, which students are in it, and a point on its team score each time you give the group a mark (which group, which mark type, and when). Teachers sometimes name a group after a student, so group names are encrypted before they're saved.
 
 ### Lesson plans
 
-The sections and lines you write for each day, any start and end times you add, their order, and when a line was checked off. Teachers often write students' names in their plans, so section titles and lines are encrypted before they're saved.
+The sections and lines you write for each day, any start and end times you add, their order, and when a line or section was checked off. If you save a day as a template, we store the template's name and its sections, times, and lines. Teachers often write students' names in their plans, so section titles, lines, and templates are encrypted before they're saved.
 
 ### Notifications (optional)
 
@@ -64,15 +107,21 @@ When you share a day with a substitute, we store the date, your time zone (so we
 
 ### Parent conferences
 
-When you set up parent conferences, we store the conference's name, the name you sign notices with, the location you type, your time zone, the classes you picked, the conference times, which student has which time, when you printed each student's notice, which meetings you marked as complete, and each change a family makes (which student, from which time, to which time, and when). We don't collect anything about parents: no names, email addresses, or phone numbers. See [Conference sign-ups](#conference-sign-ups) below.
+When you set up parent conferences, we store the conference's name, the name you sign notices with, the location you type, your time zone, the classes you picked, the conference times, which student has which time, when you printed each student's notice, which meetings you marked as complete, an optional short note you add to a student's meeting (encrypted, and never shown to families), and each change a family makes (which student, from which time, to which time, and when). Conference names and locations are not encrypted, so keep student information out of them. We don't collect anything about parents: no names, email addresses, or phone numbers. See [Conference sign-ups](#conference-sign-ups) below.
+
+### Co-teachers
+
+If you invite a co-teacher, we store the invite: what it lets them do (view or edit your classes, lesson plans, or conferences), when it expires, and an encrypted copy of its link so you can show it again until it's used, cancelled, or expires. Once they accept, we store that they co-teach with you, what they can see or change, and which of your classes they have open. A co-teacher sees your school's classes only if they're in your school too.
 
 ### Schools (optional)
 
-If you start a school, we store its name, about how many teachers it has (if you tell us), who its administrator is, its time zone, and its join link (kept encrypted, so the administrator can copy it again). When a teacher joins, we store that they're in the school and when they joined.
+If you start a school, we store its name, about how many teachers it has (if you tell us), who its administrators are, its time zone, and its join link (kept encrypted, so an administrator can copy it again). When a teacher joins, we store that they're in the school, when they joined, and whether the administrators let them edit the school calendar.
 
-**Staff list.** The administrator can add the school's staff, typed in, pasted, or imported from a Google Admin user list (the file is read on the administrator's device, and only these fields are sent to us): each person's email address, name, and, if the file has them, job title, department, and Google organizational unit. We also store the groups the administrator puts people in, whether each person uses TeachForFree, and whether they stopped the school's reminder emails. People on a staff list don't need a TeachForFree account. Staff lists are for adults on staff; the import leaves out anything that looks like student accounts, and administrators must not add students.
+**School classes.** Each class is either the school's or the teacher's own. When a teacher joins, they choose which of their classes are part of the school, and classes they make while they're a member are the school's unless they mark one as their own. We store which school each class belongs to and, if its teacher leaves, when. A teacher can't take a class out of the school; an administrator can give one back to the teacher. If a school's account is deleted, such as when its agreement with us ends, its classes are deleted with it, with all of their marks and any of their students who aren't also in one of the teacher's own classes. Teachers' own classes aren't affected.
 
-**School calendar.** For each event: its title, location, and notes (encrypted, like lesson plans, because they may name students), its date and times, how it repeats, who's invited, and which reminders to send. We also store the school's breaks; for each reminder email, who it went to, for which event and date, and when it was sent; and, for the few minutes before it goes out, each email about an event being made, changed, or cancelled (encrypted, with who it's for). The administrator can also import events from a calendar file, such as a Google Calendar export. The file is read on their device, and only the events they choose are sent to us, with the calendar app's ID for each one (so importing the same file again doesn't make copies). Guests' email addresses in the file are only used, on the device, to match people already on the staff list; we don't receive or store them.
+**Staff list.** The administrator can add the school's staff, typed in, pasted, or imported from a Google Admin user list (the file is read on the administrator's device, and only these fields are sent to us): each person's email address, name, and, if the file has them, job title, department, and Google organizational unit. We also store the groups the administrator puts people in, whether each person uses TeachForFree, and whether they stopped the school's reminder emails. People on a staff list don't need a TeachForFree account. Staff lists are for adults on staff; the import unchecks anything that looks like a student account, so it's left out unless the administrator checks it, and administrators must not add students.
+
+**School calendar.** For each event: its title, location, and notes (encrypted, like lesson plans, because they may name students), its date or dates and times, how it repeats, its category, whether it's private, who's invited, and which reminders to send. We also store a message for any week the administrator writes one (encrypted, like event notes); the school's event categories (a name and a color) and breaks; for each reminder email, who it went to, for which event and date, and when it was sent; and, for the few minutes before it goes out, each email about an event being made, changed, or cancelled (encrypted, with who it's for). Category names, staff group names, and break names are not encrypted, so keep student information out of them. The administrator can also import events from a calendar file, such as a Google Calendar export or a spreadsheet calendar. The file is read on their device, and only the events they choose are sent to us, with the calendar app's ID for each one (so importing the same file again doesn't make copies). Guests' email addresses in the file are only used, on the device, to match people already on the staff list; we don't receive or store them.
 
 ### Google Classroom (optional)
 
@@ -84,6 +133,7 @@ See [Google user data](#google-user-data) below.
 - **Your time zone,** which the app sends so marks are counted on the right days.
 - **IP addresses.** To stop abuse, our server keeps short-lived counters of how many requests come in. Sign-in pages, substitute links, and conference codes are counted by IP address. Everything else is counted by account. The counters delete themselves once they're no longer needed: within about a minute for IP addresses, and within an hour at most for accounts. If a request is refused for going over a limit, our server log records the IP address or account it came from.
 - **Server logs.** Our server logs events like sign-ins, sign-outs, and errors, along with your account's internal ID. We don't write student names or lesson plan text to our logs.
+- **A record of access.** We keep a record of who opens or changes student records: which account (or which substitute link or family code), which class or student, what they did, and when. It holds IDs, not names or text, and it's kept for one year. A teacher, and their school's administrators, can see it on each student's page, so they can answer a family who asks who has seen their child's records.
 - **Our providers.** Like any website, Cloudflare and our hosting provider handle IP addresses and basic request details (such as browser type) to deliver and protect the site.
 
 We don't use analytics tools, advertising networks, tracking pixels, or session recording.
@@ -176,7 +226,7 @@ A teacher can share one day with a substitute using a link. The substitute doesn
 
 - see the teacher's name and that day's lesson plan, and check lines off
 - see the names of the students in the classes the teacher picked, and that day's mark counts for them
-- give marks, undo marks they gave, and add a short note to a negative mark they gave
+- give marks, undo marks they gave, and add a short note to a mark they gave
 
 The link doesn't show other days, past marks, or student charts. Marks given through a link are labeled as the substitute's. The teacher can see when the link was last opened, and can turn it off at any time. It stops working right away.
 
@@ -218,7 +268,8 @@ So it opens instantly and works on spotty Wi-Fi, the installed app saves a copy 
 
 - your name and email, your class names, and the roster of the class you have open
 - your mark types and recent mark counts
-- student pages you've opened
+- your classes' groups (their names and who's in them)
+- the names and classes of students whose pages you've opened (not their marks or notes)
 - lesson plans for today and the next school day, any others you've opened from yesterday through 7 days ahead, and the dots on this month's calendar
 
 This copy is deleted when you sign out, when your session ends, and when a different teacher signs in on the same device. If you don't open the app for 7 days, the saved copy expires and is deleted the next time the app starts.
@@ -259,7 +310,7 @@ We share information only with service providers that help us run TeachForFree. 
 
 - **Cloudflare** delivers the site and protects it from attacks. All traffic between your device and TeachForFree passes through Cloudflare.
 - **Google** provides sign-in, and Google Classroom if you connect it.
-- **Hetzner** runs the server for the app, our database, and the rate-limit counters. Encrypted information stays encrypted there.
+- **Hetzner** runs the server for the app, our database, and the rate-limit counters, on servers in the United States. Encrypted information stays encrypted there.
 - **Resend** sends school calendar emails: invites, changes, cancellations, and reminders. For each email it gets the person's email address, their first name, the school's name, and the event's title, date, time, location, and notes, and it keeps delivery records under its own policy.
 - **Apple, Google, Mozilla, and Microsoft** deliver notifications to devices that have them turned on, through the push service of that device's browser. Each reminder is encrypted for your device before it leaves our server, so they can't read it. They see only that a message is going to that device.
 
@@ -267,8 +318,10 @@ We may also share information:
 
 - **With the substitute you choose.** Whoever has a substitute link sees what that link opens (see [Substitute links](#substitute-links)).
 - **With the families you give notices to.** Whoever has a conference notice's code sees what that code opens (see [Conference sign-ups](#conference-sign-ups)).
+- **With the co-teachers you invite.** They see, and if you allow it change, the parts of your account you share with them: your classes (students, marks, and notes on marks), your lesson plans, or your conferences. A co-teacher who isn't in your school sees only your own classes, not your school's. You can change what they can do, or remove them, at any time.
+- **With the teachers in your school, through the school calendar.** Teachers in the school who use TeachForFree see its events, with their titles, times, locations, notes, and who's invited. A private event is shown only to the people invited to it, the school's administrators, and teachers allowed to edit the calendar.
 - **With the staff your school invites to an event.** Each person invited gets emails with the event's title, date, time, location, and notes: when they're invited, when the event changes or is cancelled, and as reminders. Replies go to the administrator who made the change. Anyone can stop a school's event emails with the link at the bottom of one, and turn them back on from the same page.
-- **With your school's administrator, if you join a school.** They see your name and email, and can view, but not change, your classes, students, marks and notes on marks. Your lesson plans and conferences stay private to you.
+- **With your school's administrators, if you join a school.** They see your name and email, and can view, but not change, your school classes, with their students, marks, and notes on marks. They never see your own classes, lesson plans, or conferences. If you leave the school, its classes stay with the school: they leave your account right away, the administrators can still view them for 30 days, and then they're deleted.
 - **When the law requires it,** such as a valid subpoena or court order. Where we're allowed to, we'll tell the teacher, and the school for student information, first.
 - **To protect people,** if we believe it's needed to prevent serious harm, or to protect TeachForFree from fraud or abuse.
 - **If TeachForFree changes hands.** Anyone who takes over TeachForFree must keep the promises in this policy for information we already have. If they won't, we'll tell you ahead of time so you can delete your data first.
@@ -278,7 +331,7 @@ We never sell or rent personal information, and we never share it with advertise
 ## Security
 
 - Connections to TeachForFree use HTTPS.
-- Student names, lesson plan text, notes on marks, Google Classroom access keys, and the copies of substitute links and conference codes are encrypted in our database with AES-256-GCM. The encryption keys are kept separate from the database, so a copy of the database on its own doesn't reveal them. Our server holds the keys so it can show your information to you.
+- Student names, notes on marks and conferences, lesson plan text and templates, group names, school calendar event text and week messages, emails waiting to be sent, Google Classroom access keys, and the copies of substitute links, conference codes, co-teacher invites, and school join links are encrypted in our database with AES-256-GCM. The encryption keys are kept separate from the database, so a copy of the database on its own doesn't reveal them. Our server holds the keys so it can show your information to you.
 - Google student IDs are stored only as a keyed hash. Sign-in tokens are stored only as hashes, and substitute links and conference codes are looked up by a hash of their key.
 - Each teacher's information is kept separate. The database itself refuses to mix one teacher's students, classes, or marks with another's.
 - Our server tells browsers and proxies not to cache its answers, so student names don't end up in a shared computer's browser cache.
@@ -286,7 +339,9 @@ We never sell or rent personal information, and we never share it with advertise
 
 No system is perfectly secure. If we learn of a breach that affects your information, we'll tell you promptly, as the law requires. If student information is involved, we'll tell the school too.
 
-You can help: turn on 2-step verification for your Google account, sign out on shared computers, share a substitute link only with the substitute, and send conference notices home with each family.
+You can help: turn on 2-step verification for your Google account, sign out on shared computers (or sign out everywhere from your Account page if you forget), share a substitute link only with the substitute, and send conference notices home with each family.
+
+If an account is misused, we can turn it off: it can't sign in, every session ends at once, and its substitute links and conference codes stop working.
 
 ## Keeping and deleting data
 
@@ -297,7 +352,8 @@ We keep your account and everything you've added until you delete it or ask us t
 - **A mark** disappears right away. We keep a copy for 10 minutes so Undo can bring it back, then erase it for good (within about 20 minutes at most).
 - **A student:** removing a student from their last class deletes the student and all of their marks.
 - **A class:** archive it first, then delete it. Deleting a class removes all of its marks, plus any of its students who aren't in another of your classes.
-- **Lesson plan sections and lines** are deleted when you delete them.
+- **Lesson plan sections, lines, and templates** are deleted when you delete them.
+- **A group** is deleted, with its team points, when you remove it.
 - **A substitute link** can be turned off at any time, and it stops working right away. We keep the record of the link (its date and classes) so marks given through it stay labeled as the substitute's.
 - **A parent conference** can be deleted with all its times, codes, and families' changes, and its codes stop working right away. A single time, or a whole day of times, can be removed, and a student's code replaced, at any time.
 - **A person on a school's staff list** can be removed by the administrator at any time. Their entry, their place in groups and events, and the record of event emails sent to them are deleted.
@@ -309,14 +365,18 @@ We keep your account and everything you've added until you delete it or ask us t
 - Expired sign-in sessions are deleted every hour.
 - The encrypted copy of a substitute link is erased within an hour after its day ends.
 - The encrypted copies of a conference's codes are erased within an hour after its last time.
+- A co-teacher invite works for 7 days. Its encrypted copy is erased when it's used or cancelled, or within an hour after it expires, and the invite is deleted 30 days after it was made.
+- The encrypted copy of a school's join link is erased when the link is turned off, or within an hour after it expires.
+- A school's classes are deleted 30 days after their teacher leaves the school, with every mark and note in them and any of their students who aren't in another of the teacher's classes. An administrator can delete them sooner, or give one back to the teacher.
 - Parent conferences are deleted 30 days after their last time, with every time, code, and family change in them. A conference that never gets a time is deleted after 90 days.
 - Records of which reminder emails a school sent are deleted 2 weeks after the event's date. Emails about an event being made, changed, or cancelled are deleted 3 days after they're queued.
 - Rate-limit counters delete themselves within an hour at most.
+- The record of who opened which student records is deleted after one year.
 - A device's notification setup is deleted when you turn notifications off or sign out on it, when the device tells us it no longer takes them, and after 30 days without the app being opened on it. Notes of which reminders were sent are deleted after 2 days.
 
 ### Deleting your account
 
-There isn't a delete button yet. Email [a.barragan.89@gmail.com](mailto:a.barragan.89@gmail.com) from the address you sign in with, and we'll delete your account and everything in it: classes, students, marks, mark types, lesson plans, substitute links, parent conferences, and your Google Classroom connection. We'll let you know when it's done.
+There isn't a delete button yet. Email [a.barragan.89@gmail.com](mailto:a.barragan.89@gmail.com) from the address you sign in with, and we'll delete your account and everything in it: classes, students, marks, mark types, groups, lesson plans and templates, substitute links, parent conferences, co-teacher connections, notification setups, your school membership, and your Google Classroom connection. A school's staff list and calendar belong to the school, so they stay. If you're in a school, your school's classes stay with the school for 30 days, as when you leave, and then they're deleted; until then the school sees your name on them, but your email is removed and the account can't be signed in to. We'll let you know when it's done.
 
 ### No backups
 
@@ -329,6 +389,7 @@ Our server also keeps logs of events like sign-ins and errors. They never contai
 - **See and fix your information:** everything you've added is in the app. You can rename students and classes, edit lesson plans, and delete marks.
 - **Get a copy:** email us and we'll send you a copy of your data.
 - **Delete:** see [Keeping and deleting data](#keeping-and-deleting-data).
+- **Sign out everywhere:** if you lose a phone or stay signed in on a shared computer, Account → Sign out everywhere ends every session at once, on every device, and stops reminders on all of them. A device that saved your class list erases it the next time it goes online.
 
 Depending on your state, you may have other privacy rights. We honor requests to access, correct, or delete information from everyone, wherever they live. We don't sell personal information or share it for targeted advertising, so there's nothing to opt out of.
 

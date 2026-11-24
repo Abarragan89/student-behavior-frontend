@@ -28,6 +28,8 @@ import { ApiError } from '#/lib/api'
 import { useOnline } from '#/lib/online'
 import {
   changeMember,
+  HELD_CLASS_DAYS,
+  heldClassesQueryOptions,
   removeSchoolMember,
   schoolQueryOptions,
 } from '#/lib/school'
@@ -163,7 +165,10 @@ export function SchoolMembersList({ detail }: { detail: SchoolDetail }) {
   )
 }
 
-/** "Remove Ana from Lincoln?" Their account and classes stay theirs. */
+/**
+ * "Remove Ana from Lincoln?" Their account and own classes stay theirs; the
+ * school's classes stay with the school for HELD_CLASS_DAYS.
+ */
 function RemoveMemberDialog({
   member,
   schoolName,
@@ -193,13 +198,17 @@ function RemoveMemberDialog({
           },
       )
       onClose()
-      // Their ring leaves the dashboard too.
+      // Their ring leaves the dashboard too, and their school classes join
+      // the ones kept after teachers left.
       void queryClient.invalidateQueries({ queryKey: ['school-behavior'] })
+      void queryClient.invalidateQueries({
+        queryKey: heldClassesQueryOptions.queryKey,
+      })
       toast.success(`Removed ${m.name}`, {
         description:
           m.role === 'admin'
             ? 'Their account stays theirs.'
-            : 'Their account and classes stay theirs. You can no longer view their classes.',
+            : `Their own classes stay theirs. Their school classes stay with the school for ${HELD_CLASS_DAYS} days.`,
       })
     },
     onError: (error) => {
@@ -227,7 +236,7 @@ function RemoveMemberDialog({
           <AlertDialogDescription>
             {shown?.role === 'admin'
               ? 'They stop being an administrator and keep their TeachForFree account. To add them back, send them a join link.'
-              : 'They keep their TeachForFree account, classes and students, and you can no longer view their classes. To add them back, send them a join link.'}
+              : `They keep their TeachForFree account and their own classes. Their school classes leave their account and stay with the school for ${HELD_CLASS_DAYS} days, for you to view or print, then they’re deleted. To add them back, send them a join link.`}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -332,7 +341,7 @@ function RoleDialog({
           </AlertDialogTitle>
           <AlertDialogDescription>
             {toAdmin
-              ? 'They’ll see what you see: the dashboard, every teacher’s classes, students and notes (view only), the calendar and the staff list. Their own classes and lesson plans are hidden while they’re an administrator. Nothing is deleted: making them a teacher again brings it all back.'
+              ? 'They’ll see what you see: the dashboard, every teacher’s school classes, students and notes (view only), the calendar and the staff list. Their own classes and lesson plans are hidden while they’re an administrator. Nothing is deleted: making them a teacher again brings it all back.'
               : 'They lose the administrator tabs and get their own classes and lesson plans back.'}
           </AlertDialogDescription>
         </AlertDialogHeader>

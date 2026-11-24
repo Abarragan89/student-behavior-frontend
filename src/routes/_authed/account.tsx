@@ -1,7 +1,14 @@
 import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { ArrowLeft, Eye, HardDrive, LogOut, UsersRound } from 'lucide-react'
+import {
+  ArrowLeft,
+  Eye,
+  HardDrive,
+  LogOut,
+  MonitorSmartphone,
+  UsersRound,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -11,6 +18,8 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { meQueryOptions } from '#/lib/auth'
+import { useOnline } from '#/lib/online'
+import { OfflineNote } from '#/components/offline-note'
 import { usePwaInstall } from '#/lib/pwa-install'
 import { ArchivedClasses } from '#/components/archived-classes'
 import { ClassroomConnection } from '#/components/classroom-connection'
@@ -30,6 +39,8 @@ function AccountPage() {
   // Already loaded by the login check in _authed.tsx.
   const { data: me } = useSuspenseQuery(meQueryOptions)
   const [signOutOpen, setSignOutOpen] = useState(false)
+  const [everywhereOpen, setEverywhereOpen] = useState(false)
+  const online = useOnline()
   const { standalone } = usePwaInstall()
   const { switchTo, switching } = useSwitchSpace()
 
@@ -145,16 +156,39 @@ function AccountPage() {
         </>
       )}
 
-      <Button
-        variant="outline"
-        onClick={() => setSignOutOpen(true)}
-        className="h-11 self-start rounded-lg border-2 px-4 font-bold"
-      >
-        <LogOut />
-        Sign out
-      </Button>
+      <div className="flex flex-col items-start gap-3">
+        <div className="flex flex-wrap gap-3">
+          <Button
+            variant="outline"
+            onClick={() => setSignOutOpen(true)}
+            className="h-11 rounded-lg border-2 px-4 font-bold"
+          >
+            <LogOut />
+            Sign out
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setEverywhereOpen(true)}
+            disabled={!online}
+            className="h-11 rounded-lg border-2 px-4 font-bold"
+          >
+            <MonitorSmartphone />
+            Sign out everywhere
+          </Button>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Lost a phone, or stayed signed in on a shared computer? Sign out
+          everywhere ends every session at once, this one included.
+        </p>
+        <OfflineNote action="sign out everywhere" />
+      </div>
 
       <SignOutDialog open={signOutOpen} onOpenChange={setSignOutOpen} />
+      <SignOutDialog
+        open={everywhereOpen}
+        onOpenChange={setEverywhereOpen}
+        everywhere
+      />
     </main>
   )
 }

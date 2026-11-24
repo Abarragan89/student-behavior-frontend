@@ -97,13 +97,16 @@ export type CreatedClassroom = {
   id: string
   name: string
   is_default: boolean
+  /** The school it belongs to; null for the teacher's own class. */
+  school_id: string | null
   created_at: string
 }
 
 // "Create class" from the + menu. The backend is meant to make the new class
 // the default; until it does, the create-class form switches to it itself.
-export function createClassroom(name: string) {
-  return apiPost<CreatedClassroom>('/classrooms', { name })
+// A school member's class is the school's unless `personal`.
+export function createClassroom(name: string, personal = false) {
+  return apiPost<CreatedClassroom>('/classrooms', { name, personal })
 }
 
 // Opening a classroom tab. The backend makes it the teacher's default and
